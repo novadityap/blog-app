@@ -21,21 +21,20 @@ const Header = () => {
     setIsOpen(!isOpen);
   };
 
-  console.log(isOpen);  
+  console.log(isOpen);
 
   return (
     <>
       <Navbar className="border-b-2" rounded>
-        
         {isOpen ? (
           <div className="w-full flex text-center gap-x-2">
             <TextInput
               className="w-full"
-            rightIcon={TbSearch}
-            placeholder="Search..."
-          />
+              rightIcon={TbSearch}
+              placeholder="Search..."
+            />
             <div className="flex items-center">
-              <TbX className="cursor-pointer size-6" onClick={handleSearch}/>
+              <TbX className="cursor-pointer size-6" onClick={handleSearch} />
             </div>
           </div>
         ) : (
@@ -62,11 +61,7 @@ const Header = () => {
                 <TbSearch />
               </Button>
               <NavLink className="hidden md:inline-block">
-                <Button
-                  size="sm"
-                  outline
-                  gradientDuoTone="purpleToPink"
-                >
+                <Button size="sm" outline gradientDuoTone="purpleToPink">
                   Sign In
                 </Button>
               </NavLink>
@@ -79,10 +74,19 @@ const Header = () => {
               <NavbarLink as={NavLink} to="/about" active={path === "/about"}>
                 About
               </NavbarLink>
-              <NavbarLink as={NavLink} to="/projects" active={path === "/projects"}>
+              <NavbarLink
+                as={NavLink}
+                to="/projects"
+                active={path === "/projects"}
+              >
                 Projects
               </NavbarLink>
-              <NavbarLink as={NavLink} to="/signin" active={path === "/signin"} className="inline-block md:hidden">
+              <NavbarLink
+                as={NavLink}
+                to="/signin"
+                active={path === "/signin"}
+                className="inline-block md:hidden"
+              >
                 Sign In
               </NavbarLink>
             </NavbarCollapse>
