@@ -16,7 +16,14 @@ import SignIn from './pages/SignIn.jsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path='/' element={<Home />} />
+    <>
+      <Route path='/' element={<Home />} />
+      <Route path='/dashboard' element={<Dashboard />} />
+      <Route path='/about' element={<About />} />
+      <Route path='/projects' element={<Project />} />
+      <Route path='/signin' element={<SignIn />} />
+      <Route path='/signup' element={<SignUp />} />
+    </>
   )
 );
 
