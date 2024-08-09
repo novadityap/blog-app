@@ -3,8 +3,9 @@ import "winston-daily-rotate-file";
 
 const customFormat = winston.format.combine(
   winston.format.timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
-  winston.format.printf(({ level, message, timestamp }) => {
-    return `${timestamp} ${level}: ${message}`;
+  winston.format.errors({stack: true}),
+  winston.format.printf(({ level, message, timestamp, stack }) => {
+    return `${timestamp} ${level}: ${message + (stack ? '\n' + stack : '')}`;
   })
 );
 
@@ -21,7 +22,8 @@ const logger = winston.createLogger({
       datePattern: 'YYYY-MM-DD',
       zippedArchive: true,
       maxSize: '20m',
-      maxFiles: '14d'
+      maxFiles: '14d',
+      format: customFormat
     })
   ],
   exceptionHandlers: [
@@ -33,7 +35,7 @@ const logger = winston.createLogger({
 });
 
 if(process.env.NODE_ENV !== 'prod') {
-  logger.add(new winston.transports.Console({format: winston.format.simple()}));
+  logger.add(new winston.transports.Console({format: winston.format.prettyPrint()}));
 }
 
 export default logger;
