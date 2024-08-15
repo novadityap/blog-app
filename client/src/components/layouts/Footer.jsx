@@ -53,10 +53,12 @@ const Footer = () => {
             <BaseFooter.Icon
               href="https://github.com/novadityap"
               icon={TbBrandGithub}
+              className="size-5"
             />
             <BaseFooter.Icon
               href="https://www.linkedin.com/in/nova-aditya-17525b297"
               icon={TbBrandLinkedin}
+              className="size-5"
             />
             <BaseFooter.Icon href="#" icon={TbBrandInstagram} />
           </div>

@@ -1,5 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 import { useFormik } from 'formik';
+import { Link } from 'react-router-dom';
 import { Label, TextInput, Button, Spinner, Alert } from 'flowbite-react';
 import { TbBrandGoogle } from 'react-icons/tb';
 import { useSignupMutation } from '../services/authApi';
@@ -109,6 +110,7 @@ const SignUp = () => {
           <TbBrandGoogle className="mr-2 size-5" />
           Continue with Google
         </Button>
+        <p>Already have an account? <Link to="/signin" className="text-blue-500">Sign In</Link></p>
       </form>
     </div>
   );
