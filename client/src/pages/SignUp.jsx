@@ -2,14 +2,13 @@
 import { useFormik } from 'formik';
 import { Link } from 'react-router-dom';
 import { Label, TextInput, Button, Spinner, Alert } from 'flowbite-react';
-import { TbBrandGoogle } from 'react-icons/tb';
 import { useSignupMutation } from '../services/authApi';
 import { useState } from 'react';
 import changeErrorToObject from '../utils/changeErrorToObject.js';
 
 const SignUp = () => {
-  const [signup, { isLoading, isSuccess }] = useSignupMutation();
-  const [validationError, setValidationError] = useState(null);
+  const [signup, { isLoading }] = useSignupMutation();
+  const [validationMessage, setValidationMessage] = useState(null);
   const [message, setMessage] = useState(null);
   const formik = useFormik({
     initialValues: {
@@ -23,10 +22,10 @@ const SignUp = () => {
         .then(res => {
           setMessage(res.message);
           formik.resetForm();
-          setValidationError(null);
+          setValidationMessage(null);
         })
         .catch(err => {
-          setValidationError(changeErrorToObject(err.data.error));
+          setValidationMessage(changeErrorToObject(err.data.error));
         });
     },
   });
@@ -41,12 +40,11 @@ const SignUp = () => {
           <span>Blog</span>
         </div>
         <p className="mt-3 mb-8">
-          This is a demo project. You can signup with your email and password or
-          with Google.
+          This is a demo project. You can signup with your email and password
         </p>
       </div>
       <form onSubmit={formik.handleSubmit} className="flex flex-col gap-y-4">
-        {isSuccess && (
+        {message && (
           <Alert color="success" className="place-self-center">
             {message}
           </Alert>
@@ -60,10 +58,10 @@ const SignUp = () => {
             required
             onChange={formik.handleChange}
             value={formik.values.username}
-            color={validationError?.username && 'failure'}
+            color={validationMessage?.username && 'failure'}
             helperText={
-              validationError?.username && (
-                <span>{validationError?.username}</span>
+              validationMessage?.username && (
+                <span>{validationMessage?.username}</span>
               )
             }
           />
@@ -77,9 +75,11 @@ const SignUp = () => {
             required
             onChange={formik.handleChange}
             value={formik.values.email}
-            color={validationError?.email && 'failure'}
+            color={validationMessage?.email && 'failure'}
             helperText={
-              validationError?.email && <span>{validationError?.email}</span>
+              validationMessage?.email && (
+                <span>{validationMessage?.email}</span>
+              )
             }
           />
         </div>
@@ -92,10 +92,10 @@ const SignUp = () => {
             required
             onChange={formik.handleChange}
             value={formik.values.password}
-            color={validationError?.password && 'failure'}
+            color={validationMessage?.password && 'failure'}
             helperText={
-              validationError?.password && (
-                <span>{validationError?.password}</span>
+              validationMessage?.password && (
+                <span>{validationMessage?.password}</span>
               )
             }
           />
@@ -106,11 +106,12 @@ const SignUp = () => {
             <span>{isLoading ? 'Loading...' : 'Sign Up'}</span>
           </span>
         </Button>
-        <Button outline gradientDuoTone="purpleToPink" className="w-full">
-          <TbBrandGoogle className="mr-2 size-5" />
-          Continue with Google
-        </Button>
-        <p>Already have an account? <Link to="/signin" className="text-blue-500">Sign In</Link></p>
+        <p>
+          Already have an account?{' '}
+          <Link to="/signin" className="text-blue-500">
+            Sign In
+          </Link>
+        </p>
       </form>
     </div>
   );
