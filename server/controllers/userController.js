@@ -8,6 +8,23 @@ import ResponseError from '../utils/responseError.js';
 import logger from '../config/logger.js';
 import bcrypt from 'bcrypt';
 
+export const getUserById = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      logger.info(`get user failed: user not found with id ${req.params.id}`);
+      throw new ResponseError('User not found', 404);
+    }
+
+    logger.info(`get user success: user found with id ${req.params.id}`);
+    res.json({
+      data: user,
+    });
+  } catch (e) {
+    next(e);
+  }
+}
+
 export const createUser = async (req, res, next) => {
   try {
     const value = validation(createUserSchema, req.body);
