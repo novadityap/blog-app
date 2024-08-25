@@ -150,8 +150,10 @@ export const signin = async (req, res, next) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({
-        user,
-        token,
+        data: {
+          ...user.toJSON(),
+          token,
+        }
       });
   } catch (e) {
     next(e);
