@@ -1,17 +1,29 @@
 import joi from 'joi';
 
-export const signupSchema = joi.object({
-  username: joi.string().required().alphanum(),
-  email: joi.string().email().required(),
-  password: joi.string().min(6).required(),
+const usernameSchema = joi.string().alphanum().required();
+const emailSchema = joi.string().email().required();
+const passwordSchema = joi.string().min(6).required();
+
+const baseUserSchema = joi.object({
+  username: usernameSchema,
+  email: emailSchema,
+  password: passwordSchema,
 });
 
+export const signupSchema = baseUserSchema;
+
 export const signinSchema = joi.object({
-  email: joi.string().email().required(),
-  password: joi.string().required(),
+  email: emailSchema,
+  password: passwordSchema,
 });
 
 export const resendEmailSchema = joi.object({
-  email: joi.string().email().required(),
+  email: emailSchema,
 });
 
+export const createUserSchema = baseUserSchema;
+
+export const updateUserSchema = baseUserSchema.fork(
+  ['username', 'email', 'password'],
+  schema => schema.optional()
+);
