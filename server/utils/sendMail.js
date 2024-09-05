@@ -1,5 +1,5 @@
 import transporter from "../config/mail.js";
-import logger from "../config/logger.js";
+import logger from "./logger.js";
 
 const sendMail = async (email, subject, html) => {
   try {
