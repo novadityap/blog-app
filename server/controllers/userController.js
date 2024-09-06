@@ -3,21 +3,29 @@ import {
   updateUserSchema,
 } from '../validations/userValidation.js';
 import User from '../models/userModel.js';
-import validation from '../utils/validation.js';
+import validateSchema from '../utils/validateSchema.js';
+import validateMultipart from '../utils/validateMultipart.js';
 import ResponseError from '../utils/responseError.js';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 import bcrypt from 'bcrypt';
+import path from 'path';
+import fs from 'fs';
 
-export const getUserById = async (req, res, next) => {
+export const fetchUserById = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(targetUserId);
+
     if (!user) {
-      logger.info(`get user failed: user not found with id ${req.params.id}`);
+      logger.info(
+        `resource not found - user not found with id ${req.params.id}`
+      );
       throw new ResponseError('User not found', 404);
     }
 
-    logger.info(`get user success: user found with id ${req.params.id}`);
+    logger.info(`fetch user success - user found with id ${req.params.id}`);
     res.json({
+      code: 200,
+      message: 'User found',
       data: user,
     });
   } catch (e) {
