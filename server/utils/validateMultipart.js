@@ -4,15 +4,15 @@ import path from 'path';
 import validateSchema from './validateSchema.js';
 
 const validateMultipart = {
-  async single(req, fieldName, schema = null) {
-    return this.fields(req, [{ name: fieldName, maxCount: 1 }], schema);
+  async single(req, schema = null, fieldName, required = true) {
+    return this.fields(req, schema, [{ name: fieldName, maxCount: 1, required }]);
   },
 
-  async array(req, fieldName, maxCount, schema = null) {
-    return this.fields(req, [{ name: fieldName, maxCount }], schema);
+  async array(req, schema = null, fieldName, maxCount, required) {
+    return this.fields(req, schema, [{ name: fieldName, maxCount, required }]);
   },
 
-  async fields(req, fieldsConfig = [], schema = null) {
+  async fields(req, schema = null, fieldsConfig = [] ) {
     const maxFileSize = 2 * 1024 * 1024; // 2MB
     const allowedMimeTypes = ['image/jpeg', 'image/png'];
 
@@ -46,7 +46,7 @@ const validateMultipart = {
       );
 
       const fileErrors = fieldsConfig.reduce(
-        (acc, { name: fieldName, maxCount }) => {
+        (acc, { name: fieldName, maxCount, required }) => {
           const filesForField = Array.isArray(uploadedFiles[fieldName])
             ? uploadedFiles[fieldName]
             : uploadedFiles[fieldName]
@@ -54,7 +54,9 @@ const validateMultipart = {
             : [];
 
           if (filesForField.length === 0) {
-            acc[fieldName] = [`${fieldName} is required`];
+            if (required) {
+              acc[fieldName] = [`${fieldName} is required`];
+            }
             return acc;
           }
 
