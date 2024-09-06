@@ -1,7 +1,7 @@
-import ResponseError from "../utils/responseError.js";
-import logger from "../utils/logger.js";
-import jwt from "jsonwebtoken";
-const verifyTokenMiddleware = async (req, res, next) => {
+import ResponseError from '../utils/responseError.js';
+import logger from '../utils/logger.js';
+import jwt from 'jsonwebtoken';
+const authMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
 
@@ -11,11 +11,11 @@ const verifyTokenMiddleware = async (req, res, next) => {
     }
 
     req.user = jwt.verify(token, process.env.JWT_SECRET);
+
     next();
   } catch (e) {
     next(e);
   }
-}
+};
 
-
-export default verifyTokenMiddleware;
+export default authMiddleware;
