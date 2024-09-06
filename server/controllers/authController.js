@@ -162,13 +162,19 @@ export const signin = async (req, res, next) => {
     }
 
     const token = jwt.sign(
-      { id: existingUser._id }, 
+      { 
+        id: existingUser._id,
+        role: existingUser.role
+      }, 
       process.env.JWT_SECRET, 
       { expiresIn: process.env.JWT_EXPIRES }
     );
 
     const refreshToken = jwt.sign(
-      { id: existingUser._id },
+      { 
+        id: existingUser._id,
+        role: existingUser.role
+      },
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: process.env.JWT_REFRESH_EXPIRES }
     );
