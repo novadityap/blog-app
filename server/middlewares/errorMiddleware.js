@@ -3,12 +3,12 @@
   import logger from '../utils/logger.js';
 
   const errorMiddleware = (err, req, res, next) => {
-    const { code = 500, message = 'Internal server Error', errors = null } = err;
+  const { code = 500, message = 'Internal server Error', errors = null, data = null } = err;
 
     if (err instanceof jwt.TokenExpiredError || err instanceof jwt.JsonWebTokenError) {
       logger.info(`Token error - ${err.message}`);
-      return res.status(code).json({ 
-        code,
+      return res.status(401).json({ 
+        code: 401,
         message: 'Token is invalid or expired' 
       });
     }
