@@ -55,10 +55,44 @@ export const fetchAllUsers = async (req, res, next) => {
 
 export const createUser = async (req, res, next) => {
   try {
-    const value = validation(createUserSchema, req.body);
+    const { validatedData, validationErrors } = validateSchema(
+      createUserSchema,
+      req.body
+    );
 
-    const user = await User.findOne({ email: value.email });
-    if (user) {
+    if (validationErrors) {
+      logger.info('validation error');
+      throw new ResponseError('Validation error', 400, validationErrors);
+    }
+
+    const existingUser = await User.findOne({ email: validatedData.email });
+
+    if (existingUser) {
+      logger.info(
+        `create user failed - user already exists with email ${validatedData.email}`
+      );
+      throw new ResponseError('Email already in use', 409);
+    }
+
+    validatedData.password = await bcrypt.hash(validatedData.password, 10);
+    await User.create({
+      ...validatedData,
+      isVerified: true,
+      verificationToken: null,
+      verificationTokenExpires: null,
+    });
+
+    logger.info(
+      `create user success - user created with email ${validatedData.email}`
+    );
+    res.status(201).json({
+      code: 201,
+      message: 'User created successfully',
+    });
+  } catch (e) {
+    next(e);
+  }
+};
       logger.info(
         `create user failed: user already exists with email ${value.email}`
       );

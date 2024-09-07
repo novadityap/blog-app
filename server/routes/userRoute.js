@@ -12,6 +12,7 @@ const router = express.Router();
 
 router.use(authMiddleware);
 router.get('', authorizeMiddleware(['admin']), fetchAllUsers);
+router.post('', authorizeMiddleware(['admin']), createUser);
 router.get('/:id', authorizeMiddleware(['admin', 'user'], User, true), fetchUserById);
 
 export default router;
