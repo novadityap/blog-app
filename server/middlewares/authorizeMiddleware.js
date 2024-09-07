@@ -1,12 +1,10 @@
 import ResponseError from '../utils/responseError.js';
 import logger from '../utils/logger.js';
-import User from '../models/userModel.js';
-import Post from '../models/postModel.js';
 
 const authorizeMiddleware = (allowedRoles, model, checkOwnership = false) => {
   return async (req, res, next) => {
     try {
-      const { currentUserId, currentUserRole } = req.user;
+      const { id: currentUserId, role: currentUserRole } = req.user;
 
       if (!allowedRoles.includes(currentUserRole)) {
         logger.info(`forbidden - user role ${currentUserRole} is not allowed`);
@@ -18,23 +16,22 @@ const authorizeMiddleware = (allowedRoles, model, checkOwnership = false) => {
 
       if (checkOwnership) {
         const resourceId = req.params.id;
+        const resourceName = req.originalUrl.split('/')[2].replace(/s$/, '');
         const resource = await model.findById(resourceId);
 
         if (!resource) {
           logger.info(
-            `${model.toLowerCase()} not found - ${model.toLowerCase()} not found with id ${resourceId}`
+            `${resourceName} not found - ${resourceName} not found with id ${resourceId}`
           );
-          throw new ResponseError(`${model} not found`, 404);
+          throw new ResponseError(`${resourceName} not found`, 404);
         }
 
-        if (resource.userId.toString() !== currentUserId) {
+        if (currentUserId !== resourceId && currentUserRole !== 'admin') {
           logger.info(
-            `access denied - user id ${currentUserId} is not equal to ${model.toLowerCase()} owner id ${
-              resource.userId
-            }`
+            `forbidden - user ${currentUserId} is not allowed to access ${resourceName} with id ${resourceId}`
           );
           throw new ResponseError(
-            `You don't have permission to access this ${model.toLowerCase()}`,
+            `You don't have permission to access this ${resourceName}`,
             403
           );
         }
