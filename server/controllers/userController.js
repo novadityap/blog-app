@@ -33,11 +33,21 @@ export const fetchUserById = async (req, res, next) => {
   }
 };
 
-export const getAllUsers = async (req, res, next) => {
+export const fetchAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find();
-    logger.info(`get all users success: ${users.length} users found`);
-    res.json({ data: users });
+    const allUsers = await User.find();
+
+    if (allUsers.length === 0) {
+      logger.info('resource not found - no users found in database');
+      throw new ResponseError('No users found', 404, null, []);
+    }
+
+    logger.info(`fetch all users success - ${allUsers.length} users found`);
+    res.json({
+      code: 200,
+      message: 'Users found',
+      data: allUsers,
+    });
   } catch (e) {
     next(e);
   }
