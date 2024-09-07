@@ -2,6 +2,7 @@ import {
   fetchUserById,
   fetchAllUsers,
   createUser,
+  updateUser,
 } from '../controllers/userController.js';
 import User from '../models/userModel.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
@@ -14,5 +15,6 @@ router.use(authMiddleware);
 router.get('', authorizeMiddleware(['admin']), fetchAllUsers);
 router.post('', authorizeMiddleware(['admin']), createUser);
 router.get('/:id', authorizeMiddleware(['admin', 'user'], User, true), fetchUserById);
+router.put('/:id', authorizeMiddleware(['admin', 'user'], User, true), updateUser);
 
 export default router;

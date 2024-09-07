@@ -93,17 +93,82 @@ export const createUser = async (req, res, next) => {
     next(e);
   }
 };
+export const updateUser = async (req, res, next) => {
+  try {
+    const { validatedFiles, validationErrors, validatedData } =
+      await validateMultipart.single(req, updateUserSchema, 'avatar', false);
+
+    if (validationErrors) {
+      logger.info('validation error');
+      throw new ResponseError('Validation error', 400, validationErrors);
+    }
+
+    const existingUserEmail = await User.findOne({
+      email: validatedData.email,
+      _id: { $ne: req.params.id },
+    });
+
+    if (existingUserEmail) {
       logger.info(
-        `create user failed: user already exists with email ${value.email}`
+        `update user failed - user already exists with email ${existingUserEmail.email}`
       );
       throw new ResponseError('Email already in use', 409);
     }
 
-    value.password = await bcrypt.hash(value.password, 10);
-    await User.create(value);
+    const existingUser = await User.findById(req.params.id);
 
-    logger.info(`create user success: user created with email ${value.email}`);
-    res.status(201).json({ message: 'User created successfully' });
+    if (!existingUser) {
+      logger.info(
+        `update user failed - user not found with id ${req.params.id}`
+      );
+      throw new ResponseError('User not found', 404);
+    }
+
+    let avatarFilename;
+
+    if (validatedFiles.avatar) {
+      avatarFilename = validatedFiles.avatar[0].newFilename;
+      const oldAvatarFilename = existingUser.avatar;
+      const oldAvatarFilepath = path.join(
+        process.cwd(),
+        process.env.AVATAR_UPLOADS_DIR,
+        oldAvatarFilename
+      );
+
+      if (oldAvatarFilename !== 'default.jpg') {
+        fs.unlinkSync(oldAvatarFilepath);
+      }
+    }
+
+    validatedData.password = await bcrypt.hash(validatedData.password, 10);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...validatedData,
+        avatar: avatarFilename,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!updatedUser) {
+      logger.info(
+        `update user failed - user not found with id ${req.params.id}`
+      );
+      throw new ResponseError('User not found', 404);
+    }
+
+    logger.info(
+      `update user success - user updated with id ${updatedUser._id}`
+    );
+    res.json({
+      code: 200,
+      message: 'User updated successfully',
+      data: updatedUser,
+    });
   } catch (e) {
     next(e);
   }
