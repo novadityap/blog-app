@@ -93,6 +93,7 @@ export const createUser = async (req, res, next) => {
     next(e);
   }
 };
+
 export const updateUser = async (req, res, next) => {
   try {
     const { validatedFiles, validationErrors, validatedData } =
@@ -171,5 +172,26 @@ export const updateUser = async (req, res, next) => {
     });
   } catch (e) {
     next(e);
+  }
+};
+
+export const deleteUser = async (req, res, next) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+
+    if (!deletedUser) {
+      logger.info(
+        `delete user failed - user not found with id ${targetUserId}`
+      );
+      throw new ResponseError('User not found', 404);
+    }
+
+    logger.info(`delete user success - user deleted with id ${targetUserId}`);
+    res.json({
+      code: 200,
+      message: 'User deleted successfully',
+    });
+  } catch (err) {
+    next(err);
   }
 };
