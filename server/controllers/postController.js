@@ -17,21 +17,15 @@ export const createPost = async (req, res, next) => {
 
     validatedData.slug = slugify(validatedData.title, { lower: true });
 
-    let postData = {
-      ...validatedData,
-      userId,
-    };
-
     if (validatedFiles.postImage) {
       const postImageFilename = validatedFiles.postImage[0].newFilename;
-
-      postData = {
-        ...postData,
-        postImage: postImageFilename,
-      };
+      validatedData.postImage = postImageFilename;
     }
 
-    await Post.create(postData);
+    await Post.create({
+      ...validatedData,
+      userId,
+    });
 
     res.json({
       code: 200,
