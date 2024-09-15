@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 const postSchema = new mongoose.Schema(
   {
     userId: {
-      type: String,
-      required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     },
     title: {
       type: String,
@@ -14,7 +14,7 @@ const postSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    image: {
+    postImage: {
       type: String,
       default: 'default.jpg',
     },
@@ -27,13 +27,15 @@ const postSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    author: {
-      type: String,
-      required: true,
-    },
   },
   {
     timestamps: true,
+    toJSON: {
+      transform: (doc, ret) => {
+        ret.postImage = `${process.env.SERVER_URL}/${process.env.POST_UPLOADS_DIR}/${ret.postImage}`;
+        return ret;
+      }
+    }
   }
 );
 
