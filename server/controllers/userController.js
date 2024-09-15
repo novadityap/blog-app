@@ -97,7 +97,7 @@ export const createUser = async (req, res, next) => {
 export const updateUser = async (req, res, next) => {
   try {
     const { validatedFiles, validationErrors, validatedData } =
-      await validateMultipart.single(req, updateUserSchema, 'avatar', false);
+      await validateMultipart.single(req, updateUserSchema, 'avatar');
 
     if (validationErrors) {
       logger.info('validation error');
@@ -130,14 +130,14 @@ export const updateUser = async (req, res, next) => {
     if (validatedFiles.avatar) {
       avatarFilename = validatedFiles.avatar[0].newFilename;
       const oldAvatarFilename = existingUser.avatar;
-      const oldAvatarFilepath = path.join(
+      const oldAvatarPath = path.join(
         process.cwd(),
         process.env.AVATAR_UPLOADS_DIR,
         oldAvatarFilename
       );
 
       if (oldAvatarFilename !== 'default.jpg') {
-        fs.unlinkSync(oldAvatarFilepath);
+        fs.unlinkSync(oldAvatarPath);
       }
     }
 
@@ -177,7 +177,7 @@ export const updateUser = async (req, res, next) => {
 
 export const deleteUser = async (req, res, next) => {
   try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    const deletedUser = await User.findById(req.params.id);
 
     if (!deletedUser) {
       logger.info(
@@ -185,6 +185,12 @@ export const deleteUser = async (req, res, next) => {
       );
       throw new ResponseError('User not found', 404);
     }
+
+    const avatarPath = path.join(process.cwd(), process.env.AVATAR_UPLOADS_DIR, deletedUser.avatar);
+    
+    if (deletedUser.avatar !== 'default.jpg') fs.unlinkSync(avatarPath);
+
+    await User.findByIdAndDelete(req.params.id);
 
     logger.info(`delete user success - user deleted with id ${targetUserId}`);
     res.json({
