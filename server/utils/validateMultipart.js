@@ -4,21 +4,21 @@ import path from 'path';
 import validateSchema from './validateSchema.js';
 
 const validateMultipart = {
-  async single(req, schema = null, fieldName, required = true) {
+  async single(req, schema = null, fieldName, required = false) {
     return this.fields(req, schema, [{ name: fieldName, maxCount: 1, required }]);
   },
 
-  async array(req, schema = null, fieldName, maxCount, required) {
+  async array(req, schema = null, fieldName, maxCount, required = false) {
     return this.fields(req, schema, [{ name: fieldName, maxCount, required }]);
   },
 
   async fields(req, schema = null, fieldsConfig = [] ) {
-    const maxFileSize = 2 * 1024 * 1024; // 2MB
-    const allowedMimeTypes = ['image/jpeg', 'image/png'];
+    const maxFileSize = 2 * 1024 * 1024; 
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
 
     const uploadDirs = {
-      avatar: path.join(process.cwd(), process.env.AVATAR_UPLOADS_DIR),
-      post: path.join(process.cwd(), process.env.POST_UPLOADS_DIR),
+      'avatar': path.join(process.cwd(), process.env.AVATAR_UPLOADS_DIR),
+      'postImage': path.join(process.cwd(), process.env.POST_UPLOADS_DIR),
     };
 
     Object.values(uploadDirs).forEach(dir => {
@@ -40,23 +40,15 @@ const validateMultipart = {
         }
       );
 
-      const { validatedData, validationErrors } = validateSchema(
-        schema,
-        formFields
-      );
+      const { validatedData, validationErrors } = validateSchema(schema, formFields);
 
-      const fileErrors = fieldsConfig.reduce(
-        (acc, { name: fieldName, maxCount, required }) => {
+      const fileErrors = fieldsConfig.reduce((acc, { name: fieldName, maxCount, required }) => {
           const filesForField = Array.isArray(uploadedFiles[fieldName])
             ? uploadedFiles[fieldName]
-            : uploadedFiles[fieldName]
-            ? [uploadedFiles[fieldName]]
             : [];
 
           if (filesForField.length === 0) {
-            if (required) {
-              acc[fieldName] = [`${fieldName} is required`];
-            }
+            if (required) acc[fieldName] = [`${fieldName} is required`];
             return acc;
           }
 
