@@ -2,31 +2,19 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 
 const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
-  },
+  username: String,
+  email: String,
+  password: String,
+  roles: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+  }],
   avatar: {
     type: String,
     default: 'default.jpg'
   },
   isVerified: {
     type: Boolean,
-    required: true,
     default: false
   },
   verificationToken: {
@@ -37,15 +25,9 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: () => Date.now() + (24 * 60 * 60 * 1000)
   },
-  resetToken: {
-    type: String
-  },
-  resetTokenExpires: {
-    type: Date,
-  },
-  refreshToken: {
-    type: String
-  }
+  resetToken: String,
+  resetTokenExpires: Date,
+  refreshToken: String
 }, {
   timestamps: true,
   toJSON: {

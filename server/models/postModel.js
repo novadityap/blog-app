@@ -6,14 +6,8 @@ const postSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
-    title: {
-      type: String,
-      required: true,
-    },
-    content: {
-      type: String,
-      required: true,
-    },
+    title: String,
+    content: String,
     postImage: {
       type: String,
       default: 'default.jpg',
@@ -22,11 +16,7 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: 'Uncategorized',
     },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-    },
+    slug: String
   },
   {
     timestamps: true,
