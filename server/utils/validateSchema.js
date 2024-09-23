@@ -1,21 +1,5 @@
-const normalizeBody = (body) => {
-  const normalized = {};
-
-  for (const key in body) {
-    if (Array.isArray(body[key])) {
-      normalized[key] = body[key][0];
-    } else {
-      normalized[key] = body[key]; 
-    }
-  }
-
-  return normalized;
-};
-
 const validateSchema = (schema, body) => { 
-  const data = normalizeBody(body);
-
-  const result = schema.validate(data, {
+  const result = schema.validate(body, {
     abortEarly: false,
     stripUnknown: true
   });
@@ -27,10 +11,10 @@ const validateSchema = (schema, body) => {
       return acc;
     }, {});
 
-    return { validatedData: result.value, validationErrors };
+    return { validatedFields: null, validationErrors };
   }
 
-  return { validatedData: result.value, validationErrors: null };
+  return { validatedFields: result.value, validationErrors: null };
 };
 
 export default validateSchema;

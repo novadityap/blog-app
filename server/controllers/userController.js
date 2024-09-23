@@ -3,17 +3,24 @@ import {
   updateUserSchema,
 } from '../validations/userValidation.js';
 import User from '../models/userModel.js';
+import Role from '../models/roleModel.js';
 import validateSchema from '../utils/validateSchema.js';
-import validateMultipart from '../utils/validateMultipart.js';
+import uploadAndValidate from '../utils/uploadAndValidate.js';
 import ResponseError from '../utils/responseError.js';
 import logger from '../utils/logger.js';
 import bcrypt from 'bcrypt';
 import path from 'path';
-import fs from 'fs';
+import * as fs from 'node:fs/promises';
+import validateObjectId from '../utils/validateObjectId.js';
 
-export const fetchUserById = async (req, res, next) => {
+export const getUserById = async (req, res, next) => {
   try {
-    const user = await User.findById(targetUserId);
+    if (!validateObjectId(req.params.id)) {
+      logger.info(`resource not found - invalid or malformed user id ${req.params.id}`);
+      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed user id'] });
+    }
+
+    const user = await User.findById(req.params.id).populate('roles');
 
     if (!user) {
       logger.info(
@@ -28,84 +35,139 @@ export const fetchUserById = async (req, res, next) => {
       message: 'User found',
       data: user,
     });
-  } catch (e) {
-    next(e);
+  } catch (err) {
+    next(err);
   }
 };
 
-export const fetchAllUsers = async (req, res, next) => {
+export const getUsers = async (req, res, next) => {
   try {
-    const allUsers = await User.find();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const totalUsers = await User.countDocuments();
+    const totalPages = Math.ceil(totalUsers / limit);
 
-    if (allUsers.length === 0) {
-      logger.info('resource not found - no users found in database');
-      throw new ResponseError('No users found', 404, null, []);
+    const filter = {};
+
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      const roles = await Role.find({ name: searchRegex }).select('_id');
+
+      filter.$or = [
+        { username: searchRegex },
+        { email: searchRegex },
+        { roles: { $in: roles.map(role => role._id) } },
+      ];
     }
 
-    logger.info(`fetch all users success - ${allUsers.length} users found`);
+    const users = await User.find(filter)
+      .skip(skip)
+      .limit(limit)
+      .populate('roles', 'name');
+
+    if (users.length === 0) {
+      logger.info('resource not found - no users found in database');
+      return res.json({
+        code: 200,
+        message: 'No users found',
+        data: [],
+      });
+    }
+
+    logger.info(`fetch all users success - ${users.length} users found`);
     res.json({
       code: 200,
       message: 'Users found',
-      data: allUsers,
+      data: users,
+      meta: {
+        pageSize: limit,
+        totalItems: totalUsers,
+        currentPage: page,
+        totalPages,
+      },
     });
-  } catch (e) {
-    next(e);
+  } catch (err) {
+    next(err);
   }
 };
 
 export const createUser = async (req, res, next) => {
   try {
-    const { validatedData, validationErrors } = validateSchema(
+    const { validatedFields, validationErrors } = validateSchema(
       createUserSchema,
       req.body
     );
 
     if (validationErrors) {
-      logger.info('validation error');
-      throw new ResponseError('Validation error', 400, validationErrors);
+      logger.info('create user failed - invalid request fields');
+      throw new ResponseError('Validation errors', 400, validationErrors);
     }
 
-    const existingUser = await User.findOne({ email: validatedData.email });
+    const userToUpdate = await User.findOne({ email: validatedFields.email });
 
-    if (existingUser) {
+    if (userToUpdate) {
       logger.info(
-        `create user failed - user already exists with email ${validatedData.email}`
+        `create user failed - user already exists with email ${validatedFields.email}`
       );
       throw new ResponseError('Email already in use', 409);
     }
 
-    validatedData.password = await bcrypt.hash(validatedData.password, 10);
+    const roles = await Role.find({ _id: { $in: validatedFields.roles } });
+
+    if (roles.length !== validatedFields.roles.length) {
+      logger.info(`create user failed - some of the roles is invalid`);
+      throw new ResponseError('Validation errors', 400, {
+        roles: ['Some of the roles is invalid'],
+      });
+    }
+
+    validatedFields.password = await bcrypt.hash(validatedFields.password, 10);
     await User.create({
-      ...validatedData,
+      ...validatedFields,
       isVerified: true,
       verificationToken: null,
       verificationTokenExpires: null,
     });
 
     logger.info(
-      `create user success - user created with email ${validatedData.email}`
+      `create user success - user created with email ${validatedFields.email}`
     );
     res.status(201).json({
       code: 201,
       message: 'User created successfully',
     });
-  } catch (e) {
-    next(e);
+  } catch (err) {
+    next(err);
   }
 };
 
 export const updateUser = async (req, res, next) => {
   try {
-    const { validatedFiles, validationErrors, validatedData } =
-      await validateMultipart.single(req, updateUserSchema, 'avatar');
+    if (!validateObjectId(req.params.id)) {
+      logger.info(`resource not found - invalid or malformed user id ${req.params.id}`);
+      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed user id'] });
+    }
+
+    const { validatedFiles, validatedFields, validationErrors } =
+      await uploadAndValidate(req, { fieldname: 'avatar' }, updateUserSchema);
 
     if (validationErrors) {
-      logger.info('validation error');
-      throw new ResponseError('Validation error', 400, validationErrors);
+      logger.info('update user failed - invalid request fields');
+      throw new ResponseError('Validation errors', 400, validationErrors);
+    }
+
+    const userToUpdate = await User.findById(req.params.id);
+
+    if (!userToUpdate) {
+      logger.info(
+        `update user failed - user not found with id ${req.params.id}`
+      );
+      throw new ResponseError('User not found', 404);
     }
 
     const existingUserEmail = await User.findOne({
-      email: validatedData.email,
+      email: validatedFields.email,
       _id: { $ne: req.params.id },
     });
 
@@ -116,81 +178,64 @@ export const updateUser = async (req, res, next) => {
       throw new ResponseError('Email already in use', 409);
     }
 
-    const existingUser = await User.findById(req.params.id);
-
-    if (!existingUser) {
-      logger.info(
-        `update user failed - user not found with id ${req.params.id}`
-      );
-      throw new ResponseError('User not found', 404);
-    }
-
-    let avatarFilename;
-
-    if (validatedFiles.avatar) {
-      avatarFilename = validatedFiles.avatar[0].newFilename;
-      const oldAvatarFilename = existingUser.avatar;
-      const oldAvatarPath = path.join(
-        process.cwd(),
-        process.env.AVATAR_UPLOADS_DIR,
-        oldAvatarFilename
-      );
-
-      if (oldAvatarFilename !== 'default.jpg') {
-        fs.unlinkSync(oldAvatarPath);
+    if (validatedFiles?.avatar) {
+      if (userToUpdate.avatar !== 'default.jpg') {
+        await fs.unlink(
+          path.join(
+            process.cwd(),
+            process.env.AVATAR_UPLOADS_DIR,
+            userToUpdate.avatar
+          )
+        );
       }
+
+      userToUpdate.avatar = validatedFiles.avatar[0].newFilename;
     }
 
-    validatedData.password = await bcrypt.hash(validatedData.password, 10);
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        ...validatedData,
-        avatar: avatarFilename,
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!updatedUser) {
-      logger.info(
-        `update user failed - user not found with id ${req.params.id}`
-      );
-      throw new ResponseError('User not found', 404);
-    }
+    if (validatedFields.password) validatedFields.password = await bcrypt.hash(validatedFields.password, 10);
+    
+    Object.assign(userToUpdate, validatedFields);
+    await userToUpdate.save();
 
     logger.info(
-      `update user success - user updated with id ${updatedUser._id}`
+      `update user success - user updated with id ${userToUpdate._id}`
     );
     res.json({
       code: 200,
       message: 'User updated successfully',
-      data: updatedUser,
+      data: userToUpdate,
     });
-  } catch (e) {
-    next(e);
+  } catch (err) {
+    next(err);
   }
 };
 
 export const deleteUser = async (req, res, next) => {
   try {
-    const deletedUser = await User.findById(req.params.id);
+    if (!validateObjectId(req.params.id)) {
+      logger.info(`resource not found - invalid or malformed user id ${req.params.id}`);
+      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed user id'] });
+    }
 
-    if (!deletedUser) {
+    const userToDelete = await User.findById(req.params.id);
+
+    if (!userToDelete) {
       logger.info(
-        `delete user failed - user not found with id ${targetUserId}`
+        `delete user failed - user not found with id ${req.params.id}`
       );
       throw new ResponseError('User not found', 404);
     }
 
-    const avatarPath = path.join(process.cwd(), process.env.AVATAR_UPLOADS_DIR, deletedUser.avatar);
-    
-    if (deletedUser.avatar !== 'default.jpg') fs.unlinkSync(avatarPath);
+    if (userToDelete.avatar !== 'default.jpg') {
+      const avatarPath = path.join(
+        process.cwd(),
+        process.env.AVATAR_UPLOADS_DIR,
+        userToDelete.avatar
+      );
+      await fs.unlink(avatarPath);
+    }
 
-    await User.findByIdAndDelete(req.params.id);
+    userToDelete.remove();
 
     logger.info(`delete user success - user deleted with id ${targetUserId}`);
     res.json({

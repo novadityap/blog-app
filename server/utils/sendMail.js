@@ -1,19 +1,25 @@
-import transporter from "../config/mail.js";
-import logger from "./logger.js";
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  host: process.env.MAIL_HOST,
+  port: process.env.MAIL_PORT,
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS
+  }
+});
 
 const sendMail = async (email, subject, html) => {
-  try {
-    const info = await transporter.sendMail({
-      from: process.env.MAIL_FROM,
-      to: email,
-      subject,
-      html
-    });
-  
-    logger.info(`Email has been sent to ${email}: ${info.messageId}`);
-  } catch(e) {
-    logger.error(e);
-  }
-}
+ try {
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM,
+    to: email,
+    subject,
+    html,
+  });
+ } catch (err) {
+  throw new Error(err);
+ }
+};
 
 export default sendMail;

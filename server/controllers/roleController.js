@@ -7,6 +7,7 @@ import {
   createRoleSchema,
   updateRoleSchema
 } from "../validations/roleValidation.js";
+import validateObjectId from "../utils/validateObjectId.js";
 
 export const createRole = async (req, res, next) => {
   try {
@@ -50,7 +51,18 @@ export const getRoles = async (req, res, next) => {
     const skip = (page - 1) * limit;
     const totalRoles = await Role.countDocuments();
     const totalPages = Math.ceil(totalRoles / limit);
-    const roles = await Role.find()
+
+    const filter = {};
+
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+
+      filter.$or = [
+        { name: searchRegex }
+      ];
+    }
+
+    const roles = await Role.find(filter)
       .skip(skip)
       .limit(limit);
 
@@ -82,6 +94,11 @@ export const getRoles = async (req, res, next) => {
 
 export const getRoleById = async (req, res, next) => {
   try {
+    if (!validateObjectId(req.params.id)) {
+      logger.info(`resource not found - invalid or malformed role id ${req.params.id}`);
+      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed role id'] });
+    }
+
     const role = await Role.findById(req.params.id).populate('permissions');
 
     if (!role) {
@@ -102,6 +119,11 @@ export const getRoleById = async (req, res, next) => {
 
 export const updateRole = async (req, res, next) => {
   try {
+    if (!validateObjectId(req.params.id)) {
+      logger.info(`resource not found - invalid or malformed role id ${req.params.id}`);
+      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed role id'] });
+    }
+
     const { validatedFields, validationErrors } = validateSchema(updateRoleSchema, req.body);
 
     if (validationErrors) {
@@ -156,6 +178,11 @@ export const updateRole = async (req, res, next) => {
 
 export const deleteRole = async (req, res, next) => {
   try {
+    if (!validateObjectId(req.params.id)) {
+      logger.info(`resource not found - invalid or malformed role id ${req.params.id}`);
+      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed role id'] });
+    }
+
     const deletedRole = await Role.findByIdAndDelete(req.params.id);
 
     if (!deletedRole) {

@@ -6,6 +6,7 @@ import {
   createPermissionSchema,
   updatePermissionSchema,
 } from '../validations/permissionValidation.js';
+import validateObjectId from '../utils/validateObjectId.js';
 
 export const createPermission = async (req, res, next) => {
   try {
@@ -53,7 +54,19 @@ export const getPermissions = async (req, res, next) => {
     const totalPermissions = await Permission.countDocuments();
     const totalPages = Math.ceil(totalPermissions / limit);
 
-    const permissions = await Permission.find()
+    const filter = {};  
+
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+
+      filter.$or = [
+        { action: searchRegex },
+        { resource: searchRegex },
+        { description: searchRegex },
+      ];
+    }
+
+    const permissions = await Permission.find(filter)
       .skip(skip)
       .limit(limit);
 
@@ -85,6 +98,11 @@ export const getPermissions = async (req, res, next) => {
 
 export const getPermissionById = async (req, res, next) => {
   try {
+    if (!validateObjectId(req.params.id)) {
+      logger.info(`resource not found - invalid or malformed permission id ${req.params.id}`);
+      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed permission id'] });
+    }
+
     const permission = await Permission.findById(req.params.id);
 
     if (!permission) {
@@ -107,6 +125,11 @@ export const getPermissionById = async (req, res, next) => {
 
 export const updatePermission = async (req, res, next) => {
   try {
+    if (!validateObjectId(req.params.id)) {
+      logger.info(`resource not found - invalid or malformed permission id ${req.params.id}`);
+      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed permission id'] });
+    }
+
     const { validatedFields, validationErrors } = validateSchema(
       updatePermissionSchema,
       req.body
@@ -157,6 +180,11 @@ export const updatePermission = async (req, res, next) => {
 
 export const deletePermission = async (req, res, next) => {
   try {
+    if (!validateObjectId(req.params.id)) {
+      logger.info(`resource not found - invalid or malformed permission id ${req.params.id}`);
+      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed permission id'] });
+    }
+
     const deletedPermission = await Permission.findByIdAndDelete(req.params.id);
 
     if (!deletedPermission) {
