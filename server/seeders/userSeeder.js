@@ -24,7 +24,7 @@ const seedUser = async () => {
           username: 'admin',
           email: 'admin@email.com',
           password: adminPassword,
-          roles: [adminRole._id],
+          roles: [adminRole._id, userRole._id],
           isVerified: true,
           verificationToken: null,
           verificationTokenExpires: null,
