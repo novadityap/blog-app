@@ -1,7 +1,7 @@
 import ResponseError from '../utils/responseError.js';
 import logger from '../utils/logger.js';
 import jwt from 'jsonwebtoken';
-const authMiddleware = async (req, res, next) => {
+const authenticate = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
 
@@ -18,4 +18,4 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-export default authMiddleware;
+export default authenticate;
