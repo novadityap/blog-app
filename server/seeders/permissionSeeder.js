@@ -11,6 +11,8 @@ const seedPermission = async () => {
 
   for (let resource of resources) {
     for (let action of actions) {
+      if (resource === 'post' && action === 'read') continue; 
+
       permissions.push({
         action,
         resource,
