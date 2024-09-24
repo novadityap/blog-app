@@ -7,9 +7,11 @@ import {
 } from '../controllers/roleController.js';
 import express from 'express';
 import authorize from '../middlewares/authorize.js';
+import authenticate from '../middlewares/authenticate.js';
 
 const router = express.Router();
 
+router.use(authenticate);
 router.post('/', authorize('create', 'role'), createRole);
 router.get('/', authorize('read', 'role'), getRoles);
 router.get('/:id', authorize('read', 'role'), getRoleById);

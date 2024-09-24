@@ -1,22 +1,21 @@
 import {
-  fetchUserById,
-  fetchAllUsers,
+  getUserById,
+  getUsers,
   createUser,
   updateUser,
   deleteUser
 } from '../controllers/userController.js';
-import User from '../models/userModel.js';
-import authMiddleware from '../middlewares/authMiddleware.js';
-import authorizeMiddleware from '../middlewares/authorizeMiddleware.js';
+import authenticate from '../middlewares/authenticate.js';
+import authorize from '../middlewares/authorize.js';
 import express from 'express';
 
 const router = express.Router();
 
-router.use(authMiddleware);
-router.get('', authorizeMiddleware(['admin']), fetchAllUsers);
-router.post('', authorizeMiddleware(['admin']), createUser);
-router.get('/:id', authorizeMiddleware(['admin', 'user'], User, true), fetchUserById);
-router.put('/:id', authorizeMiddleware(['admin', 'user'], User, true), updateUser);
-router.delete('/:id', authorizeMiddleware(['admin', 'user'], User, true), deleteUser);
+router.use(authenticate);
+router.get('/', authorize('read', 'user'), getUsers);
+router.post('/', authorize('create', 'user'), createUser);
+router.get('/:id', authorize('read', 'user'), getUserById);
+router.put('/:id', authorize('update', 'user'), updateUser);
+router.delete('/:id', authorize('delete', 'user'), deleteUser);
 
 export default router;
