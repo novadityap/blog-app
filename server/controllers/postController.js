@@ -111,7 +111,14 @@ export const getPostById = async (req, res, next) => {
       throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed post id'] });
     }
 
-    const post = await Post.findById(req.params.id).populate('userId').populate('comments');
+    const post = await Post.findById(req.params.id)
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'userId',
+          select: 'username email'
+        }
+      });
 
     if (!post) {
       logger.info(`resource not found - post not found with id ${req.params.id}`);
@@ -121,8 +128,8 @@ export const getPostById = async (req, res, next) => {
     logger.info(`fetch post success - post found with id ${req.params.id}`);
     res.json({
       code: 200,
-      message: 'Post found',
-      data: post,
+      message: 'Post found',  
+      data: post
     });
   } catch (err) {
     next(err);
@@ -242,31 +249,4 @@ export const createComment = async (req, res, next) => {
   }
 }
 
-export const getCommentsByPost = async (req, res, next) => {
-  try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed post id ${req.params.id}`);
-      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed post id'] });
-    }
-    
-    const comments = await Comment.find({ postId: req.params.id });
 
-    if (comments.length === 0) {
-      logger.info('resource not found - no comments found in database');
-      return res.json({
-        code: 200,
-        message: 'No comments found',
-        data: [],
-      });
-    }
-
-    logger.info(`fetch all comments success - ${comments.length} comments found`);
-    res.json({
-      code: 200,
-      message: 'Comments found',
-      data: comments
-    });
-  } catch (err) {
-    next(err);
-  }
-}

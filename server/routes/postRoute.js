@@ -1,14 +1,24 @@
 import {
-  createPost
+  createPost,
+  getPosts,
+  getPostWithComments,
+  updatePost,
+  deletePost,
+  createComment,
 } from '../controllers/postController.js';
-import Post from '../models/postModel.js';
-import authMiddleware from '../middlewares/authMiddleware.js';
-import authorizeMiddleware from '../middlewares/authorizeMiddleware.js';
+import authorize from '../middlewares/authorize.js';
+import authenticate from '../middlewares/authenticate.js';
 import express from 'express';
 
 const router = express.Router();
 
-router.use(authMiddleware);
-router.post('', authorizeMiddleware(['admin']), createPost);
+router.get('/', getPosts);
+router.get('/:id', getPostWithComments);
+
+router.use(authenticate);
+router.post('/', authorize('create', 'post'), createPost);
+router.put('/:id', authorize('update', 'post'), updatePost);
+router.delete('/:id', authorize('delete', 'post'), deletePost);
+router.post('/:id/comments', authorize('create', 'comment'), createComment);
 
 export default router;

@@ -16,7 +16,11 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: 'Uncategorized',
     },
-    slug: String
+    slug: String,
+    comments: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Comment'
+    }]
   },
   {
     timestamps: true,
