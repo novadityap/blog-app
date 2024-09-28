@@ -1,10 +1,10 @@
-import joi from 'joi';
+import Joi from 'joi';
 
-const actionSchema = joi.string().valid('create', 'read', 'update', 'delete').required();
-const resourceSchema = joi.string().valid('user', 'role', 'permission', 'post', 'comment').required();
-const descriptionSchema = joi.string().required();
+const actionSchema = Joi.string().valid('create', 'read', 'update', 'delete').required();
+const resourceSchema = Joi.string().valid('user', 'role', 'permission', 'post', 'comment').required();
+const descriptionSchema = Joi.string().required();
 
-const basePermissionSchema = joi.object({
+const basePermissionSchema = Joi.object({
   action: actionSchema,
   resource: resourceSchema,
   description: descriptionSchema
