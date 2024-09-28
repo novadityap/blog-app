@@ -1,13 +1,13 @@
-import joi from 'joi';
+import Joi from 'joi';
 import mongoose from 'mongoose';
 
-const contentSchema = joi.string().required();
-const userIdSchema = joi.string().custom((value, helpers) => {
+const contentSchema = Joi.string().required();
+const userIdSchema = Joi.string().custom((value, helpers) => {
   if (!mongoose.Types.ObjectId.isValid(value)) return helpers.error('invalid user id');
   return value;
 }).required();
 
-const baseCommentSchema = joi.object({
+const baseCommentSchema = Joi.object({
   content: contentSchema,
   userId: userIdSchema
 });

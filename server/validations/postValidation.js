@@ -1,9 +1,9 @@
-import joi from 'joi';
+import Joi from 'joi';
 
-const titleSchema = joi.string().required();
-const contentSchema = joi.string().required();
+const titleSchema = Joi.string().required();
+const contentSchema = Joi.string().required();
 
-const basePostSchema = joi.object({
+const basePostSchema = Joi.object({
   title: titleSchema,
   content: contentSchema,
 });

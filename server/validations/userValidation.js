@@ -1,18 +1,24 @@
-import joi from 'joi';
+import Joi from 'joi';
 import mongoose from 'mongoose';
 
-const usernameSchema = joi.string().alphanum().required();
-const emailSchema = joi.string().email().required();
-const oldPasswordSchema = joi.string().required();
-const passwordSchema = joi.string().min(6).required();
-const rolesSchema = joi.array().items(
-  joi.string().custom((value, helpers) => {
+const usernameSchema = Joi.string().alphanum().required();
+const emailSchema = Joi.string().email().required();
+const passwordSchema = Joi.string().min(6).required();
+const signinPasswordSchema = Joi.string().required();
+const newPasswordSchema = Joi.string().min(6).required().messages({
+  'any.required': 'new password is required',
+  'string.min': 'new password should be at least 6 characters long',
+  'string.base': 'new password must be a string',
+  'string.empty': 'new password cannot be an empty field',
+});
+const rolesSchema = Joi.array().items(
+  Joi.string().custom((value, helpers) => {
     if (!mongoose.Types.ObjectId.isValid(value)) return helpers.error('invalid role id');
     return value;
   })
 ).required();
 
-const baseUserSchema = joi.object({
+const baseUserSchema = Joi.object({
   username: usernameSchema,
   email: emailSchema,
   password: passwordSchema,
@@ -21,12 +27,12 @@ const baseUserSchema = joi.object({
 
 export const signupSchema = baseUserSchema.fork(['roles'], schema => schema.optional());
 
-export const signinSchema = joi.object({
+export const signinSchema = Joi.object({
   email: emailSchema,
-  password: passwordSchema,
+  password: signinPasswordSchema,
 });
 
-export const verifyEmailSchema = joi.object({
+export const verifyEmailSchema = Joi.object({
   email: emailSchema,
 });
 
@@ -37,7 +43,6 @@ export const updateUserSchema = baseUserSchema.fork(
   schema => schema.optional()
 );
 
-export const resetPasswordSchema = joi.object({
-  oldPassword: oldPasswordSchema,
-  newPassword: passwordSchema
+export const resetPasswordSchema = Joi.object({
+  newPassword: newPasswordSchema
 });
