@@ -5,20 +5,19 @@ import bcrypt from 'bcrypt';
 
 const seedUser = async () => {
     try {
-      await User.deleteMany({});
       const roles = await Role.find({ name: { $in: ['admin', 'user'] } });
-
+      
       if (roles.length < 2) {
         logger.error('Insufficient roles in the database. Seeding failed.');
         return;
       }
-
+      
       const adminRole = roles.find(role => role.name === 'admin');
       const userRole = roles.find(role => role.name === 'user');
-
+      
       const adminPassword = await bcrypt.hash('admin123', 10);
       const userPassword = await bcrypt.hash('user123', 10);
-
+      
       const users = [
         {
           username: 'admin',
@@ -39,7 +38,8 @@ const seedUser = async () => {
           verificationTokenExpires: null,
         },
       ];
-
+      
+      await User.deleteMany({});
       await User.insertMany(users);
       logger.info('user seeded successfully');
     } catch (err) {
