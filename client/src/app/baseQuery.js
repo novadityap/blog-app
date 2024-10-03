@@ -1,7 +1,6 @@
 import axiosInstance from './interceptor.js';
 
-const axiosBaseQuery =
-  ({ baseUrl } = { baseUrl: '' }) =>
+const axiosBaseQuery = ({ baseUrl } = { baseUrl: '' }) =>
   async ({ url, method, data, params, headers }) => {
     try {
       const result = await axiosInstance({
@@ -11,16 +10,13 @@ const axiosBaseQuery =
         params,
         headers,
       });
-
+      
       return { data: result.data };
     } catch (axiosError) {
       const err = axiosError;
 
       return {
-        error: {
-          status: err.response?.status,
-          data: err.response?.data || err.message,
-        },
+        error: {...err.response.data},
       };
     }
   };
