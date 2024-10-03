@@ -1,13 +1,6 @@
 import Joi from 'joi';
-import mongoose from 'mongoose';
 
-const nameSchema = Joi.string().valid('admin', 'user').required();
-// const permissionsSchema = Joi.array().items(
-//   Joi.string().custom((value, helpers) => {
-//     if (!mongoose.Types.ObjectId.isValid(value)) return helpers.error('invalid permission id');
-//     return value;
-//   })
-// ).required();
+const nameSchema = Joi.string().required();
 const permissionsSchema = Joi.array().items(Joi.string()).required(); 
 
 const baseRoleSchema = Joi.object({
