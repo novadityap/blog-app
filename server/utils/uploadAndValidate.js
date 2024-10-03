@@ -76,11 +76,9 @@ const uploadAndValidate = (req, {fieldname, isRequired = false}, formSchema = nu
   
       form.parse(req, async (err, fields, files) => {
         const uploadDir = await checkDirAndCreate(fieldname);
-        let uploadedFiles;
+        let uploadedFiles = files?.[fieldname];
   
-       if (isRequired ) {
-        uploadedFiles = files?.[fieldname];
-
+       if (isRequired || uploadedFiles) {
         if (!uploadedFiles) {
           errors[fieldname] = [`${fieldname} is required`];
         } else {
@@ -109,8 +107,11 @@ const uploadAndValidate = (req, {fieldname, isRequired = false}, formSchema = nu
           validatedFields = result.validatedFields;
 
           if (result.validationErrors) {
-            Object.assign(errors, validationErrors);
-            await removeUploadedFiles(uploadedFiles);
+            Object.assign(errors, result.validationErrors);
+            
+            if (uploadedFiles) {
+              await removeUploadedFiles(uploadedFiles);
+            }
           }
         }
         
@@ -120,9 +121,10 @@ const uploadAndValidate = (req, {fieldname, isRequired = false}, formSchema = nu
 
         if (uploadedFiles) {
           await moveUploadedFiles(uploadedFiles, uploadDir);
+          return resolve({validatedFiles: uploadedFiles, validatedFields, validationErrors: null});
         }
         
-        resolve({validatedFiles: uploadedFiles, validatedFields, validationErrors: null});
+        resolve({validatedFiles: null, validatedFields, validationErrors: null});
       });
     } catch (err) {
       reject(new Error(err));
