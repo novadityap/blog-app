@@ -2,7 +2,7 @@ import Permission from '../models/permissionModel.js';
 import logger from '../utils/logger.js';
 
 const seedPermission = async () => {
-  const resources = ['permission', 'role', 'user', 'post', 'comment'];
+  const resources = ['permission', 'role', 'user', 'post', 'comment', 'category'];
   const actions = ['create', 'read', 'update', 'delete'];
   
   const permissions = resources.flatMap(resource => {
