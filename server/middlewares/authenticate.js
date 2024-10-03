@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 const authenticate = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-
+    
     if (!token) {
       logger.info('unauthorized - no access token provided');
       throw new ResponseError('Token is not provided', 401);
