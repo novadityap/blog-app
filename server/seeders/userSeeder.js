@@ -2,6 +2,19 @@ import User from '../models/userModel.js';
 import Role from '../models/roleModel.js';
 import logger from '../utils/logger.js';
 import bcrypt from 'bcrypt';
+import * as fs from 'node:fs/promises';
+import path from 'node:path';
+
+const deleteAvatars = async (excludeFilename) => {
+  const avatarDir = path.join(process.cwd(), process.env.AVATAR_UPLOADS_DIR);
+  const files = await fs.readdir(avatarDir);
+
+  await Promise.all(
+    files
+      .filter((file) => file !== excludeFilename)
+      .map((file) => fs.unlink(path.join(avatarDir, file)))
+  );
+};
 
 const seedUser = async () => {
     try {
@@ -39,6 +52,7 @@ const seedUser = async () => {
         },
       ];
       
+      await deleteAvatars('default.jpg');
       await User.deleteMany({});
       await User.insertMany(users);
       logger.info('user seeded successfully');
