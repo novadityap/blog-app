@@ -11,9 +11,13 @@ import {
 } from 'redux-persist';
 import { combineReducers } from 'redux';
 import storage from 'redux-persist/lib/storage';
-import authReducer from '../features/authSlice.js';
-import authApi from '../services/authApi.js';
-import userApi from '../services/userApi.js';
+import authReducer from '@/features/authSlice.js';
+import authApi from '@/services/authApi.js';
+import permissionApi from "@/services/permissionApi";
+import postApi from "@/services/postApi.js";
+import userApi from "@/services/userApi.js";
+import roleApi from "@/services/roleApi.js";
+import categoryApi from '@/services/categoryApi.js';
 
 const rootPersistConfig = {
   key: 'root',
@@ -28,7 +32,11 @@ const authPersistConfig = {
 
 const rootReducer = combineReducers({
   [authApi.reducerPath]: authApi.reducer,
+  [permissionApi.reducerPath]: permissionApi.reducer,
+  [postApi.reducerPath]: postApi.reducer,
   [userApi.reducerPath]: userApi.reducer,
+  [roleApi.reducerPath]: roleApi.reducer,
+  [categoryApi.reducerPath]: categoryApi.reducer,
   auth: persistReducer(authPersistConfig, authReducer)
 });
 
@@ -38,7 +46,14 @@ export const store = configureStore({
     serializableCheck: {
       ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
     }
-  }).concat(authApi.middleware, userApi.middleware),
+  }).concat(
+    authApi.middleware, 
+    postApi.middleware, 
+    userApi.middleware,
+    roleApi.middleware,
+    categoryApi.middleware,
+    permissionApi.middleware,
+  ),
 });
 
 export const persistor = persistStore(store);
