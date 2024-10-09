@@ -16,7 +16,7 @@ const axiosBaseQuery = ({ baseUrl } = { baseUrl: '' }) =>
       const err = axiosError;
 
       return {
-        error: {...err.response.data},
+        error: {...err?.response?.data},
       };
     }
   };
