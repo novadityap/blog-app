@@ -80,7 +80,7 @@ export const emailVerification = async (req, res, next) => {
 
     if (!updatedUser) {
       logger.info(`email verification failed - token is invalid or expired`);
-      throw new ResponseError('Token is invalid or expired', 401);
+      throw new ResponseError('Invalid verification token', 401);
     }
 
     logger.info(
@@ -88,7 +88,7 @@ export const emailVerification = async (req, res, next) => {
     );
     res.json({ 
       code: 200,
-      message: 'Email has been verified' 
+      message: 'Email has been verified, you can now login' 
     });
   } catch (e) {
     next(e);
@@ -97,7 +97,7 @@ export const emailVerification = async (req, res, next) => {
 
 export const resendEmailVerification = async (req, res, next) => {
   try {
-    const { validatedFields, validationErrors } = validateSchema(resendEmailSchema, req.body);
+    const { validatedFields, validationErrors } = validateSchema(verifyEmailSchema, req.body);
 
     if (validationErrors) {
       logger.info('resend email verification failed - invalid request fields');
@@ -115,13 +115,12 @@ export const resendEmailVerification = async (req, res, next) => {
       },
       { 
         new: true,
-        runValidators: true
       }
     );
 
     if (!updatedUser) {
       logger.info(
-        `resend email verification failed - user is not registered with email ${value.email}`
+        `resend email verification failed - user is not registered with email ${validatedFields.email}`
       );
       return res.json({
         code: 200,
@@ -156,7 +155,13 @@ export const signin = async (req, res, next) => {
       throw new ResponseError('Validation errors', 400, validationErrors)
     }
 
-    const existingUser = await User.findOne({ email: validatedFields.email });
+    const existingUser = await User.findOne({ email: validatedFields.email })
+      .populate({
+        path: 'roles',
+        populate: {
+          path: 'permissions'
+        }
+      });
 
     if (!existingUser) {
       logger.info('signin failed - user is not registered');
@@ -193,6 +198,17 @@ export const signin = async (req, res, next) => {
     existingUser.refreshToken = refreshToken;
     await existingUser.save();
 
+    const roles = existingUser.roles.map(role => role.name);
+
+    const permissions = existingUser.roles.reduce((acc, role) => {
+      role.permissions.forEach(permission => {
+        acc.push(permission);
+      });
+
+      return acc;
+    }, [])
+
+
     logger.info(`signin success - user logged in with email ${existingUser.email}`);
 
     res
@@ -204,7 +220,12 @@ export const signin = async (req, res, next) => {
         code: 200,
         message: 'User logged in successfully',
         data: {
-          ...existingUser.toJSON(),
+          _id: existingUser._id,
+          username: existingUser.username,
+          email: existingUser.email,
+          avatar: existingUser.avatarUrl,
+          roles,
+          permissions,
           token,
         }
       });
@@ -221,7 +242,7 @@ export const signout = async (req, res, next) => {
       logger.info(
         'signout failed - refresh token is not provided'
       );
-      throw new ResponseError('Refresh token is not provided', 401);
+      throw new ResponseError('Invalid refresh token', 401);
     }
 
     const updatedUser = await User.findOneAndUpdate(
@@ -234,7 +255,7 @@ export const signout = async (req, res, next) => {
       logger.info(
         'signout failed - refresh token not found in database'
       );
-      throw new ResponseError('Refresh token is invalid', 401);
+      throw new ResponseError('Invalid refresh token', 401);
     }
 
     await Blacklist.create({ token: refreshToken });
@@ -256,21 +277,21 @@ export const refreshToken = async (req, res, next) => {
 
     if (!refreshToken) {
       logger.info('refresh token failed - token is not provided');
-      throw new ResponseError('Refresh token is not provided', 401);
+      throw new ResponseError('Invalid refresh token', 401);
     }
 
     const blacklistedToken = await Blacklist.findOne({ token: refreshToken });
 
     if (blacklistedToken) {
       logger.info(`refresh token failed - refresh token is blacklisted with token - ${refreshToken}`);
-      throw new ResponseError('Token has been revoked', 401);
+      throw new ResponseError('Invalid refresh token', 401);
     }
 
     const userWithToken = await User.findOne({ refreshToken });
 
     if (!userWithToken) {
       logger.info(`refresh token failed - refresh token not found in database`);
-      throw new ResponseError('Refresh token is invalid', 401);
+      throw new ResponseError('Invalid refresh token', 401);
     }
 
     jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
@@ -352,15 +373,8 @@ export const resetPassword = async (req, res, next) => {
     })
 
     if (!userToReset) {
-      logger.info(`reset password failed - token is invalid or has expired with user ${userToReset.email}`);
-      throw new ResponseError('Token is invalid or has expired', 400);
-    }
-
-    const isMatch = await bcrypt.compare(validatedFields.oldPassword, userToReset.password);
-
-    if (!isMatch) {
-      logger.info(`reset password failed - old password is incorrect with user ${userToReset.email}`);
-      throw new ResponseError('The provided credentials are incorrect', 401);
+      logger.info(`reset password failed - token is invalid or has expired}`);
+      throw new ResponseError('Invalid reset token', 401);
     }
 
     userToReset.password = await bcrypt.hash(validatedFields.newPassword, 10);
@@ -372,7 +386,7 @@ export const resetPassword = async (req, res, next) => {
     logger.info(`reset password success - password has been reset for email ${userToReset.email}`);
     res.json({
       code: 200,
-      message: 'Password has been reset successfully'
+      message: 'Password has been reset successfully, please login with your new password'
     });
   } catch (err) {
     next(err);

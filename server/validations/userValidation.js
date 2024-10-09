@@ -16,7 +16,7 @@ const rolesSchema = Joi.array().items(
     if (!mongoose.Types.ObjectId.isValid(value)) return helpers.error('invalid role id');
     return value;
   })
-).required();
+).min(1).required();
 
 const baseUserSchema = Joi.object({
   username: usernameSchema,
