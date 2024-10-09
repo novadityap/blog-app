@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useEmailVerificationMutation } from '@/services/authApi';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -12,27 +11,19 @@ import {
 import { TbMailX, TbCircleCheck } from 'react-icons/tb';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
+import useAuth from '@/hooks/useAuth';
 
 const EmailVerification = () => {
   const { token } = useParams();
-  const [emailVerification, { isLoading, isError, isSuccess }] =
-    useEmailVerificationMutation();
-  const [message, setMessage] = useState('');
+  const { handleEmailVerification, isVerificationLoading, isVerificationError, isVerificationSuccess, message } = useAuth();
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await emailVerification(token).unwrap();
-        setMessage(res?.message);
-      } catch (err) {
-        setMessage(err?.message);
-      }
-    })();
-  }, [token, emailVerification]);
+    handleEmailVerification(token);
+  }, [token]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
-      {isLoading && (
+      {isVerificationLoading && (
         <div className="flex flex-col gap-y-5">
           <Skeleton className="h-56 w-96 rounded-xl" />
           <div className="space-y-2">
@@ -43,26 +34,26 @@ const EmailVerification = () => {
         </div>
       )}
 
-      {(isError || isSuccess) && (
+      {(isVerificationError || isVerificationSuccess) && (
         <Card className="w-96">
           <CardHeader>
-            {isError ? (
+            {isVerificationError ? (
               <TbMailX className="text-red-500 size-32 w-full text-center mb-4" />
             ) : (
               <TbCircleCheck className="text-green-500 size-32 w-full text-center mb-4" />
             )}
             <CardTitle className="text-gray-500">
-              {isError ? 'Email Verification Failed' : 'Email Verified'}
+              {isVerificationError ? 'Email Verification Failed' : 'Email Verified'}
             </CardTitle>
             <CardDescription>{message}</CardDescription>
           </CardHeader>
           <CardFooter>
             <Link
-              to={isError ? '/resend-email-verification' : '/signin'}
+              to={isVerificationError ? '/resend-email-verification' : '/signin'}
               className="w-full"
             >
               <Button variant="primary" className="w-full">
-                {isError ? 'Resend Email' : 'Sign In'}
+                {isVerificationError ? 'Resend Email' : 'Sign In'}
               </Button>
             </Link>
           </CardFooter>
