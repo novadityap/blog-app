@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { useFormik } from 'formik';
-import { useSignupMutation } from '@/services/authApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.jsx';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Card,
   CardContent,
@@ -12,15 +10,13 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import transformErrors from '@/utils/transformErrors.js';
 import { TbLoader, TbCircleCheck } from 'react-icons/tb';
 import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils.js';
+import { cn } from '@/lib/utils';
+import useAuth from '@/hooks/useAuth';
 
 const Signup = () => {
-  const [signup, { isLoading, isError, isSuccess }] = useSignupMutation();
-  const [validationErrors, setValidationErrors] = useState({});
-  const [message, setMessage] = useState('');
+  const { message, validationErrors, handleSignup, isSignupLoading, isSignupError, isSignupSuccess } = useAuth();
 
   const formik = useFormik({
     initialValues: {
@@ -28,28 +24,19 @@ const Signup = () => {
       email: '',
       password: '',
     },
-    onSubmit: async (values, { resetForm }) => {
-      try {
-        const res = await signup(values).unwrap();
-        setMessage(res.message);
-        setValidationErrors({});
-        resetForm();
-      } catch (err) {
-        setValidationErrors(transformErrors(err.errors));
-      }
-    },
+    onSubmit: (values, { resetForm }) => handleSignup(values, resetForm)
   });
 
   return (
     <div className="flex flex-col gap-y-4 items-center justify-center min-h-screen ">
-      {isSuccess && (
+      {isSignupSuccess && (
         <Alert className="w-96" variant="success">
           <TbCircleCheck className="size-5 text-green-500" />
           <AlertTitle>Success</AlertTitle>
           <AlertDescription>{message}</AlertDescription>
         </Alert>
       )}
-      <Card className="w-96">
+      <Card className="w-full sm:w-[450px]">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-green-500">
             Sign Up
@@ -69,12 +56,12 @@ const Signup = () => {
                 onChange={formik.handleChange}
                 required
                 placeholder="Enter your username"
-                className={cn(isError && 'border-red-200 focus:ring-red-200')}
+                className={cn(isSignupError && 'border-red-200 focus:ring-red-200')}
               />
 
               {validationErrors?.username && (
                 <p className="text-red-500 text-sm">
-                  {validationErrors?.username}
+                  {validationErrors.username}
                 </p>
               )}
             </div>
@@ -91,12 +78,12 @@ const Signup = () => {
                 onChange={formik.handleChange}
                 required
                 placeholder="Enter your email"
-                className={cn(isError && 'border-red-200 focus:ring-red-200')}
+                className={cn(isSignupError && 'border-red-200 focus:ring-red-200')}
               />
 
               {validationErrors?.email && (
                 <p className="text-red-500 text-sm">
-                  {validationErrors?.email}
+                  {validationErrors.email}
                 </p>
               )}
             </div>
@@ -113,12 +100,12 @@ const Signup = () => {
                 onChange={formik.handleChange}
                 required
                 placeholder="Enter your password"
-                className={cn(isError && 'border-red-200 focus:ring-red-200')}
+                className={cn(isSignupError && 'border-red-200 focus:ring-red-200')}
               />
 
               {validationErrors?.password && (
                 <p className="text-red-500 text-sm">
-                  {validationErrors?.password}
+                  {validationErrors.password}
                 </p>
               )}
             </div>
@@ -127,11 +114,11 @@ const Signup = () => {
               variant="primary"
               type="submit"
               className="w-full "
-              disabled={isLoading}
+              disabled={isSignupLoading}
             >
-              {isLoading ? (
+              {isSignupLoading ? (
                 <>
-                  <TbLoader className="animate-spin mr-2" size={20} />
+                  <TbLoader className="animate-spin mr-2 size-5" />
                   Loading...
                 </>
               ) : (
