@@ -24,23 +24,39 @@ axiosInstance.interceptors.response.use(
   async err => {
     const originalRequest = err.config;
 
-    if (err.response.status === 401) {
-      try {
-        const { data } = await axios.post(
-          `${import.meta.env.VITE_API_URL}/auth/refresh-token`,
-          null,
-          { withCredentials: true }
-        );
+    if (err.response && err.response.status === 401) {
+      const message = err.response.data.message;
 
-        originalRequest.headers.Authorization = `Bearer ${data.data.token}`;
-        store.dispatch(setToken(data.data.token));
-        return axiosInstance(originalRequest);
-      } catch (refrehError) {
-        if (refrehError.response.status === 401) {
-          store.dispatch(clearAuth());
+      const invalidMessages = [
+        'Invalid token',
+        'Invalid verification token',
+        'Invalid reset token',
+        'Invalid email or password',
+        'Invalid refresh token'
+      ];
+
+      if (invalidMessages.includes(message)) {
+        return Promise.reject(err);
+      }
+
+      if (message === 'Token has expired') {
+        try {
+          const { data } = await axios.post(
+            `${import.meta.env.VITE_API_URL}/auth/refresh-token`,
+            null,
+            { withCredentials: true }
+          );
+
+          originalRequest.headers.Authorization = `Bearer ${data.data.token}`;
+          store.dispatch(setToken(data.data.token));
+
+          return axiosInstance(originalRequest);
+        } catch (refreshError) {
+          if (refreshError.response && refreshError.response.status === 401) {
+            store.dispatch(clearAuth()); 
+          }
+          return Promise.reject(refreshError);
         }
-
-        return Promise.reject(refrehError);
       }
     }
 
