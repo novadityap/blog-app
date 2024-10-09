@@ -7,7 +7,7 @@ const authenticate = async (req, res, next) => {
     
     if (!token) {
       logger.info('unauthorized - no access token provided');
-      throw new ResponseError('Token is not provided', 401);
+      throw new ResponseError('Invalid token', 401);
     }
 
     req.user = jwt.verify(token, process.env.JWT_SECRET);
