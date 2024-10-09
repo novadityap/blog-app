@@ -10,60 +10,37 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { useFormik } from 'formik';
-import { useResetPasswordMutation } from '@/services/authApi';
 import { useParams } from 'react-router-dom';
-import { useState } from 'react';
 import { TbLoader, TbExclamationCircle, TbCircleCheck } from 'react-icons/tb';
 import { cn } from '@/lib/utils.js';
-import transformErrors from '@/utils/transformErrors.js';
+import useAuth from '@/hooks/useAuth';
 
 const ResetPassword = () => {
   const { token } = useParams();
-  const [resetPassword, { isLoading, error, isError, isSuccess }] =
-    useResetPasswordMutation();
-  const [message, setMessage] = useState('');
-  const [validationErrors, setValidationErrors] = useState({});
+  const { handleResetPassword, isResetPasswordLoading, isResetPasswordSuccess, isResetPasswordError, resetPasswordError, message, validationErrors } = useAuth();
   const formik = useFormik({
     initialValues: {
       newPassword: '',
     },
-    onSubmit: async (values, { resetForm }) => {
-      try {
-        const res = await resetPassword({ data: values, token }).unwrap();
-        resetForm();
-        setMessage(res.message);
-        setValidationErrors({});
-      } catch (err) {
-        resetForm();
-
-        if (err.code === 401) {
-          setMessage(err.message);
-          setValidationErrors({});
-          return;
-        }
-
-        setMessage('');
-        setValidationErrors(transformErrors(err.errors));
-      }
-    },
+    onSubmit: (values, { resetForm }) => handleResetPassword(values, resetForm, token),
   });
 
-  const isInvalidToken = isError && error.code === 401;
+  const isInvalidToken = isResetPasswordError && resetPasswordError.code === 401;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen ">
-      {(isInvalidToken || isSuccess) && (
+      {(isInvalidToken || isResetPasswordSuccess) && (
         <Alert
           className="mb-4 w-96"
-          variant={isError ? 'destructive' : 'success'}
+          variant={isResetPasswordError ? 'destructive' : 'success'}
         >
-          {isError ? (
+          {isResetPasswordError ? (
             <TbExclamationCircle className="size-5 text-red-500" />
           ) : (
             <TbCircleCheck className="size-5 text-green-500" />
           )}
           <AlertTitle>
-            {isError ? 'Something went wrong' : 'Success'}
+            {isResetPasswordError ? 'Something went wrong' : 'Success'}
           </AlertTitle>
           <AlertDescription>{message}</AlertDescription>
         </Alert>
@@ -93,8 +70,8 @@ const ResetPassword = () => {
                 required
                 placeholder="Enter your new password"
                 className={cn(
-                  isError &&
-                    error.code === 400 &&
+                  isResetPasswordError &&
+                    resetPasswordError.code === 400 &&
                     'border-red-200 focus:ring-red-200'
                 )}
               />
@@ -108,11 +85,11 @@ const ResetPassword = () => {
               variant="primary"
               type="submit"
               className="w-full "
-              disabled={isLoading}
+              disabled={isResetPasswordLoading}
             >
-              {isLoading ? (
+              {isResetPasswordLoading ? (
                 <>
-                  <TbLoader className="animate-spin mr-2" size={20} />
+                  <TbLoader className="animate-spin mr-2 size-5" />
                   Loading...
                 </>
               ) : (

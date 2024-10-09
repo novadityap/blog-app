@@ -10,32 +10,21 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { useFormik } from 'formik';
-import { useRequestResetPasswordMutation } from '@/services/authApi';
-import { useState } from 'react';
 import { TbLoader, TbCircleCheck } from 'react-icons/tb';
+import useAuth from '@/hooks/useAuth';
 
 const RequestResetPassword = () => {
-  const [requestResetPassword, { isLoading, isSuccess }] =
-    useRequestResetPasswordMutation();
-  const [message, setMessage] = useState('');
+  const { handleRequestResetPassword, isRequestResetLoading, isRequestResetSuccess, message, validationErrors } = useAuth();
   const formik = useFormik({
     initialValues: {
       email: '',
     },
-    onSubmit: async (values, { resetForm }) => {
-      try {
-        const res = await requestResetPassword(values).unwrap();
-        setMessage(res.message);
-        resetForm();
-      } catch (err) {
-        return;
-      }
-    },
+    onSubmit: (values, { resetForm }) => handleRequestResetPassword(values, resetForm)
   });
 
   return (
     <div className="flex flex-col gap-y-4 items-center justify-center min-h-screen ">
-      {isSuccess && (
+      {isRequestResetSuccess && (
         <Alert className="w-96" variant="success">
           <TbCircleCheck className="size-5 text-green-500" />
           <AlertTitle>Email Sent</AlertTitle>
@@ -67,17 +56,21 @@ const RequestResetPassword = () => {
                 required
                 placeholder="Enter your email"
               />
+
+              {validationErrors?.email && (
+                <p className="text-red-500 text-sm">{validationErrors.email}</p>
+              )}
             </div>
 
             <Button
               variant="primary"
               type="submit"
               className="w-full "
-              disabled={isLoading}
+              disabled={isRequestResetLoading}
             >
-              {isLoading ? (
+              {isRequestResetLoading ? (
                 <>
-                  <TbLoader className="animate-spin mr-2" size={20} />
+                  <TbLoader className="animate-spin mr-2 size-5" />
                   Loading...
                 </>
               ) : (
