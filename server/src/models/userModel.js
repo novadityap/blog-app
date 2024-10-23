@@ -42,6 +42,13 @@ const userSchema = new mongoose.Schema({
       delete ret.refreshToken;
       return ret;
     }
+  },
+  virtuals: {
+    avatarUrl: {
+      get() {
+        return `${process.env.SERVER_URL}/${process.env.AVATAR_UPLOADS_DIR}/${this.avatar}`;
+      }
+    }
   }
 });
 

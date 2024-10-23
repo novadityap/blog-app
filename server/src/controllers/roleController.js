@@ -22,7 +22,7 @@ export const createRole = async (req, res, next) => {
 
     if (existingRole) {
       logger.info(`create role failed - role already exists with name ${validatedFields.name}`);
-      throw new ResponseError('Role with that name already exists', 409);
+      throw new ResponseError('Role with that name already exists', 409, { name: ['Role with that name already exists'] });
     }
 
     const permissions = await Permission.find({ _id: { $in: validatedFields.permissions } });
@@ -34,7 +34,7 @@ export const createRole = async (req, res, next) => {
 
     await Role.create(validatedFields);
 
-    logger.info(`create role success - role created with name ${existingRole.name}`);
+    logger.info(`create role success - role created with name ${validatedFields.name}`);
     res.json({
       code: 200,
       message: 'Role created successfully'
@@ -47,20 +47,17 @@ export const createRole = async (req, res, next) => {
 export const getRoles = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 0;
     const skip = (page - 1) * limit;
-    const totalRoles = await Role.countDocuments();
+
+    const filter = req.query.search ? { 
+      $or: [
+        { name: { $regex: req.query.search, $options: 'i' } },
+      ]
+    } : {};
+
+    const totalRoles = await Role.countDocuments(filter);
     const totalPages = Math.ceil(totalRoles / limit);
-
-    const filter = {};
-
-    if (req.query.search) {
-      const searchRegex = new RegExp(req.query.search, 'i');
-
-      filter.$or = [
-        { name: searchRegex }
-      ];
-    }
 
     const roles = await Role.find(filter)
       .skip(skip)
@@ -99,7 +96,7 @@ export const getRoleById = async (req, res, next) => {
       throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed role id'] });
     }
 
-    const role = await Role.findById(req.params.id).populate('permissions');
+    const role = await Role.findById(req.params.id).populate('permissions', 'id');
 
     if (!role) {
       logger.info(`resource not found - role not found with id ${req.params.id}`);

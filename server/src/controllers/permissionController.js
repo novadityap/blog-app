@@ -49,22 +49,19 @@ export const createPermission = async (req, res, next) => {
 export const getPermissions = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 0;
     const skip = (page - 1) * limit;
-    const totalPermissions = await Permission.countDocuments();
+   
+    const filter = req.query.search ? {
+      $or: [
+        { action: { $regex: req.query.search, $options: 'i' } },
+        { resource: { $regex: req.query.search, $options: 'i' } },
+        { description: { $regex: req.query.search, $options: 'i' } },
+      ]
+    } : {};  
+
+    const totalPermissions = await Permission.countDocuments(filter);
     const totalPages = Math.ceil(totalPermissions / limit);
-
-    const filter = {};  
-
-    if (req.query.search) {
-      const searchRegex = new RegExp(req.query.search, 'i');
-
-      filter.$or = [
-        { action: searchRegex },
-        { resource: searchRegex },
-        { description: searchRegex },
-      ];
-    }
 
     const permissions = await Permission.find(filter)
       .skip(skip)

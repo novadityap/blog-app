@@ -13,8 +13,8 @@ const postSchema = new mongoose.Schema(
       default: 'default.jpg',
     },
     category: {
-      type: String,
-      default: 'Uncategorized',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
     },
     slug: String,
     comments: [{
