@@ -51,10 +51,10 @@ export const updateCategory = async (req, res, next) => {
 
     const updatedCategory = await Category.findOneAndUpdate(
       { _id: req.params.id },
-      { validatedFields },
+      { ...validatedFields },
       { new: true }
     );
-
+    
     if (!updatedCategory) {
       logger.info(`resource not found - category with id ${req.params.id} not found`);
       throw new ResponseError("Resource not found", 404);
