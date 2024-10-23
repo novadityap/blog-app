@@ -13,8 +13,9 @@ const seed = async () => {
     await seedRole();
     await seedUser();
 
+    logger.info('database seeded successfully');
   } catch (err) {
-    logger.error(`failed seeding - ${err}`);
+    logger.error(`database seeding failed - ${err}`);
   } finally {
     mongoose.connection.close();
     logger.info('database connection closed');
@@ -23,3 +24,4 @@ const seed = async () => {
 
 seed();
 
+export default seed;

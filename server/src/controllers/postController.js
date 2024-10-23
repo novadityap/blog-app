@@ -1,5 +1,4 @@
 import Post from '../models/postModel.js';
-import Comment from '../models/commentModel.js';
 import slugify from 'slugify';
 import ResponseError from '../utils/responseError.js';
 import uploadAndValidate from '../utils/uploadAndValidate.js';
@@ -8,11 +7,9 @@ import {
   createPostSchema,
   updatePostSchema,
 } from '../validations/postValidation.js';
-import {
-  createCommentSchema,
-} from '../validations/commentValidation.js';
 import * as fs from 'node:fs/promises';
 import validateObjectId from '../utils/validateObjectId.js';
+import path from 'node:path';
 
 export const createPost = async (req, res, next) => {
   try {
@@ -50,32 +47,38 @@ export const createPost = async (req, res, next) => {
 export const getPosts = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 0;
     const skip = (page - 1) * limit;
-    const totalPosts = await Post.countDocuments();
-    const totalPages = Math.ceil(totalPosts / limit);
-    const hasMore = page * limit < totalPosts;
 
-    const filter = {};
-    if (req.query.category) filter.category = req.query.category;
+    let filter = {};
 
     if (req.query.search) {
-      const searchRegex = new RegExp(req.query.search, 'i');
-      
-      filter.$or = [
-        { title: searchRegex },
-        { content: searchRegex },
-      ];
+      filter = {
+        ...filter,
+        $or: [
+          { title: { $regex: req.query.search, $options: 'i' } },
+          { content: { $regex: req.query.search, $options: 'i' } },
+        ],
+      };
     }
 
-    let sortOrder = -1;
-    if (req.query.sortBy === 'oldest') sortOrder = 1;
+    if (req.query.category) {
+      filter = {
+        ...filter,
+        category: req.query.category, 
+      };
+    }
+
+    const totalPosts = await Post.countDocuments(filter);
+    const totalPages = Math.ceil(totalPosts / limit);
+    const hasMore = page * limit < totalPosts;
 
     const posts = await Post.find(filter)
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: sortOrder })
-      .populate('userId', 'username email');
+      .sort({ createdAt: -1 })
+      .populate('userId', 'username email avatar')
+      .populate('category');
 
     if (posts.length === 0) {
       logger.info('resource not found - no posts found in database');
@@ -112,13 +115,15 @@ export const getPostById = async (req, res, next) => {
     }
 
     const post = await Post.findById(req.params.id)
+      .populate('userId', 'email')
       .populate({
         path: 'comments',
         populate: {
           path: 'userId',
-          select: 'username email'
+          select: 'username'
         }
-      });
+      })
+      .populate('category');
 
     if (!post) {
       logger.info(`resource not found - post not found with id ${req.params.id}`);
@@ -161,14 +166,14 @@ export const updatePost = async (req, res, next) => {
       throw new ResponseError('Post not found', 404);
     }
 
-    if (validatedFields?.postImage) {
+    if (validatedFiles) {
       if (existingPost.postImage !== 'default.jpg') {
         await fs.unlink(
           path.join(process.cwd(), process.env.POST_UPLOADS_DIR, existingPost.postImage)
         );
       }
 
-      existingPost.postImage = validatedFiles.postImage[0].newFilename;
+      existingPost.postImage = validatedFiles[0].newFilename;
     }
 
     Object.assign(existingPost, validatedFields);
@@ -205,7 +210,7 @@ export const deletePost = async (req, res, next) => {
       );
     }
 
-    await postToDelete.remove();
+    await postToDelete.deleteOne();
 
     logger.info(`delete post success - post deleted with id ${req.params.id}`);
     res.json({
@@ -217,36 +222,6 @@ export const deletePost = async (req, res, next) => {
   }
 }
 
-export const createComment = async (req, res, next) => {
-  try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed post id ${req.params.id}`);
-      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed post id'] });
-    }
 
-    const { validatedFields, validationErrors } = validateSchema(
-      createCommentSchema,
-      req.body
-    );
-
-    if (validationErrors) {
-      logger.info('create comment failed - invalid request fields');
-      throw new ResponseError('Validation errors', 400, validationErrors);
-    }
-
-    const comment = await Comment.create({
-      ...validatedFields,
-      postId: req.params.id
-    });
-
-    logger.info(`create comment success - comment created with id ${comment._id}`);
-    res.json({
-      code: 200,
-      message: 'Comment created successfully',
-    });
-  } catch (err) {
-    next(err);
-  }
-}
 
 
