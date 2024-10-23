@@ -2,7 +2,7 @@ import ResponseError from '../utils/responseError.js';
 import jwt from 'jsonwebtoken';
 import logger from '../utils/logger.js';
 
-const handleError = (err, req, res, next) => {
+const errorHandler = (err, req, res, next) => {
   const {
     code = 500,
     message = 'Internal server Error',
@@ -10,7 +10,18 @@ const handleError = (err, req, res, next) => {
     data = null,
   } = err;
 
-  logger.error(err)
+  const logMeta = {
+    ip: req.ip,
+    method: req.method,
+    url: req.originalUrl,
+    userAgent: req.headers['user-agent'],
+};
+
+  if (code >= 500) {
+    logger.error(`server error - ${err.message}`, logMeta, { stack: err.stack});
+  } else {
+    logger.warn(`client error - ${err.message}`, logMeta);
+  }
 
   if ( err instanceof jwt.TokenExpiredError || err instanceof jwt.JsonWebTokenError) {
     return res.status(401).json({
@@ -51,4 +62,4 @@ const handleError = (err, req, res, next) => {
   });
 };
 
-export default handleError;
+export default errorHandler;
