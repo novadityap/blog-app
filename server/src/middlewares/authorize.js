@@ -7,7 +7,8 @@ const authorize = (action, resource) => {
     const { id: currentUserId, roles: currentUserRoles } = req.user;
 
     try {
-      const roles = await Role.find({ name: { $in: currentUserRoles } }).populate('permissions');
+      const roles = await Role.find({ 
+      name : { $in: currentUserRoles } }).populate('permissions');
 
       const hasPermission = roles.some(role =>
         role.permissions.some(
@@ -24,8 +25,8 @@ const authorize = (action, resource) => {
       };
 
       return next();
-    } catch (err) {
-      next(err);
+    } catch (e) {
+      next(e);
     }
   };
 };
