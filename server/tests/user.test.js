@@ -16,12 +16,13 @@ import {
   removeTestUser,
   removeAllTestUsers,
   fileExists,
+  copyFile,
 } from './testUtil.js';
 
 let adminRole;
 const token = createAuthToken('auth');
-const invalidUserId = undefined;
-const missingUserId = new mongoose.Types.ObjectId();
+const invalidId = undefined;
+const missingId = new mongoose.Types.ObjectId();
 const testAvatarPath = path.join(
   process.cwd(),
   'tests/uploads/avatars',
@@ -30,13 +31,13 @@ const testAvatarPath = path.join(
 const cases = [
   {
     name: 'invalid user id',
-    id: invalidUserId,
+    id: invalidId,
     expectedStatus: 400,
     expectedMessage: 'Invalid id',
   },
   {
     name: 'missing user id',
-    id: missingUserId,
+    id: missingId,
     expectedStatus: 404,
     expectedMessage: 'User not found',
   },
@@ -67,12 +68,12 @@ describe('GET /api/users', () => {
 
   it('should return 200 and fetch all users without search query', async () => {
     const res = await request(app)
-    .get('/api/users')
-    .set('Authorization', `Bearer ${token}`)
-    .query({
-      page: 1,
-      limit: 2
-    });
+      .get('/api/users')
+      .set('Authorization', `Bearer ${token}`)
+      .query({
+        page: 1,
+        limit: 2,
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('Users found');
@@ -94,12 +95,12 @@ describe('GET /api/users', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.code).toBe(200);
     expect(res.body.message).toBe('Users found');
-    expect(res.body.data).toHaveLength(1); 
+    expect(res.body.data).toHaveLength(1);
   });
 
-
   it('should return 200 and empty data when no user matches the search query', async () => {
-    const res = await request(app).get('/api/users')
+    const res = await request(app)
+      .get('/api/users')
       .set('Authorization', `Bearer ${token}`)
       .query({
         limit: 10,
@@ -269,14 +270,7 @@ describe('PATCH /api/users/:id', () => {
   it('should return 200 and update user by changing avatar file and removing old non-default avatar', async () => {
     user.avatar = 'test-avatar.jpg';
     await user.save();
-    await fs.copyFile(
-      testAvatarPath,
-      path.join(
-        process.cwd(),
-        process.env.AVATAR_UPLOADS_DIR,
-        'test-avatar.jpg'
-      )
-    );
+    await copyFile(testAvatarPath, 'avatars');
 
     const res = await request(app)
       .patch(`/api/users/${user._id}`)
@@ -342,15 +336,7 @@ describe('DELETE /api/users/:id', () => {
   it('should return 200 and deleted user with removing avatar file', async () => {
     user.avatar = 'test-avatar.jpg';
     user.save();
-
-    await fs.copyFile(
-      testAvatarPath,
-      path.join(
-        process.cwd(),
-        process.env.AVATAR_UPLOADS_DIR,
-        'test-avatar.jpg'
-      )
-    );
+    await copyFile(testAvatarPath, 'avatars');
 
     const res = await request(app)
       .delete(`/api/users/${user._id}`)
