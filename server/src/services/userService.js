@@ -36,9 +36,9 @@ const getAll = async options => {
     .populate('roles', 'name');
 
   if (users.length === 0) {
-    logger.info(`fetch all users - no users found in database`);
+    logger.info(`fetch users - no users found in database`);
   } else {
-    logger.info(`fetch all users - ${users.length} users found`);
+    logger.info(`fetch users - ${users.length} users found`);
   }
 
   return { users, totalUsers, totalPages };
@@ -183,13 +183,7 @@ const remove = async id => {
   }
 
   if (user.avatar !== 'default.jpg') {
-    const avatarPath = path.join(
-      process.cwd(),
-      process.env.AVATAR_UPLOADS_DIR,
-      user.avatar
-    );
-
-    await fs.unlink(avatarPath);
+    await fs.unlink(path.join(process.cwd(), process.env.AVATAR_UPLOADS_DIR, user.avatar));
     logger.info(`delete user - avatar from user id ${user._id} successfully deleted`);
   }
 
