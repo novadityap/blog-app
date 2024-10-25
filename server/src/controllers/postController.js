@@ -129,7 +129,7 @@ const search = async (req, res, next) => {
       message: 'Posts retrieved successfully',
       data: posts,
       meta: {
-        pageSize: limit,
+        pageSize: req.queryOptions.limit,
         totalItems: totalPosts,
         currentPage: page,
         totalPages: Math.ceil(totalPosts / limit),
