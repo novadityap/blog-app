@@ -10,8 +10,8 @@ const startServer = async () => {
     app.listen(port, () => {
       logger.info(`Server started on port ${port}`);
     });
-  } catch (err) {
-    logger.error(`Server failed to start - ${err}`);
+  } catch (e) {
+    logger.error(`Server failed to start - ${e.message}`, { stack: e.stack });
   }
 };
 
