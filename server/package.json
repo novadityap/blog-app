@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --runInBand",
-    "start": "node --env-file=.env --watch src/server.js",
+    "start": "node --trace-exit --env-file=.env --watch src/server.js",
     "seed": "node --env-file=.env src/seeders/seed.js"
   },
   "jest": {
