@@ -18,7 +18,7 @@ const authorize = (action, resource) => {
       );
 
       if (!hasPermission) {
-        logger.info(
+        logger.warn(
           `permission denied - user ${currentUserId} does not have permission to ${action} ${resource}`
         );
         throw new ResponseError('Permission denied', 403);
