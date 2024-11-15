@@ -8,22 +8,24 @@ const seedPermission = async () => {
     'post',
     'comment',
     'category',
+    'dashboard',
   ];
   const actions = ['create', 'read', 'update', 'delete'];
 
-  const permissions = resources.flatMap(resource => {
-    return actions
-      .filter(
-        action =>
-          !(resource === 'post' && action === 'read') &&
-          !(resource === 'comment' && action === 'read')
-      )
+  const exceptions = {
+    post: ['read'],
+    dashboard: ['create', 'update', 'delete'],
+  };
+
+  const permissions = resources.flatMap(resource =>
+    actions
+      .filter(action => !(exceptions[resource] || []).includes(action))
       .map(action => ({
         action,
         resource,
         description: `permission to ${action} ${resource}`,
-      }));
-  });
+      }))
+  );
 
   await Permission.deleteMany({});
   await Permission.insertMany(permissions);

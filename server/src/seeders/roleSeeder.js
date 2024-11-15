@@ -5,7 +5,7 @@ const seedRole = async () => {
   const permissions = await Permission.find();
   const userPermissionsCriteria = {
     user: ['read', 'update', 'delete'],
-    comment: ['create', 'read', 'update', 'delete'],
+    comment: ['create', 'update', 'delete'],
   };
   const roles = [
     { name: 'admin', permissions: [] },
