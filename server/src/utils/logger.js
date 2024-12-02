@@ -8,7 +8,7 @@ const logFormat = winston.format.combine(
 )
 const consoleFormat = winston.format.combine(
   winston.format.colorize(),
-  winston.format.printf(({ level, message, timestamp, stack, meta }) => `${timestamp} [${level}]: ${stack || message}` + (meta ? ` ${JSON.stringify(meta)}` : ''))
+  winston.format.printf(({ level, message, timestamp }) => `${timestamp} [${level}]: ${message}`)
 );
 
 const logger = winston.createLogger({
