@@ -12,14 +12,10 @@ const commentSchema = new mongoose.Schema(
       ref: 'User',
     },
     content: String,
-    likes: [{
+    childComments: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-    }],
-    numberOfLikes: {
-      type: Number,
-      default: 0,
-    },
+      ref: 'Comment',
+    }]
   },
   {
     timestamps: true,
