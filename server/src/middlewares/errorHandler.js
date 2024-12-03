@@ -1,4 +1,3 @@
-import ResponseError from '../utils/responseError.js';
 import jwt from 'jsonwebtoken';
 import logger from '../utils/logger.js';
 
@@ -6,60 +5,30 @@ const errorHandler = (err, req, res, next) => {
   const {
     code = 500,
     message = 'Internal server Error',
-    errors = null,
-    data = null,
+    errors,
+    data,
+    stack,
   } = err;
 
-  const logMeta = {
-    ip: req.ip,
-    method: req.method,
-    url: req.originalUrl,
-    userAgent: req.headers['user-agent'],
-};
+  const logMethod = code >= 500 ? 'error' : 'warn';
+  logger.log(logMethod, message, { stack, ...req.metadata });
 
-  if (code >= 500) {
-    logger.error(`server error - ${err.message}`, logMeta, { stack: err.stack});
-  } else {
-    logger.warn(`client error - ${err.message}`, logMeta);
-  }
-
-  if ( err instanceof jwt.TokenExpiredError || err instanceof jwt.JsonWebTokenError) {
+  if (err instanceof jwt.TokenExpiredError || err instanceof jwt.JsonWebTokenError) {
     return res.status(401).json({
       code: 401,
-      message: 'Token has expired',
+      message: 'Token expired',
     });
   }
 
-  if (code === 400) {
-    const response = {
-      code,
-      message,
-      errors,
-    };
+  const response = { code, message };
 
-    if (!errors) delete response.errors;
-    return res.status(code).json(response);
+  if (code === 400 && errors) {
+    response.errors = errors;
+  } else if (code === 404) {
+    response.data = data;
   }
 
-  if (code === 404) {
-    return res.status(code).json({
-      code,
-      message,
-      data,
-    });
-  }
-
-  if (code !== 500) {
-    return res.status(code).json({
-      code,
-      message,
-    });
-  }
-
-  return res.status(500).json({
-    code: 500,
-    message: 'Internal server error',
-  });
+  res.status(code).json(response);
 };
 
 export default errorHandler;
