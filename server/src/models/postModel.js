@@ -17,6 +17,14 @@ const postSchema = new mongoose.Schema(
       ref: 'Category',
     },
     slug: String,
+    likes: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    totalLikes: {
+      type: Number,
+      default: 0,
+    },
     comments: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Comment'
