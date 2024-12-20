@@ -1,167 +1,201 @@
-import Category from "../models/categoryModel.js";
-import ResponseError from "../utils/responseError.js";
+import Category from '../models/categoryModel.js';
+import ResponseError from '../utils/responseError.js';
 import {
   createCategorySchema,
-  updateCategorySchema
-} from "../validations/categoryValidation.js";
-import validateSchema from "../utils/validateSchema.js";
-import validateObjectId from "../utils/validateObjectId.js";
-import logger from "../utils/logger.js";
+  updateCategorySchema,
+  getCategorySchema,
+  searchCategorySchema,
+} from '../validations/categoryValidation.js';
+import validate from '../utils/validate.js';
+import logger from '../utils/logger.js';
 
-export const createCategory = async (req, res, next) => {
+const create = async (req, res, next) => {
   try {
-    const { validatedFields, validationErrors } = validateSchema(
-      createCategorySchema,
-      req.body
-    );
+    const fields = validate(createCategorySchema, req.body);
 
-    if (validationErrors) {
-      logger.info("create category failed - invalid request fields");
-      throw new ResponseError("Validation errors", 400, validationErrors);
+    const isNameTaken = await Category.exists({ name: fields.name });
+    if (isNameTaken) {
+      logger.warn('resource already in use');
+      throw new ResponseError('Resource already in use', 409, {
+        name: 'Name already in use',
+      });
     }
 
-    const category = await Category.create(validatedFields);
+    await Category.create(fields);
 
-    logger.info(`create category success - category created with id ${category._id}`);
-    res.json({
-      code: 200,
-      message: "Category created successfully",
+    logger.info('category created successfully');
+    res.status(201).json({
+      code: 201,
+      message: 'Category created successfully',
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
 };
 
-export const updateCategory = async (req, res, next) => {
+const update = async (req, res, next) => {
   try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed category id ${req.params.id}`);
-      throw new ResponseError("Invalid id", 400, { id: ["Invalid or malformed category id"] });
-    }
+    const categoryId = validate(getCategorySchema, req.params.categoryId);
+    const fields = validate(updateCategorySchema, req.body);
 
-    const { validatedFields, validationErrors } = validateSchema(
-      updateCategorySchema,
-      req.body
-    );  
-
-    if (validationErrors) {
-      logger.info("update category failed - invalid request fields");
-      throw new ResponseError("Validation errors", 400, validationErrors);
-    }
-
-    const updatedCategory = await Category.findOneAndUpdate(
-      { _id: req.params.id },
-      { ...validatedFields },
-      { new: true }
-    );
-    
-    if (!updatedCategory) {
-      logger.info(`resource not found - category with id ${req.params.id} not found`);
-      throw new ResponseError("Resource not found", 404);
-    }
-
-    logger.info(`update category success - category updated with id ${req.params.id}`);
-    res.json({
-      code: 200,
-      message: "Category updated successfully",
-      data: updatedCategory,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-export const deleteCategory = async (req, res, next) => {
-  try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed category id ${req.params.id}`);
-      throw new ResponseError("Invalid id", 400, { id: ["Invalid or malformed category id"] });
-    }
-
-    const deletedCategory = await Category.findByIdAndDelete(req.params.id);
-
-    if (!deletedCategory) { 
-      logger.info(`delete category failed - category not found with id ${req.params.id}`);
-      throw new ResponseError("Category not found", 404); 
-    }
-
-    logger.info(`delete category success - category deleted with id ${req.params.id}`);
-    res.json({
-      code: 200,
-      message: "Category deleted successfully",
-    });
-
-  } catch (err) {
-    next(err);
-  }
-}
-
-export const getCategoryById = async (req, res, next) => {
-  try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed category id ${req.params.id}`);
-      throw new ResponseError("Invalid id", 400, { id: ["Invalid or malformed category id"] });
-    } 
-
-    const category = await Category.findById(req.params.id);
-
+    const category = await Category.findById(categoryId);
     if (!category) {
-      logger.info(`resource not found - category not found with id ${req.params.id}`);
-      throw new ResponseError("Category not found", 404);
+      logger.warn('category not found');
+      throw new ResponseError('Category not found', 404);
     }
 
-    logger.info(`fetch category success - category found with id ${req.params.id}`);
+    if (fields.name && fields.name !== category.name) {
+      const isNameTaken = await Category.exists({ name: fields.name });
+
+      if (isNameTaken) {
+        logger.warn('resource already in use');
+        throw new ResponseError('Resource already in use', 409, {
+          name: 'Name already in use',
+        });
+      }
+    }
+
+    Object.assign(category, fields);
+    await category.save();
+
+    logger.info('category updated successfully');
     res.json({
       code: 200,
-      message: "Category found",
-      data: category
+      message: 'Category updated successfully',
+      data: category,
     });
-
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-}
+};
 
-export const getCategories = async (req, res, next) => {
+const remove = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 0;
-    const skip = (page - 1) * limit;
-    
-    let filter = req.query.search ? {
-      $or: [
-        { name: { $regex: req.query.search, $options: "i" } }
-      ]
-    } : {};
+    const categoryId = validate(getCategorySchema, req.params.categoryId);
 
-    const totalCategories = await Category.countDocuments(filter);
-    const totalPages = Math.ceil(totalCategories / limit);
+    const category = await Category.findByIdAndDelete(categoryId);
+    if (!category) {
+      logger.warn('category not found');
+      throw new ResponseError('Category not found', 404);
+    }
 
-    const categories = await Category.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
+    logger.info('category deleted successfully');
+    res.json({
+      code: 200,
+      message: 'Category deleted successfully',
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+const show = async (req, res, next) => {
+  try {
+    const categoryId = validate(getCategorySchema, req.params.categoryId);
+
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      logger.warn('category not found');
+      throw new ResponseError('Category not found', 404);
+    }
+
+    logger.info('category retrieved successfully');
+    res.json({
+      code: 200,
+      message: 'Category retrieved successfully',
+      data: category,
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const search = async (req, res, next) => {
+  try {
+    const query = validate(searchCategorySchema, req.query);
+    const { page, limit, search } = query;
+
+    const [{ categories, totalCategories }] = await Category.aggregate()
+      .lookup({
+        from: 'posts',
+        localField: '_id',
+        foreignField: 'category',
+        as: 'posts',
+        pipeline: [{ $count: 'count' }],
+      })
+      .addFields({
+        totalPosts: { $ifNull: [{ $arrayElemAt: ['$posts.count', 0] }, 0] },
+      })
+      .project({ posts: 0 })
+      .match(search ? { name: { $regex: search, $options: 'i' } } : {})
+      .facet({
+        categories: [
+          { $sort: { createdAt: -1 } },
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+        ],
+        totalCategories: [{ $count: 'count' }],
+      })
+      .project({
+        categories: 1,
+        totalCategories: {
+          $ifNull: [{ $arrayElemAt: ['$totalCategories.count', 0] }, 0],
+        },
+      });
 
     if (categories.length === 0) {
-      logger.info(`resource not found - categories not found`);
-      return res.json({ code: 200, message: "No categories found", data: [] });
+      logger.info('no categories found');
+      return res.json({
+        code: 200,
+        message: 'No categories found',
+        data: [],
+        meta: {
+          pageSize: limit,
+          totalItems: 0,
+          currentPage: page,
+          totalPages: 0,
+        },
+      });
     }
 
-    logger.info(`fetch categories success - ${categories.length} categories found`);
+    logger.info('categories retrieved successfully');
     res.json({
-      code: 200,  
-      message: "Categories found",
-      data: categories ,
+      code: 200,
+      message: 'Categories retrieved successfully',
+      data: categories,
       meta: {
         pageSize: limit,
         totalItems: totalCategories,
         currentPage: page,
-        totalPages
-      }
+        totalPages: Math.ceil(totalCategories / limit),
+      },
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-} 
+};
 
+const list = async (req, res, next) => {
+  try {
+    const categories = await Category.find().select('name');
+    if (categories.length === 0) {
+      logger.info('no categories found');
+      return res.json({
+        code: 200,
+        message: 'No categories found',
+        data: [],
+      });
+    }
 
+    logger.info('categories retrieved successfully');
+    res.json({
+      code: 200,
+      message: 'Categories retrieved successfully',
+      data: categories,
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+export default { create, update, remove, show, search, list };
