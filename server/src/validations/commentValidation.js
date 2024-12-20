@@ -1,17 +1,24 @@
 import Joi from 'joi';
 import mongoose from 'mongoose';
 
-const contentSchema = Joi.string().required();
-const userIdSchema = Joi.string().custom((value, helpers) => {
-  if (!mongoose.Types.ObjectId.isValid(value)) return helpers.error('invalid user id');
-  return value;
-}).required();
-
-const baseCommentSchema = Joi.object({
-  content: contentSchema,
-  userId: userIdSchema
+const commentSchema = Joi.object({
+  text: Joi.string().required(),
 });
 
-export const createCommentSchema = baseCommentSchema;
-
-export const updateCommentSchema = baseCommentSchema.fork(['content'], schema => schema.optional());
+export const searchCommentSchema = Joi.object({
+  page: Joi.number().integer().positive().min(1).default(1),
+  limit: Joi.number().integer().positive().min(1).max(100).default(10),
+  search: Joi.string().allow('').optional(),
+});
+export const getCommentSchema = Joi.string()
+  .custom((value, helpers) => {
+    if (!mongoose.Types.ObjectId.isValid(value))
+      return helpers.message('Comment id is invalid');
+    return value;
+  })
+  .label('commentId')
+  .required();
+export const createCommentSchema = commentSchema;
+export const updateCommentSchema = commentSchema.fork(['text'], schema =>
+  schema.optional()
+);
