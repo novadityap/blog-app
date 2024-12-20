@@ -1,9 +1,10 @@
-import mongoose from "mongoose";
 import seedPermission from "./permissionSeeder.js";
 import seedRole from "./roleSeeder.js";
 import seedUser from "./userSeeder.js";
 import logger from "../utils/logger.js";
 import connectDB from '../config/connection.js';
+import 'dotenv/config';
+
 const seed = async () => {
   try {
     await connectDB();
@@ -12,11 +13,10 @@ const seed = async () => {
     await seedUser();
 
     logger.info('database seeded successfully');
+    process.exit(0);
   } catch (err) {
-    logger.error(`database seeding failed - ${err}`);
-  } finally {
-    mongoose.connection.close();
-    logger.info('database connection closed');
+    logger.error('database seeded unsuccessfully', { stack: err.stack });
+    process.exit(1);
   }
 }
 
