@@ -1,17 +1,31 @@
 import Joi from 'joi';
+import mongoose from 'mongoose';
 
-const actionSchema = Joi.string().valid('create', 'read', 'update', 'delete').required();
-const resourceSchema = Joi.string().valid('user', 'role', 'permission', 'post', 'comment', 'category', 'dashboard').required();
-const descriptionSchema = Joi.string().required();
-
-const basePermissionSchema = Joi.object({
-  action: actionSchema,
-  resource: resourceSchema,
-  description: descriptionSchema
+const permissionSchema = Joi.object({
+  action: Joi.string().valid('create', 'read', 'update', 'delete').required(),
+  resource: Joi.string()
+    .valid(
+      'user',
+      'role',
+      'permission',
+      'post',
+      'comment',
+      'category',
+      'dashboard'
+    )
+    .required(),
 });
 
-export const createPermissionSchema = basePermissionSchema;
-export const updatePermissionSchema = basePermissionSchema.fork(
+export const getPermissionSchema = Joi.string()
+  .custom((value, helpers) => {
+    if (!mongoose.Types.ObjectId.isValid(value))
+      return helpers.message('permission id is invalid');
+    return value;
+  })
+  .label('permissionId')
+  .required();
+export const createPermissionSchema = permissionSchema;
+export const updatePermissionSchema = permissionSchema.fork(
   ['action', 'resource', 'description'],
   schema => schema.optional()
 );
