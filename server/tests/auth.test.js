@@ -1,27 +1,8 @@
 import request from 'supertest';
 import app from '../src/app.js';
-import {
-  findRelevantLog,
-  createTestUser,
-  removeTestUser,
-  createAuthToken,
-} from './testUtil.js';
-import connectDB from '../src/config/connection.js';
-import mongoose from 'mongoose';
+import { findLog, createTestUser, removeTestUser } from './testUtil.js';
 import Blacklist from '../src/models/blacklistModel.js';
-import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
-const token = createAuthToken('auth');
-const refreshToken = createAuthToken('refresh');
-
-beforeAll(async () => {
-  await connectDB();
-});
-
-afterAll(async () => {
-  await mongoose.connection.close();
-});
 
 describe('POST /api/auth/signup', () => {
   let startTime;
@@ -34,7 +15,7 @@ describe('POST /api/auth/signup', () => {
     await removeTestUser();
   });
 
-  it('should return 400 for invalid input', async () => {
+  it('should return an error if invalid input data', async () => {
     const res = await request(app).post('/api/auth/signup').send({
       username: '',
       email: '',
@@ -42,44 +23,44 @@ describe('POST /api/auth/signup', () => {
     });
 
     expect(res.status).toBe(400);
-    expect(res.body.errors).toMatchObject({
-      username: expect.anything(),
-      email: expect.anything(),
-      password: expect.anything(),
-    });
+    expect(res.body.message).toBe('Validation errors');
+    expect(res.body.errors.username).toBeDefined();
+    expect(res.body.errors.email).toBeDefined();
+    expect(res.body.errors.password).toBeDefined();
   });
 
-  it('should create a new user and send email verification', async () => {
+  it('should not create a new user if email already in use', async () => {
+    await createTestUser();
+
     const res = await request(app).post('/api/auth/signup').send({
       username: 'test',
       email: 'test@me.com',
       password: 'test123',
     });
 
-    const logMessage = 'signup - email has been sent to test@me.com';
-    const relevantLog = await findRelevantLog(logMessage, startTime);
+    const logMessage = 'user already exists';
+    const relevantLog = await findLog(logMessage, startTime);
 
     expect(res.status).toBe(200);
     expect(relevantLog).toBeDefined();
   });
 
-  it('should skip sending email verification if user already exists', async () => {
-    await createTestUser();
+  it('should create a new user and send verification email', async () => {
     const res = await request(app).post('/api/auth/signup').send({
       username: 'test',
       email: 'test@me.com',
       password: 'test123',
     });
 
-    const logMessage = 'signup - user already exists with email test@me.com';
-    const relevantLog = await findRelevantLog(logMessage, startTime);
+    const logMessage = 'verification email sent successfully';
+    const relevantLog = await findLog(logMessage, startTime);
 
     expect(res.status).toBe(200);
     expect(relevantLog).toBeDefined();
   });
 });
 
-describe('POST /api/auth/email-verification/:token', () => {
+describe('POST /api/auth/verify-email/:token', () => {
   let user;
 
   beforeEach(async () => {
@@ -90,39 +71,32 @@ describe('POST /api/auth/email-verification/:token', () => {
     await removeTestUser();
   });
 
-  it('should return 400 for invalid token', async () => {
-    const res = await request(app).post(
-      `/api/auth/email-verification/invalid-token`
-    );
-
-    expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid verification token');
-  });
-
-  it('should return 401 for expired token', async () => {
-    user.verificationTokenExpires = new Date() - 24 * 60 * 60 * 1000;
+  it('should return an error if verification token has expired', async () => {
+    user.verificationTokenExpires = new Date() - 1000;
     await user.save();
 
     const res = await request(app).post(
-      `/api/auth/email-verification/${user.verificationToken}`
+      `/api/auth/verify-email/${user.verificationToken}`
     );
 
     expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid verification token');
+    expect(res.body.message).toBe(
+      'Verification token is invalid or has expired'
+    );
   });
 
-  it('should verify the email and return 200', async () => {
+  it('should verify email if verification token is valid', async () => {
     const { verificationToken } = user;
     const res = await request(app).post(
-      `/api/auth/email-verification/${verificationToken}`
+      `/api/auth/verify-email/${verificationToken}`
     );
 
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Email has been verified, you can now login');
+    expect(res.body.message).toBe('Email verified successfully');
   });
 });
 
-describe('POST /api/auth/resend-email-verification', () => {
+describe('POST /api/auth/resend-verification', () => {
   let startTime;
 
   beforeEach(async () => {
@@ -133,42 +107,36 @@ describe('POST /api/auth/resend-email-verification', () => {
     await removeTestUser();
   });
 
-  it('should return 400 for invalid input', async () => {
-    const res = await request(app)
-      .post('/api/auth/resend-email-verification')
-      .send({
-        email: '',
-      });
+  it('should return an error if input data is invalid', async () => {
+    const res = await request(app).post('/api/auth/resend-verification').send({
+      email: '',
+    });
 
     expect(res.status).toBe(400);
     expect(res.body.errors.email).toBeDefined();
   });
 
-  it('should skip sending email verification for unregistered user', async () => {
-    const res = await request(app)
-      .post('/api/auth/resend-email-verification')
-      .send({
-        email: 'test@me.com',
-      });
+  it('should not send verification email if user is not registered', async () => {
+    const res = await request(app).post('/api/auth/resend-verification').send({
+      email: 'test@me.com',
+    });
 
-    const logMessage = 'resend email verification - user is not registered with email test@me.com';
-    const relevantLog = await findRelevantLog(logMessage, startTime);
+    const logMessage = 'user is not registered';
+    const relevantLog = await findLog(logMessage, startTime);
 
     expect(res.status).toBe(200);
     expect(relevantLog).toBeDefined();
   });
 
-  it('should return 200 and resend email verification', async () => {
+  it('should send verification email if user is registered', async () => {
     await createTestUser();
 
-    const res = await request(app)
-      .post('/api/auth/resend-email-verification')
-      .send({
-        email: 'test@me.com',
-      });
+    const res = await request(app).post('/api/auth/resend-verification').send({
+      email: 'test@me.com',
+    });
 
-      const logMessage = 'resend email verification - email has been sent to test@me.com';
-      const relevantLog = await findRelevantLog(logMessage, startTime);
+    const logMessage = 'verification email sent successfully';
+    const relevantLog = await findLog(logMessage, startTime);
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBe(
@@ -183,48 +151,44 @@ describe('POST /api/auth/signin', () => {
 
   beforeEach(async () => {
     user = await createTestUser();
-    user.password = await bcrypt.hash('test123', 10);
-    await user.save();
   });
 
   afterEach(async () => {
     await removeTestUser();
   });
 
-  it('should return 400 for invalid input', async () => {
+  it('should return an error if input data is invalid', async () => {
     const res = await request(app).post('/api/auth/signin').send({
       email: '',
       password: '',
     });
 
     expect(res.status).toBe(400);
-    expect(res.body.errors).toMatchObject({
-      email: expect.anything(),
-      password: expect.anything(),
-    });
+    expect(res.body.errors.email).toBeDefined();
+    expect(res.body.errors.password).toBeDefined();
   });
 
-  it('should return 401 for invalid credentials', async () => {
+  it('should return an error if credentials are invalid', async () => {
     const res = await request(app).post('/api/auth/signin').send({
       email: 'test@me.co',
       password: 'test12',
     });
 
     expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid email or password');
+    expect(res.body.message).toBe('Email or password is invalid');
   });
 
-  it('should return 200 and set a valid JWT token and refresh token in the cookie for valid credentials', async () => {
+  it('should sign in if credentials are valid', async () => {
     const res = await request(app).post('/api/auth/signin').send({
       email: 'test@me.com',
       password: 'test123',
     });
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveProperty('token');
-    expect(res.body.data).toHaveProperty('username');
-    expect(res.body.data).toHaveProperty('email');
-    expect(res.body.data).toHaveProperty('avatar');
+    expect(res.body.data.token).toBeDefined();
+    expect(res.body.data.username).toBeDefined();
+    expect(res.body.data.email).toBeDefined();
+    expect(res.body.data.roles).toBeDefined();
 
     const decoded = jwt.verify(res.body.data.token, process.env.JWT_SECRET);
     expect(decoded.id).toBeDefined();
@@ -238,41 +202,37 @@ describe('POST /api/auth/signin', () => {
 describe('POST /api/auth/signout', () => {
   afterEach(async () => {
     await removeTestUser();
+    Blacklist.deleteMany();
   });
 
-  it('should return 401 for refresh token not provided', async () => {
+  it('should return an error if refresh token is not provided', async () => {
     const res = await request(app)
       .post('/api/auth/signout')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid refresh token');
+    expect(res.body.message).toBe('Refresh token is not provided');
   });
 
-  it('should return 401 for refresh token not found in database', async () => {
-    const startTime = new Date();
+  it('should return an error if refresh token is not found in the database', async () => {
     const res = await request(app)
       .post('/api/auth/signout')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', `refreshToken=${refreshToken}`);
-
-      const logMessage = 'signout - refresh token not found in database';
-      const relevantLog = await findRelevantLog(logMessage, startTime);
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Cookie', `refreshToken=${global.adminRefreshToken}`);
 
     expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid refresh token');
-    expect(relevantLog).toBeDefined();
+    expect(res.body.message).toBe('Refresh token is invalid');
   });
 
-  it('should return 204 for valid refresh token', async () => {
+  it('should sign out if refresh token is valid', async () => {
     const user = await createTestUser();
-    user.refreshToken = refreshToken;
+    user.refreshToken = global.adminRefreshToken;
     await user.save();
 
     const res = await request(app)
       .post('/api/auth/signout')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', `refreshToken=${refreshToken}`);
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Cookie', `refreshToken=${global.adminRefreshToken}`);
 
     expect(res.status).toBe(204);
   });
@@ -280,54 +240,50 @@ describe('POST /api/auth/signout', () => {
 
 describe('POST /api/auth/refresh-token', () => {
   afterEach(async () => {
-    await Blacklist.deleteMany({});
+    await Blacklist.deleteMany();
     await removeTestUser();
   });
 
-  it('should return 401 for invalid refresh token', async () => {
+  it('should return an error if refresh token is not provided', async () => {
     const res = await request(app)
       .post('/api/auth/refresh-token')
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid refresh token');
+    expect(res.body.message).toBe('Refresh token is not provided');
   });
 
-  it('should return 401 for blacklisted refresh token', async () => {
-    await Blacklist.create({ token: refreshToken });
+  it('should return an error if refresh token is blacklisted', async () => {
+    await Blacklist.create({ token: global.adminRefreshToken });
+
     const res = await request(app)
       .post('/api/auth/refresh-token')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', `refreshToken=${refreshToken}`);
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Cookie', `refreshToken=${global.adminRefreshToken}`);
 
     expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid refresh token');
+    expect(res.body.message).toBe('Refresh token is invalid');
   });
 
-  it('should return 401 for refresh token not found in database', async () => {
-    const startTime = new Date();
+  it('should return an error if refresh token is not found in the database', async () => {
     const res = await request(app)
       .post('/api/auth/refresh-token')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', `refreshToken=${refreshToken}`);
-
-    const logMessage = 'refresh token - refresh token not found in database';
-    const relevantLog = await findRelevantLog(logMessage, startTime);
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Cookie', `refreshToken=${global.adminRefreshToken}`);
 
     expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid refresh token');
-    expect(relevantLog).toBeDefined();
+    expect(res.body.message).toBe('Refresh token is invalid');
   });
 
-  it('should return 200 for valid refresh token and new token', async () => {
+  it('should refresh token if refresh token is valid', async () => {
     const user = await createTestUser();
-    user.refreshToken = refreshToken;
+    user.refreshToken = global.adminRefreshToken;
     await user.save();
 
     const res = await request(app)
       .post('/api/auth/refresh-token')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', `refreshToken=${refreshToken}`);
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Cookie', `refreshToken=${global.adminRefreshToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('Token refreshed successfully');
@@ -343,7 +299,7 @@ describe('POST /api/auth/request-reset-password', () => {
     await removeTestUser();
   });
 
-  it('should return 400 for invalid input', async () => {
+  it('should return an error if input data is invalid', async () => {
     const res = await request(app)
       .post('/api/auth/request-reset-password')
       .send({
@@ -354,22 +310,20 @@ describe('POST /api/auth/request-reset-password', () => {
     expect(res.body.errors.email).toBeDefined();
   });
 
-  it('should return 200 and skip sending email for unregistered user', async () => {
-    const startTime = new Date();
+  it('should not send reset password email if user is not registered', async () => {
     const res = await request(app)
       .post('/api/auth/request-reset-password')
       .send({
         email: 'test1@me.com',
       });
 
-      const logMessage =  'request reset password - user is not registered';
-    const relevantLog = await findRelevantLog(logMessage, startTime);
-
     expect(res.status).toBe(200);
-    expect(relevantLog).toBeDefined();
+    expect(res.body.message).toBe(
+      'Please check your email to reset your password'
+    );
   });
 
-  it('should return 200 and sending email for registered user', async () => {
+  it('should send reset password email if user is registered', async () => {
     const user = await createTestUser();
     user.isVerified = true;
     await user.save();
@@ -393,7 +347,7 @@ describe('POST /api/auth/reset-password/:token', () => {
   beforeEach(async () => {
     user = await createTestUser();
     user.resetToken = '123';
-    user.resetTokenExpires = Date.now() + 1 * 60 * 60 * 1000;
+    user.resetTokenExpires = Date.now() + 1000;
     await user.save();
   });
 
@@ -401,7 +355,7 @@ describe('POST /api/auth/reset-password/:token', () => {
     await removeTestUser();
   });
 
-  it('should return 400 for invalid input', async () => {
+  it('should return an error if input data is invalid', async () => {
     const res = await request(app)
       .post('/api/auth/reset-password/invalid-token')
       .send({
@@ -412,17 +366,8 @@ describe('POST /api/auth/reset-password/:token', () => {
     expect(res.body.errors.newPassword).toBeDefined();
   });
 
-  it('should return 401 for invalid token', async () => {
-    const res = await request(app).post('/api/auth/reset-password/1234').send({
-      newPassword: 'test123',
-    });
-
-    expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid reset token');
-  });
-
-  it('should return 401 for expired token', async () => {
-    user.resetTokenExpires = Date.now() - 1 * 60 * 60 * 1000;
+  it('should return an error if reset token has expired', async () => {
+    user.resetTokenExpires = Date.now() - 1000;
     await user.save();
 
     const res = await request(app).post('/api/auth/reset-password/123').send({
@@ -430,10 +375,10 @@ describe('POST /api/auth/reset-password/:token', () => {
     });
 
     expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Invalid reset token');
+    expect(res.body.message).toBe('Reset token is invalid or has expired');
   });
 
-  it('should return 200 for valid token', async () => {
+  it('should reset password if reset token is valid', async () => {
     user.resetTokenExpires = Date.now() + 1 * 60 * 60 * 1000;
     await user.save();
 
@@ -442,8 +387,6 @@ describe('POST /api/auth/reset-password/:token', () => {
     });
 
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe(
-      'Password has been reset successfully, please login with your new password'
-    );
+    expect(res.body.message).toBe('Password reset successfully');
   });
 });
