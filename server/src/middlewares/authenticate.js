@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 const authenticate = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    
     if (!token) {
       logger.warn('token is missing');
       throw new ResponseError('Token is missing', 401);
