@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema({
   timestamps: true,
   toJSON: {
     transform: (doc, ret) => {
-      ret.avatar = `${process.env.SERVER_URL}/${process.env.AVATAR_UPLOADS_DIR}/${ret.avatar}`;
+      ret.avatar = `${process.env.SERVER_URL}/${process.env.AVATAR_DIR}/${ret.avatar}`;
 
       delete ret.password;
       delete ret.verificationToken;
