@@ -6,16 +6,16 @@ const commentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Post',
     },
-    content: String,
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
-    content: String,
-    childComments: [{
+    text: String,
+    parentCommentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Comment',
-    }]
+      default: null
+    }
   },
   {
     timestamps: true,
