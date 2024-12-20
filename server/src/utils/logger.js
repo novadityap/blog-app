@@ -1,5 +1,6 @@
 import winston from "winston";
 import "winston-daily-rotate-file";
+import 'dotenv/config';
 
 const logFormat = winston.format.combine(
   winston.format.timestamp(),
@@ -24,7 +25,7 @@ const logger = winston.createLogger({
       datePattern: 'YYYY-MM-DD',
       zippedArchive: true,
       maxSize: '20m',
-      maxFiles: '3',
+      maxFiles: '2',
       format: logFormat,
       utc: true
     })
@@ -37,7 +38,7 @@ const logger = winston.createLogger({
   ]
 });
 
-if(process.env.NODE_ENV !== 'production') {
+if(process.env.NODE_ENV === 'development') {
   logger.add(new winston.transports.Console({format: consoleFormat}));
 }
 
