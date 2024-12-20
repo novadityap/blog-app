@@ -34,7 +34,7 @@ const postSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: {
       transform: (doc, ret) => {
-        ret.postImage = `${process.env.SERVER_URL}/${process.env.POST_UPLOADS_DIR}/${ret.postImage}`;
+        ret.postImage = `${process.env.SERVER_URL}/${process.env.POST_DIR}/${ret.postImage}`;
         return ret;
       }
     }
