@@ -1,198 +1,246 @@
-import Role from "../models/roleModel.js";
-import Permission from "../models/permissionModel.js";
-import ResponseError from "../utils/responseError.js";
-import logger from "../utils/logger.js";
-import validateSchema from "../utils/validateSchema.js";
+import Role from '../models/roleModel.js';
+import Permission from '../models/permissionModel.js';
+import ResponseError from '../utils/responseError.js';
+import logger from '../utils/logger.js';
+import validate from '../utils/validate.js';
 import {
   createRoleSchema,
-  updateRoleSchema
-} from "../validations/roleValidation.js";
-import validateObjectId from "../utils/validateObjectId.js";
+  updateRoleSchema,
+  getRoleSchema,
+  searchRoleSchema,
+} from '../validations/roleValidation.js';
+import mongoose from 'mongoose';
 
-export const createRole = async (req, res, next) => {
+const create = async (req, res, next) => {
   try {
-    const { validatedFields, validationErrors } = validateSchema(createRoleSchema, req.body);
+    const fields = validate(createRoleSchema, req.body);
 
-    if (validationErrors) {
-      logger.info('create role failed - invalid request fields');
-      throw new ResponseError('Validation error', 400, validationErrors);
+    const isNameTaken = await Role.exists({ name: fields.name });
+    if (isNameTaken) {
+      logger.warn('resource already in use');
+      throw new ResponseError('Resource already in use', 409, {
+        name: 'Name already in use',
+      });
     }
 
-    const existingRole = await Role.findOne({ name: validatedFields.name });
+    if (fields.permissions?.length > 0) {
+      const totalPermissions = await Permission.countDocuments({
+        _id: { $in: fields.permissions },
+      });
 
-    if (existingRole) {
-      logger.info(`create role failed - role already exists with name ${validatedFields.name}`);
-      throw new ResponseError('Role with that name already exists', 409, { name: ['Role with that name already exists'] });
+      if (totalPermissions !== fields.permissions.length) {
+        logger.warn('validation errors');
+        throw new ResponseError('Validation errors', 400, {
+          permissions: 'Invalid permission id',
+        });
+      }
     }
 
-    const permissions = await Permission.find({ _id: { $in: validatedFields.permissions } });
+    await Role.create(fields);
 
-    if (permissions.length !== validatedFields.permissions.length) {
-      logger.info(`create role failed - some of the permissions is invalid`);
-      throw new ResponseError('Validation errors', 400, { permissions: ['Some of the permissions is invalid'] });
-    }
-
-    await Role.create(validatedFields);
-
-    logger.info(`create role success - role created with name ${validatedFields.name}`);
-    res.json({
-      code: 200,
-      message: 'Role created successfully'
+    logger.info('role created successfully');
+    res.status(201).json({
+      code: 201,
+      message: 'Role created successfully',
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-}
+};
 
-export const getRoles = async (req, res, next) => {
+const search = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 0;
-    const skip = (page - 1) * limit;
+    const query = validate(searchRoleSchema, req.query);
+    const { page, limit, search } = query;
 
-    const filter = req.query.search ? { 
-      $or: [
-        { name: { $regex: req.query.search, $options: 'i' } },
-      ]
-    } : {};
-
-    const totalRoles = await Role.countDocuments(filter);
-    const totalPages = Math.ceil(totalRoles / limit);
-
-    const roles = await Role.find(filter)
-      .skip(skip)
-      .limit(limit);
+    const [{ roles, totalRoles }] = await Role.aggregate()
+      .lookup({
+        from: 'permissions',
+        localField: 'permissions',
+        foreignField: '_id',
+        as: 'permissions',
+      })
+      .unwind({ path: '$permissions', preserveNullAndEmptyArrays: true })
+      .group({
+        _id: '$_id',
+        name: { $first: '$name' },
+        permissions: { $push: '$permissions.name' },
+        createdAt: { $first: '$createdAt' },
+        updatedAt: { $first: '$updatedAt' },
+      })
+      .addFields({
+        permissions: {
+          $map: {
+            input: '$permissions',
+            as: 'permission',
+            in: {
+              $replaceAll: {
+                input: '$$permission',
+                find: '_',
+                replacement: ' ',
+              },
+            },
+          },
+        },
+      })
+      .match(
+        search
+          ? {
+              $or: [
+                { name: { $regex: search, $options: 'i' } },
+                { 'permissions.name': { $regex: search, $options: 'i' } },
+              ],
+            }
+          : {}
+      )
+      .facet({
+        roles: [
+          { $sort: { createdAt: -1 } },
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+        ],
+        totalRoles: [{ $count: 'count' }],
+      })
+      .project({
+        roles: 1,
+        totalRoles: {
+          $ifNull: [{ $arrayElemAt: ['$totalRoles.count', 0] }, 0],
+        },
+      });
 
     if (roles.length === 0) {
-      logger.info('resource not found - no roles found in database');
+      logger.info('no roles found');
       return res.json({
         code: 200,
         message: 'No roles found',
         data: [],
+        meta: {
+          pageSize: limit,
+          totalItems: 0,
+          currentPage: page,
+          totalPages: 0,
+        },
       });
     }
 
-    logger.info(`fetch all roles success - ${roles.length} roles found`);
+    logger.info('roles retrieved successfully');
     res.json({
       code: 200,
-      message: 'Roles found',
+      message: 'Roles retrieved successfully',
       data: roles,
       meta: {
         pageSize: limit,
         totalItems: totalRoles,
         currentPage: page,
-        totalPages
-      }
+        totalPages: Math.ceil(totalRoles / limit),
+      },
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-}
+};
 
-export const getRoleById = async (req, res, next) => {
+const show = async (req, res, next) => {
   try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed role id ${req.params.id}`);
-      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed role id'] });
-    }
+    const roleId = validate(getRoleSchema, req.params.roleId);
 
-    const role = await Role.findById(req.params.id).populate('permissions', 'id');
+    const role = await Role.findById(roleId).populate({
+      path: 'permissions',
+      select: '_id',
+      transform: doc => doc._id,
+    });
 
     if (!role) {
-      logger.info(`resource not found - role not found with id ${req.params.id}`);
+      logger.warn('role not found');
       throw new ResponseError('Role not found', 404);
     }
 
-    logger.info(`fetch role success - role found with id ${req.params.id}`);
+    logger.info('role retrieved successfully');
     res.json({
       code: 200,
-      message: 'Role found',
-      data: role
+      message: 'Role retrieved successfully',
+      data: role,
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-}
+};
 
-export const updateRole = async (req, res, next) => {
+const update = async (req, res, next) => {
   try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed role id ${req.params.id}`);
-      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed role id'] });
-    }
+    const roleId = validate(getRoleSchema, req.params.roleId);
+    const fields = validate(updateRoleSchema, req.body);
 
-    const { validatedFields, validationErrors } = validateSchema(updateRoleSchema, req.body);
+    const role = await Role.findById(roleId).populate({
+      path: 'permissions',
+      select: '_id',
+      transform: doc => doc._id,
+    });
 
-    if (validationErrors) {
-      logger.info('update role failed - invalid request fields');
-      throw new ResponseError('Validation errors', 400, validationErrors);
-    }
-
-    const roleToUpdate = await Role.findById(req.params.id);
-
-    if (!roleToUpdate) {
-      logger.info(`update role failed - role not found with id ${req.params.id}`);
+    if (!role) {
+      logger.warn('role not found');
       throw new ResponseError('Role not found', 404);
     }
 
-    const permissions = await Permission.find({ _id: { $in: validatedFields.permissions } });
-
-    if (permissions.length !== validatedFields.permissions.length) {
-      logger.info(`update role failed - some of the permissions is invalid`);
-      throw new ResponseError('Validation errors', 400, { permissions: ['Some of the permissions is invalid'] });
-    }
-
-    if (validatedFields?.name) {
-      const existingRoleName = await Role.findOne({ 
-        name: validatedFields.name,
-        _id: { $ne: req.params.id }
+    if (fields.name && fields.name !== role.name) {
+      const isNameTaken = await Role.exists({
+        name: fields.name,
+        _id: { $ne: roleId },
       });
 
-      if (existingRoleName) {
-        logger.info(`update role failed - role already exists with name ${validatedFields.name}`);
-        throw new ResponseError('Role with that name already exists', 409);
+      if (isNameTaken) {
+        logger.warn('resource already in use');
+        throw new ResponseError('Resource already in use', 409, {
+          name: 'Name already in use',
+        });
       }
-
-      roleToUpdate.name = validatedFields.name;
     }
 
-    if (validatedFields?.permissions) {
-      roleToUpdate.permissions = validatedFields.permissions;
+    if (fields.permissions?.length > 0) {
+      const totalPermissions = await Permission.countDocuments({
+        _id: { $in: fields.permissions },
+      });
+
+      if (totalPermissions !== fields.permissions.length) {
+        logger.warn('validation errors');
+        throw new ResponseError('Validation errors', 400, {
+          permissions: 'Invalid permission id',
+        });
+      }
     }
 
-    await roleToUpdate.save();
+    Object.assign(role, fields);
+    await role.save();
 
-    logger.info(`update role success - role updated with id ${req.params.id}`);
+    logger.info('role updated successfully');
     res.json({
       code: 200,
       message: 'Role updated successfully',
-      data: roleToUpdate
+      data: role,
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-}
+};
 
-export const deleteRole = async (req, res, next) => {
+const remove = async (req, res, next) => {
   try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed role id ${req.params.id}`);
-      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed role id'] });
-    }
+    const roleId = validate(getRoleSchema, req.params.roleId);
 
-    const deletedRole = await Role.findByIdAndDelete(req.params.id);
-
-    if (!deletedRole) {
-      logger.info(`delete role failed - role not found with id ${req.params.id}`);
+    const role = await Role.findByIdAndDelete(roleId);
+    if (!role) {
+      logger.warn('role not found');
       throw new ResponseError('Role not found', 404);
     }
 
-    logger.info(`delete role success - role deleted with id ${req.params.id}`);
+    logger.info('role deleted successfully');
     res.json({
       code: 200,
-      message: 'Role deleted successfully'
+      message: 'Role deleted successfully',
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-}
+};
+
+export default { create, search, show, update, remove };
