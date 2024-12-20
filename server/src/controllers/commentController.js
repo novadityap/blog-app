@@ -3,215 +3,195 @@ import Comment from '../models/commentModel.js';
 import User from '../models/userModel.js';
 import Post from '../models/postModel.js';
 import ResponseError from '../utils/responseError.js';
-import validateSchema from '../utils/validateSchema.js';
+import validate from '../utils/validate.js';
 import {
   createCommentSchema,
   updateCommentSchema,
+  getCommentSchema,
+  searchCommentSchema,
 } from '../validations/commentValidation.js';
-import validateObjectId from '../utils/validateObjectId.js';
+import { getPostSchema } from '../validations/postValidation.js';
+import checkOwnership from '../utils/checkOwnership.js';
 
-export const createComment = async (req, res, next) => {
+const validatePostId = async id => {
+  const postId = validate(getPostSchema, id);
+
+  const post = await Post.findById(postId);
+  if (!post) {
+    logger.warn('post not found');
+    throw new ResponseError('Post not found', 404);
+  }
+
+  return postId;
+};
+
+const create = async (req, res, next) => {
   try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed post id ${req.params.id}`);
-      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed post id'] });
-    }
+    const postId = await validatePostId(req.params.postId);
 
-    const { validatedFields, validationErrors } = validateSchema(
-      createCommentSchema,
-      req.body
-    );
-
-    if (validationErrors) {
-      logger.info('create comment failed - invalid request fields');
-      throw new ResponseError('Validation errors', 400, validationErrors);
-    }
-
-    const comment = await Comment.create({
-      ...validatedFields,
-      postId: req.params.id
+    const fields = validate(createCommentSchema, req.body);
+    await Comment.create({
+      ...fields,
+      postId: postId,
+      userId: req.user.id,
     });
 
-    logger.info(`create comment success - comment created with id ${comment._id}`);
-    res.json({
-      code: 200,
+    logger.info('comment created successfully');
+    res.status(201).json({
+      code: 201,
       message: 'Comment created successfully',
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-}
-export const getComments = async (req, res, next) => {
+};
+
+const search = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 0;
-    const skip = (page - 1) * limit;
+    const query = validate(searchCommentSchema, req.query);
+    const { page, limit, search } = query;
 
-    const filter = {};
-
-    if (req.query.search) {
-      const users = await User.find({ username: { $regex: req.query.search, $options: 'i' } }).select('_id');
-      const posts = await Post.find({ title: { $regex: req.query.search, $options: 'i' } }).select('_id');
-
-      filter.$or = [
-        { title: { $regex: req.query.search, $options: 'i' } },
-        { content: { $regex: req.query.search, $options: 'i' } },
-        { userId: { in: users.map(user => user._id) } },
-        { postId: { in: posts.map(post => post._id) } }
-      ];
-    }
-
-    const totalComments = await Comment.countDocuments(filter);
-    const totalPages = Math.ceil(totalComments / limit);
-
-    const comments = await Comment.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .populate('userId', 'email')
-      .populate('postId', 'title');
+    const [{ comments, totalComments }] = await Comment.aggregate()
+      .lookup({
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'user',
+        pipeline: [{ $project: { username: 1 } }],
+      })
+      .lookup({
+        from: 'posts',
+        localField: 'postId',
+        foreignField: '_id',
+        as: 'post',
+        pipeline: [{ $project: { title: 1 } }],
+      })
+      .match(
+        search
+          ? {
+              $or: [
+                { text: { $regex: search, $options: 'i' } },
+                { 'user.username': { $regex: search, $options: 'i' } },
+                { 'post.title': { $regex: search, $options: 'i' } },
+              ],
+            }
+          : {}
+      )
+      .facet({
+        comments: [
+          { $sort: { createdAt: -1 } },
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+        ],
+        totalComments: [{ $count: 'count' }],
+      })
+      .project({
+        comments: 1,
+        totalComments: {
+          $ifNull: [{ $arrayElemAt: ['$totalComments.count', 0] }, 0],
+        },
+      });
 
     if (comments.length === 0) {
-      logger.info('resource not found - no comments found in database');
+      logger.info('no comments found');
       return res.json({
         code: 200,
         message: 'No comments found',
         data: [],
+        meta: {
+          pageSize: limit,
+          totalItems: 0,
+          currentPage: page,
+          totalPages: 1,
+        },
       });
     }
 
     res.json({
       code: 200,
-      message: 'Comments fetched successfully',
+      message: 'Comments retrieved successfully',
       data: comments,
       meta: {
         pageSize: limit,
         totalItems: totalComments,
         currentPage: page,
-        totalPages,
-      }
+        totalPages: Math.ceil(totalComments / limit),
+      },
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-}
-export const updateComment = async (req, res, next) => {
+};
+
+const show = async (req, res, next) => {
   try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed comment id ${req.params.id}`);
-      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed comment id'] });
+    await validatePostId(req.params.postId);
+    const commentId = validate(getCommentSchema, req.params.commentId);
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      logger.warn('comment not found');
+      throw new ResponseError('Comment not found', 404);
     }
 
-    const { validatedFields, validationErrors } = validateSchema(updateCommentSchema, req.body);
+    logger.info('comment retrieved successfully');
+    res.json({
+      code: 200,
+      message: 'Comment retrieved successfully',
+      data: comment,
+    });
+  } catch (e) {
+    next(e);
+  }
+};
 
-    if (validationErrors) {
-      logger.info('update comment failed - invalid request fields');
-      throw new ResponseError('Validation errors', 400, validationErrors);
+const update = async (req, res, next) => {
+  try {
+    await validatePostId(req.params.postId);
+    const commentId = validate(getCommentSchema, req.params.commentId);
+    const fields = validate(updateCommentSchema, req.body);
+
+    const comment = await Comment.findByIdAndUpdate(commentId, fields, {
+      new: true,
+    });
+    if (!comment) {
+      logger.warn('comment not found');
+      throw new ResponseError('Comment not found', 404);
     }
 
-    const updatedComment = await Comment.findOneAndUpdate(
-      { _id: req.params.id },
-      { ...validatedFields },
-      { new: true }
-    );
-
-    if (!updatedComment) {
-      logger.info(`resource not found - comment with id ${req.params.id} not found`);
-      throw new ResponseError('Resource not found', 404);
-    }
-
-    logger.info(`update comment success - comment updated with id ${req.params.id}`);
+    logger.info('comment updated successfully');
     res.json({
       code: 200,
       message: 'Comment updated successfully',
-      data: updatedComment
+      data: comment,
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-}
+};
 
-export const deleteComment = async (req, res, next) => {
+const remove = async (req, res, next) => {
   try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed comment id ${req.params.id}`);
-      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed comment id'] });
+    await validatePostId(req.params.postId);
+    const commentId = validate(getCommentSchema, req.params.commentId);
+
+    await checkOwnership(Comment, commentId, req.user);
+
+    const comment = await Comment.findByIdAndDelete(commentId);
+    if (!comment) {
+      logger.warn('comment not found');
+      throw new ResponseError('Comment not found', 404);
     }
 
-    const deletedComment = await Comment.findOneAndDelete({ _id: req.params.id });
-
-    if (!deletedComment) {
-      logger.info(`resource not found - comment with id ${req.params.id} not found`);
-      throw new ResponseError('Resource not found', 404);
-    }
-
-    logger.info(`delete comment success - comment deleted with id ${req.params.id}`);
+    logger.info('comment deleted successfully');
     res.json({
       code: 200,
       message: 'Comment deleted successfully',
-      data: deletedComment      
+      data: comment,
     });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
-}
+};
 
-export const likeComment = async (req, res, next) => {
-  try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed comment id ${req.params.id}`);
-      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed comment id'] });
-    }
-
-    const commentToLike = await Comment.findById(req.params.id);
-
-    if (!commentToLike) {
-      logger.info(`resource not found - comment with id ${req.params.id} not found`);
-      throw new ResponseError('Resource not found', 404);
-    }
-
-    if (!commentToLike.likes.includes(req.body.userId)) {
-      commentToLike.likes.push(req.body.userId);
-      commentToLike.numberOfLikes += 1;
-      await commentToLike.save();
-    }
-
-    logger.info(`like comment success - comment liked with id ${req.params.id}`);
-    res.json({
-      code: 200,
-      message: 'Comment liked successfully',
-    });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export const unlikeComment = async (req, res, next) => {
-  try {
-    if (!validateObjectId(req.params.id)) {
-      logger.info(`resource not found - invalid or malformed comment id ${req.params.id}`);
-      throw new ResponseError('Invalid id', 400, { id: ['Invalid or malformed comment id'] });
-    }
-    
-    const commentToUnlike = await Comment.findById(req.params.id);
-
-    if (!commentToUnlike) {
-      logger.info(`resource not found - comment with id ${req.params.id} not found`);
-      throw new ResponseError('Resource not found', 404);
-    }
-
-    if (commentToUnlike.likes.includes(req.body.userId)) {
-      commentToUnlike.likes.filter(like => like.toString() !== req.body.userId);
-      commentToUnlike.numberOfLikes -= 1;
-      await commentToUnlike.save();
-    }
-
-    logger.info(`unlike comment success - comment unliked with id ${req.params.id}`);
-    res.json({
-      code: 200,
-      message: 'Comment unliked successfully',
-    });
-  } catch (err) {
-    next(err);
-  }
-}
-
+export default { create, show, update, remove, search };
