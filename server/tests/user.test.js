@@ -1,191 +1,218 @@
 import request from 'supertest';
 import app from '../src/app.js';
-import connectDB from '../src/config/connection.js';
-import mongoose from 'mongoose';
 import path from 'node:path';
-import * as fs from 'node:fs/promises';
+import User from '../src/models/userModel.js';
+import { access, copyFile, unlink } from 'node:fs/promises';
 import Role from '../src/models/roleModel.js';
-import Permission from '../src/models/permissionModel.js';
-import seedRole from '../src/seeders/roleSeeder.js';
-import seedPermission from '../src/seeders/permissionSeeder.js';
 import {
   createTestUser,
   createManyTestUsers,
-  getTestUser,
-  createAuthToken,
   removeTestUser,
-  removeAllTestUsers,
-  fileExists,
-  copyFile,
+  removeTestFile,
 } from './testUtil.js';
 
-let adminRole;
-const token = createAuthToken('auth');
-const invalidId = undefined;
-const missingId = new mongoose.Types.ObjectId();
-const testAvatarPath = path.join(
-  process.cwd(),
-  'tests/uploads/avatars',
+const testAvatarPath = path.resolve(
+  process.env.TEST_AVATAR_DIR,
   'test-avatar.jpg'
 );
-const cases = [
-  {
-    name: 'invalid user id',
-    id: invalidId,
-    expectedStatus: 400,
-    expectedMessage: 'Invalid id',
-  },
-  {
-    name: 'missing user id',
-    id: missingId,
-    expectedStatus: 404,
-    expectedMessage: 'User not found',
-  },
-];
-
-beforeAll(async () => {
-  await connectDB();
-  await seedPermission();
-  await seedRole();
-  adminRole = await Role.findOne({ name: 'admin' });
-});
-
-afterAll(async () => {
-  await Role.deleteMany({});
-  await Permission.deleteMany({});
-  await mongoose.connection.close();
-});
 
 describe('GET /api/users', () => {
   beforeEach(async () => {
-    await createManyTestUsers(3);
+    await createManyTestUsers();
   });
 
   afterEach(async () => {
     await removeTestUser();
-    await removeAllTestUsers();
   });
 
-  it('should return 200 and fetch all users without search query', async () => {
+  it('should return an error if user does not have permission', async () => {
     const res = await request(app)
       .get('/api/users')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${global.userToken}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Permission denied');
+  });
+
+  it('should return a list of users with default pagination', async () => {
+    const res = await request(app)
+      .get('/api/users')
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('Users retrieved successfully');
+    expect(res.body.data).toHaveLength(10);
+    expect(res.body.meta.pageSize).toBe(10);
+    expect(res.body.meta.totalItems).toBe(15);
+    expect(res.body.meta.currentPage).toBe(1);
+    expect(res.body.meta.totalPages).toBe(2);
+  });
+
+  it('should return a list of users with custom pagination', async () => {
+    const res = await request(app)
+      .get('/api/users')
+      .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
-        page: 1,
-        limit: 2,
+        page: 2,
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Users found');
-    expect(res.body.data).toHaveLength(2);
-    expect(res.body.meta.pageSize).toBe(2);
-    expect(res.body.meta.currentPage).toBe(1);
+    expect(res.body.message).toBe('Users retrieved successfully');
+    expect(res.body.data.length).toBe(5);
+    expect(res.body.meta.pageSize).toBe(10);
+    expect(res.body.meta.totalItems).toBe(15);
+    expect(res.body.meta.currentPage).toBe(2);
+    expect(res.body.meta.totalPages).toBe(2);
   });
 
-  it('should return 200 and fetch users with search query matching username', async () => {
+  it('should return a list of users with custom search', async () => {
     const res = await request(app)
       .get('/api/users')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
-        limit: 10,
-        page: 1,
-        search: 'test1',
+        search: 'test10',
       });
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body.code).toBe(200);
-    expect(res.body.message).toBe('Users found');
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('Users retrieved successfully');
     expect(res.body.data).toHaveLength(1);
-  });
-
-  it('should return 200 and empty data when no user matches the search query', async () => {
-    const res = await request(app)
-      .get('/api/users')
-      .set('Authorization', `Bearer ${token}`)
-      .query({
-        limit: 10,
-        page: 1,
-        search: 'notexist',
-      });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.message).toBe('No users found');
-    expect(res.body.data).toHaveLength(0);
+    expect(res.body.meta.pageSize).toBe(10);
+    expect(res.body.meta.totalItems).toBe(1);
+    expect(res.body.meta.currentPage).toBe(1);
+    expect(res.body.meta.totalPages).toBe(1);
   });
 });
 
-describe('GET /api/users/:id', () => {
-  afterEach(async () => {
-    await removeTestUser();
-  });
-
-  it.each(cases)(
-    'should return $expectedStatus for user with $name',
-    async ({ id, expectedStatus, expectedMessage }) => {
-      const res = await request(app)
-        .get(`/api/users/${id}`)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(expectedStatus);
-      expect(res.body.message).toBe(expectedMessage);
-    }
-  );
-
-  it('should return 200 and user for valid id', async () => {
+describe('GET /api/users/:userId', () => {
+  it('should return an error if user is not owned by current user', async () => {
     const user = await createTestUser();
     const res = await request(app)
       .get(`/api/users/${user._id}`)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${global.userToken}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Permission denied');
+
+    await removeTestUser();
+  });
+
+  it('should return an error if user id is invalid', async () => {
+    const res = await request(app)
+      .get('/api/users/invalid-id')
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Validation errors');
+    expect(res.body.errors.userId).toBeDefined();
+  });
+
+  it('should return an error if user is not found', async () => {
+    const res = await request(app)
+      .get(`/api/users/${global.validObjectId}`)
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.message).toBe('User not found');
+  });
+
+  it('should return a user for user id is valid', async () => {
+    const user = await createTestUser();
+    const res = await request(app)
+      .get(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe('User found');
+    expect(res.body.message).toBe('User retrieved successfully');
     expect(res.body.data).toBeDefined();
+
+    await removeTestUser();
   });
 });
 
 describe('POST /api/users', () => {
+  let adminRole;
+
+  beforeEach(async () => {
+    adminRole = await Role.findOne({ name: 'admin' });
+  });
+
   afterEach(async () => {
     await removeTestUser();
   });
 
-  it('should return 400 for invalid input', async () => {
+  it('should return an error if user does not have permission', async () => {
     const res = await request(app)
       .post('/api/users')
-      .set('Authorization', `Bearer ${token}`)
-      .send();
+      .set('Authorization', `Bearer ${global.userToken}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Permission denied');
+  });
+
+  it('should return an error if input data is invalid', async () => {
+    const res = await request(app)
+      .post('/api/users')
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .send({
+        username: '',
+        email: '',
+        password: '',
+        roles: '',
+      });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('Validation errors');
     expect(res.body.errors.username).toBeDefined();
     expect(res.body.errors.email).toBeDefined();
     expect(res.body.errors.password).toBeDefined();
+    expect(res.body.errors.roles).toBeDefined();
   });
 
-  it('should return 409 for duplicate email', async () => {
-    const user = await createTestUser();
+  it('should return an error if email already in use', async () => {
+    await createTestUser();
+
     const res = await request(app)
       .post('/api/users')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
-        username: 'test',
-        email: user.email,
+        username: 'test1',
+        email: 'test@me.com',
         password: 'test123',
         roles: [adminRole._id],
       });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe('Email already in use');
+    expect(res.body.message).toBe('Resource already in use');
+    expect(res.body.errors.email).toBeDefined();
   });
 
-  it('should return 400 for invalid roles input', async () => {
+  it('should return an error if username already in use', async () => {
+    await createTestUser();
+
     const res = await request(app)
       .post('/api/users')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .send({
+        username: 'test',
+        email: 'test1@me.com',
+        password: 'test123',
+        roles: [adminRole._id],
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe('Resource already in use');
+    expect(res.body.errors.username).toBeDefined();
+  });
+
+  it('should return an error if role is invalid', async () => {
+    const res = await request(app)
+      .post('/api/users')
+      .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         username: 'test',
         email: 'test@me.com',
         password: 'test123',
-        roles: ['invalid'],
+        roles: ['invalid-id'],
       });
 
     expect(res.status).toBe(400);
@@ -193,10 +220,10 @@ describe('POST /api/users', () => {
     expect(res.body.errors.roles).toBeDefined();
   });
 
-  it('should return 201 and created user for valid input', async () => {
+  it('should create a user if input data is valid', async () => {
     const res = await request(app)
       .post('/api/users')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         username: 'test',
         email: 'test@me.com',
@@ -209,10 +236,12 @@ describe('POST /api/users', () => {
   });
 });
 
-describe('PATCH /api/users/:id', () => {
+describe('PUT /api/users/:userId', () => {
   let user;
+  let adminRole;
 
   beforeEach(async () => {
+    adminRole = await Role.findOne({ name: 'admin' });
     user = await createTestUser();
   });
 
@@ -220,85 +249,138 @@ describe('PATCH /api/users/:id', () => {
     await removeTestUser();
   });
 
-  it.each(cases)(
-    'should return $expectedStatus for user with $name',
-    async ({ id, expectedStatus, expectedMessage }) => {
-      const res = await request(app)
-        .get(`/api/users/${id}`)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(expectedStatus);
-      expect(res.body.message).toBe(expectedMessage);
-    }
-  );
-
-  it('should return 200 and updated user without changing avatar file', async () => {
+  it('should return an error if user is not owned by current user', async () => {
     const res = await request(app)
-      .patch(`/api/users/${user._id}`)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Content-Type', 'multipart/form-data')
-      .field('email', 'test1@me.com');
+      .put(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.userToken}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('User updated successfully');
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Permission denied');
   });
 
-  it('should return 200 and updated user with changing avatar file', async () => {
+  it('should return an error if user id is invalid', async () => {
     const res = await request(app)
-      .patch(`/api/users/${user._id}`)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Content-Type', 'multipart/form-data')
-      .field('email', 'test1@me.com')
-      .attach('avatar', testAvatarPath);
+      .put('/api/users/invalid-id')
+      .set('Authorization', `Bearer ${global.adminToken}`);
 
-    const updatedUser = await getTestUser();
-    const avatarExists = await fileExists('avatars', updatedUser.avatar);
-
-    expect(avatarExists).toBe(true);
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('User updated successfully');
-
-    await fs.unlink(
-      path.join(
-        process.cwd(),
-        process.env.AVATAR_UPLOADS_DIR,
-        updatedUser.avatar
-      )
-    );
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Validation errors');
+    expect(res.body.errors.userId).toBeDefined();
   });
 
-  it('should return 200 and update user by changing avatar file and removing old non-default avatar', async () => {
-    user.avatar = 'test-avatar.jpg';
-    await user.save();
-    await copyFile(testAvatarPath, 'avatars');
-
+  it('should return an error if user is not found', async () => {
     const res = await request(app)
-      .patch(`/api/users/${user._id}`)
-      .set('Authorization', `Bearer ${token}`)
+      .put(`/api/users/${global.validObjectId}`)
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.message).toBe('User not found');
+  });
+
+  it('should return an error if input data is invalid', async () => {
+    const res = await request(app)
+      .put(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', '')
+      .field('username', '');
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Validation errors');
+    expect(res.body.errors.username).toBeDefined();
+    expect(res.body.errors.email).toBeDefined();
+  });
+
+  it('should return an error if role is invalid', async () => {
+    const res = await request(app)
+      .put(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
-      .attach('avatar', testAvatarPath);
+      .field('username', 'test1')
+      .field('roles', 'invalid-id');
 
-    const updatedUser = await getTestUser();
-    const oldAvatarExists = await fileExists('avatars', 'test-avatar.jpg');
-    const avatarExists = await fileExists('avatars', updatedUser.avatar);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Validation errors');
+    expect(res.body.errors.roles).toBeDefined();
+  });
 
-    expect(oldAvatarExists).toBe(false);
-    expect(avatarExists).toBe(true);
+  it('should return an error if email is already in use', async () => {
+    await createTestUser({ email: 'test1@me.com' });
+
+    const res = await request(app)
+      .put(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', 'test1@me.com')
+      .field('username', 'test1')
+      .field('roles', adminRole._id.toString());
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe('Resource already in use');
+    expect(res.body.errors.email).toBeDefined();
+  });
+
+  it('should return an error if username is already in use', async () => {
+    await createTestUser({ username: 'test1' });
+
+    const res = await request(app)
+      .put(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', 'test1@me.com')
+      .field('username', 'test1')
+      .field('roles', adminRole._id.toString());
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe('Resource already in use');
+    expect(res.body.errors.username).toBeDefined();
+  });
+
+  it('should update user without changing avatar', async () => {
+    const res = await request(app)
+      .put(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', 'test1@me.com')
+      .field('username', 'test1')
+      .field('roles', adminRole._id.toString());
+
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('User updated successfully');
+    expect(res.body.data.email).toBe('test1@me.com');
+    expect(res.body.data.username).toBe('test1');
+    expect(res.body.data.roles).toContain(adminRole._id.toString());
+  });
 
-    await fs.unlink(
-      path.join(
-        process.cwd(),
-        process.env.AVATAR_UPLOADS_DIR,
-        updatedUser.avatar
-      )
-    );
+  it('should update user with changing avatar', async () => {
+    const res = await request(app)
+      .put(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', 'test1@me.com')
+      .field('username', 'test1')
+      .attach('avatar', testAvatarPath);
+
+    const updatedUser = await User.findById(user._id);
+    const avatarExists = await access(
+      path.resolve(process.env.AVATAR_DIR, updatedUser.avatar)
+    )
+      .then(() => true)
+      .catch(() => false);
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('User updated successfully');
+    expect(res.body.data.email).toBe('test1@me.com');
+    expect(res.body.data.username).toBe('test1');
+    expect(avatarExists).toBe(true);
+
+    await removeTestFile('avatar');
+    // await unlink(path.resolve(process.env.AVATAR_DIR, updatedUser.avatar));
   });
 });
 
-describe('DELETE /api/users/:id', () => {
+describe('DELETE /api/users/:userId', () => {
   let user;
 
   beforeEach(async () => {
@@ -309,43 +391,67 @@ describe('DELETE /api/users/:id', () => {
     await removeTestUser();
   });
 
-  it.each(cases)(
-    'should return $expectedStatus for user with $name',
-    async ({ id, expectedStatus, expectedMessage }) => {
-      const res = await request(app)
-        .get(`/api/users/${id}`)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(expectedStatus);
-      expect(res.body.message).toBe(expectedMessage);
-    }
-  );
-
-  it('should return 200 and deleted user without removing default avatar file', async () => {
+  it('should return an error if user is not owned by current user', async () => {
     const res = await request(app)
       .delete(`/api/users/${user._id}`)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${global.userToken}`);
 
-    const avatarExists = await fileExists('avatars', 'default.jpg');
-
-    expect(avatarExists).toBe(true);
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('User deleted successfully');
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Permission denied');
   });
 
-  it('should return 200 and deleted user with removing avatar file', async () => {
+  it('should return an error if user id is invalid', async () => {
+    const res = await request(app)
+      .delete('/api/users/invalid-id')
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Validation errors');
+    expect(res.body.errors.userId).toBeDefined();
+  });
+
+  it('should return an error if user is not found', async () => {
+    const res = await request(app)
+      .delete(`/api/users/${global.validObjectId}`)
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.message).toBe('User not found');
+  });
+
+  it('should delete user without removing default avatar', async () => {
+    const res = await request(app)
+      .delete(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    const avatarExists = await access(
+      path.resolve(process.env.AVATAR_DIR, 'default.jpg')
+    )
+      .then(() => true)
+      .catch(() => false);
+
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('User deleted successfully');
+    expect(avatarExists).toBe(true);
+  });
+
+  it('should delete user with removing non-default avatar', async () => {
+    const avatarPath = path.resolve(process.env.AVATAR_DIR, 'test-avatar.jpg');
     user.avatar = 'test-avatar.jpg';
-    user.save();
-    await copyFile(testAvatarPath, 'avatars');
+
+    await user.save();
+    await copyFile(testAvatarPath, avatarPath);
 
     const res = await request(app)
       .delete(`/api/users/${user._id}`)
-      .set('Authorization', `Bearer ${token}`);
+      .set('Authorization', `Bearer ${global.adminToken}`);
 
-    const avatarExists = await fileExists('avatars', 'test-avatar.jpg');
+    const avatarExists = await access(avatarPath)
+      .then(() => true)
+      .catch(() => false);
 
-    expect(avatarExists).toBe(false);
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('User deleted successfully');
+    expect(avatarExists).toBe(false);
   });
 });
