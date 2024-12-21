@@ -171,7 +171,6 @@ const signin = async (req, res, next) => {
     await user.save();
 
     logger.info('signed in successfully');
-
     res
       .cookie('refreshToken', refreshToken, {
         httpOnly: true,
@@ -194,7 +193,6 @@ const signin = async (req, res, next) => {
   }
 };
 
-
 const signout = async (req, res, next) => {
   try {
     const refreshToken = req.cookies.refreshToken;
@@ -216,14 +214,12 @@ const signout = async (req, res, next) => {
     await Blacklist.create({ token: refreshToken });
 
     logger.info('signed out successfully');
-
     res.clearCookie('refreshToken');
     res.sendStatus(204);
   } catch (e) {
     next(e);
   }
 };
-
 
 const refreshToken = async (req, res, next) => {
   try {
@@ -258,7 +254,6 @@ const refreshToken = async (req, res, next) => {
     });
 
     logger.info('token refreshed successfully');
-
     res.json({
       code: 200,
       message: 'Token refreshed successfully',
@@ -268,7 +263,6 @@ const refreshToken = async (req, res, next) => {
     next(e);
   }
 };
-
 
 const requestResetPassword = async (req, res, next) => {
   try {
@@ -302,7 +296,6 @@ const requestResetPassword = async (req, res, next) => {
     await sendMail(user.email, 'Reset Password', html);
 
     logger.info('reset password email sent successfully');
-
     res.json({
       code: 200,
       message: 'Please check your email to reset your password',
@@ -311,7 +304,6 @@ const requestResetPassword = async (req, res, next) => {
     next(e);
   }
 };
-
 
 const resetPassword = async (req, res, next) => {
   try {
