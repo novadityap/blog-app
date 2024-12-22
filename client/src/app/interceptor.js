@@ -27,19 +27,23 @@ axiosInstance.interceptors.response.use(
     if (err.response && err.response.status === 401) {
       const message = err.response.data.message;
 
-      const invalidMessages = [
-        'Invalid token',
-        'Invalid verification token',
-        'Invalid reset token',
-        'Invalid email or password',
-        'Invalid refresh token'
-      ];
+      const signoutMessages = [
+        'Token is not provided',
+        'Token is invalid',
+        'Refresh token is not provided',
+        'Refresh token is invalid',
+        'Refresh token has expired',
+      ] 
 
-      if (invalidMessages.includes(message)) {
-        return Promise.reject(err);
-      }
+      const ignoredMessages = [
+        'Verification token is invalid or has expired',
+        'Email or password is invalid',
+        'Reset token is invalid or has expired',
+      ]; 
 
-      if (message === 'Token has expired') {
+      if (ignoredMessages.includes(message)) return Promise.reject(err);
+
+      if (message === 'Token has expired') { 
         try {
           const { data } = await axios.post(
             `${import.meta.env.VITE_API_URL}/auth/refresh-token`,
@@ -52,9 +56,7 @@ axiosInstance.interceptors.response.use(
 
           return axiosInstance(originalRequest);
         } catch (refreshError) {
-          if (refreshError.response && refreshError.response.status === 401) {
-            store.dispatch(clearAuth()); 
-          }
+          if (signoutMessages.includes(message)) store.dispatch(clearAuth()); 
           return Promise.reject(refreshError);
         }
       }
