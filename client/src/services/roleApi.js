@@ -5,14 +5,14 @@ const roleApi = createApi({
   reducerPath: 'roleApi',
   baseQuery: axiosBaseQuery(),
   endpoints: builder => ({
-    getRoles: builder.query({
+    searchRoles: builder.query({
       query: (params = {}) => ({
         url: '/roles',
         method: 'GET',
         params,
       }),
     }),
-    getRoleById: builder.query({
+    showRole: builder.query({
       query: id => ({
         url: `/roles/${id}`,
         method: 'GET',
@@ -32,7 +32,7 @@ const roleApi = createApi({
         data,
       }),
     }),
-    deleteRole: builder.mutation({
+    removeRole: builder.mutation({
       query: id => ({
         url: `/roles/${id}`,
         method: 'DELETE',
@@ -42,11 +42,13 @@ const roleApi = createApi({
 });
 
 export const {
-  useGetRolesQuery,
-  useLazyGetRoleByIdQuery,
+  useSearchRolesQuery,
+  useLazySearchRolesQuery,
+  useShowRoleQuery,
+  useLazyShowRoleQuery,
   useCreateRoleMutation,
   useUpdateRoleMutation,
-  useDeleteRoleMutation,
+  useRemoveRoleMutation,
 } = roleApi;
 
 export default roleApi;
