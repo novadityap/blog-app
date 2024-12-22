@@ -13,12 +13,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
 import useAuth from '@/hooks/useAuth';
 
-const EmailVerification = () => {
+const VerifyEmail = () => {
   const { token } = useParams();
-  const { handleEmailVerification, isVerificationLoading, isVerificationError, isVerificationSuccess, message } = useAuth();
+  const { handleVerifyEmail, isVerificationLoading, isVerificationError, isVerificationSuccess, message } = useAuth();
 
   useEffect(() => {
-    handleEmailVerification(token);
+    handleVerifyEmail(token);
   }, [token]);
 
   return (
@@ -63,4 +63,4 @@ const EmailVerification = () => {
   );
 };
 
-export default EmailVerification;
+export default VerifyEmail;
