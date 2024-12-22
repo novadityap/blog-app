@@ -20,22 +20,22 @@ const userApi = createApi({
       }),
     }),
     showUser: builder.query({
-      query: id => ({
-        url: `/users/${id}`,
+      query: userId => ({
+        url: `/users/${userId}`,
         method: 'GET',
       }),
     }),
     updateUser: builder.mutation({
-      query: ({ data, id }) => ({
-        url: `/users/${id}`,
+      query: ({ data, userId }) => ({
+        url: `/users/${userId}`,
         method: 'PUT',
         data,
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
     }),
     removeUser: builder.mutation({
-      query: id => ({
-        url: `/users/${id}`,
+      query: userId => ({
+        url: `/users/${userId}`,
         method: 'DELETE',
       }),
     }),

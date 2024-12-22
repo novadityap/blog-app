@@ -13,8 +13,8 @@ const roleApi = createApi({
       }),
     }),
     showRole: builder.query({
-      query: id => ({
-        url: `/roles/${id}`,
+      query: roleId => ({
+        url: `/roles/${roleId}`,
         method: 'GET',
       }),
     }),
@@ -26,15 +26,15 @@ const roleApi = createApi({
       }),
     }),
     updateRole: builder.mutation({
-      query: ({ id, data }) => ({
-        url: `/roles/${id}`,
+      query: ({ roleId, data }) => ({
+        url: `/roles/${roleId}`,
         method: 'PUT',
         data,
       }),
     }),
     removeRole: builder.mutation({
-      query: id => ({
-        url: `/roles/${id}`,
+      query: roleId => ({
+        url: `/roles/${roleId}`,
         method: 'DELETE',
       }),
     }),

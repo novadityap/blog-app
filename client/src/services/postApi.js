@@ -21,28 +21,28 @@ const postApi = createApi({
       }),
     }),
     showPost: builder.query({
-      query: id => ({
-        url: `/posts/${id}`,
+      query: postId => ({
+        url: `/posts/${postId}`,
         method: 'GET',
       }),
     }),
     removePost: builder.mutation({
-      query: id => ({
-        url: `/posts/${id}`,
+      query: postId => ({
+        url: `/posts/${postId}`,
         method: 'DELETE',
       }),
     }),
     updatePost: builder.mutation({
-      query: ({ data, id }) => ({
-        url: `/posts/${id}`,
+      query: ({ data, postId }) => ({
+        url: `/posts/${postId}`,
         method: 'PUT',
         data,
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
     }),
     likePost: builder.mutation({
-      query: id => ({
-        url: `/posts/${id}/like`,
+      query: postId => ({
+        url: `/posts/${postId}/like`,
         method: 'PATCH',
       }),
     }),

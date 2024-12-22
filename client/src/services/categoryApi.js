@@ -19,8 +19,8 @@ const categoryApi = createApi({
       }),
     }),
     showCategory: builder.query({
-      query: id => ({
-        url: `/categories/${id}`,
+      query: categoryId => ({
+        url: `/categories/${categoryId}`,
         method: "GET",
       }),
     }),
@@ -32,15 +32,15 @@ const categoryApi = createApi({
       }),
     }),
     updateCategory: builder.mutation({
-      query: ({ id, data }) => ({
-        url: `/categories/${id}`,
+      query: ({ categoryId, data }) => ({
+        url: `/categories/${categoryId}`,
         method: "PUT",
         data,
       }),
     }),
     removeCategory: builder.mutation({
-      query: id => ({
-        url: `/categories/${id}`,
+      query: categoryId => ({
+        url: `/categories/${categoryId}`,
         method: "DELETE",
       }),
     }),
