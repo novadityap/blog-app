@@ -9,7 +9,6 @@ import {
   getRoleSchema,
   searchRoleSchema,
 } from '../validations/roleValidation.js';
-import mongoose from 'mongoose';
 
 const create = async (req, res, next) => {
   try {
@@ -140,6 +139,30 @@ const search = async (req, res, next) => {
   }
 };
 
+const list = async (req, res, next) => {
+  try {
+    const roles = await Role.find();
+    if (roles.length === 0) {
+      logger.info('no roles found');
+      return res.json({
+        code: 200,
+        message: 'No roles found',
+        data: [],
+      });
+    }
+
+    logger.info('roles retrieved successfully');
+    res.json({
+      code: 200,
+      message: 'Roles retrieved successfully',
+      data: roles,
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
+
 const show = async (req, res, next) => {
   try {
     const roleId = validate(getRoleSchema, req.params.roleId);
@@ -243,4 +266,4 @@ const remove = async (req, res, next) => {
   }
 };
 
-export default { create, search, show, update, remove };
+export default { create, search, show, update, remove, list };
