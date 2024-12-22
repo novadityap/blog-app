@@ -5,7 +5,7 @@ const commentApi = createApi({
   reducerPath: 'commentApi',
   baseQuery: axiosBaseQuery(),
   endpoints: builder => ({
-    getComments: builder.query({
+    searchComments: builder.query({
       query: (params = {}) => ({
         url: '/comments',
         method: 'GET',
@@ -13,28 +13,28 @@ const commentApi = createApi({
       }),
     }),
     createComment: builder.mutation({
-      query: ({data, postId}) => ({
-        url: `/comments/${postId}`,
+      query: ({data, postId, commentId}) => ({
+        url: `/posts/${postId}/comments/${commentId}`,
         method: 'POST',
         data,
       }),
     }),
-    getCommentById: builder.query({
+    showComment: builder.query({
       query: ({postId, commentId}) => ({
-        url: `/comments/${postId}/${commentId}`,
+        url: `/posts/${postId}/comments/${commentId}`,
         method: 'GET',
       }),
     }),
     updateComment: builder.mutation({
       query: ({ postId, commentId, data }) => ({
-        url: `/comments/${postId}/${commentId}`,
+        url: `/posts/${postId}/comments/${commentId}`,
         method: 'PUT',
         data,
       }),
     }),
-    deleteComment: builder.mutation({
+    removeComment: builder.mutation({
       query: ({postId, commentId}) => ({
-        url: `/comments/${postId}/${commentId}`,
+        url: `/posts/${postId}/comments/${commentId}`,
         method: 'DELETE',
       }),
     }),
@@ -42,12 +42,13 @@ const commentApi = createApi({
 });
 
 export const {
-  useGetCommentsQuery,
+  useSearchCommentsQuery,
+  useLazySearchCommentsQuery,
+  useShowCommentQuery,
+  useLazyShowCommentQuery,
   useCreateCommentMutation,
-  useGetCommentByIdQuery,
-  useLazyGetCommentByIdQuery,
   useUpdateCommentMutation,
-  useDeleteCommentMutation,
+  useRemoveCommentMutation,
 } = commentApi;
 
 export default commentApi;
