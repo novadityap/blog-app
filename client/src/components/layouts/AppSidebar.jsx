@@ -1,7 +1,7 @@
 import { forwardRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link, useLocation } from 'react-router-dom';
-import { useLazyGetCategoriesQuery } from '@/services/categoryApi';
+import { useLazyListCategoriesQuery } from '@/services/categoryApi';
 import { cn } from '@/lib/utils';
 import { useDispatch } from 'react-redux';
 import { setFilters, clearFilters } from '@/features/uiSlice';
@@ -30,7 +30,7 @@ const AppSidebar = forwardRef(({ isSidebarOpen }, ref) => {
   const { pathname } = useLocation();
   const { handleSignout, token, currentUser, roles } = useAuth();
   const [isOpenCategories, setIsOpenCategories] = useState(false);
-  const [getCategories, { data: categories }] = useLazyGetCategoriesQuery();
+  const [getCategories, { data: categories }] = useLazyListCategoriesQuery();
 
   const menuItems = [
     token && { name: 'Profile', icon: TbUser, link: '/profile' },
