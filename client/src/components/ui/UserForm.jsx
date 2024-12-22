@@ -4,13 +4,13 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useFormik } from 'formik';
 import transformErrors from '@/utils/transformErrors';
-import { useGetRolesQuery } from '@/services/roleApi';
+import { useLazyListRolesQuery } from '@/services/roleApi';
 import { Checkbox } from '@/components/ui/checkbox';
 import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {TbLoader} from 'react-icons/tb';
 
 const UserForm = ({ initialValues, onSubmit, onCancel, isCreate, isLoading }) => {
-  const { data: roles } = useGetRolesQuery();
+  const { data: roles } = useLazyListRolesQuery();
   const roleIds = initialValues?.roles?.map(role => role._id);
   const [validationErrors, setValidationErrors] = useState({});
   const formik = useFormik({

@@ -12,7 +12,7 @@ import { useFormik } from 'formik';
 import transformErrors from '@/utils/transformErrors';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { useGetCategoriesQuery } from '@/services/categoryApi';
+import { useListCategoriesQuery } from '@/services/categoryApi';
 
 const PostForm = ({
   initialValues,
@@ -21,7 +21,7 @@ const PostForm = ({
   isCreate,
   isLoading,
 }) => {
-  const { data: categories } = useGetCategoriesQuery();
+  const { data: categories } = useListCategoriesQuery();
   const [validationErrors, setValidationErrors] = useState({});
 
   const formik = useFormik({

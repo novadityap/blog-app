@@ -5,10 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useFormik } from 'formik';
 import transformErrors from '@/utils/transformErrors';
-import { useGetPermissionsQuery } from '@/services/permissionApi';
+import { useListPermissionsQuery } from '@/services/permissionApi';
  
 const RoleForm = ({ initialValues, onSubmit, onCancel, isCreate }) => {
-  const { data: permissionsData } = useGetPermissionsQuery();
+  const { data: permissionsData } = useListPermissionsQuery();
   const [validationErrors, setValidationErrors] = useState({});
 
   const permissionIds = initialValues?.permissions?.map(permission => permission._id) || [];
