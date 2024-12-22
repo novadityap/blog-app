@@ -5,15 +5,15 @@ const dashboardApi = createApi({
   reducerPath: 'dashboardApi',
   baseQuery: axiosBaseQuery(),
   endpoints: builder => ({
-    getDashboard: builder.query({
+    showDashboard: builder.query({
       query: () => ({
-        url: '/dashboard',
+        url: '/dashboard/stats',
         method: 'GET',
       }),
     }),
   }),
 });
 
-export const { useGetDashboardQuery } = dashboardApi;
+export const { useShowDashboardQuery, useLazyShowDashboardQuery } = dashboardApi;
 
 export default dashboardApi;
