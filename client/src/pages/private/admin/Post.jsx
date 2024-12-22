@@ -1,11 +1,11 @@
 import DataTable from '@/components/ui/DataTable';
 import { createColumnHelper } from '@tanstack/react-table';
 import {
-  useGetPostsQuery,
-  useLazyGetPostByIdQuery,
+  useSearchPostsQuery,
+  useLazyShowPostQuery,
   useCreatePostMutation,
   useUpdatePostMutation,
-  useDeletePostMutation,
+  useRemovePostMutation,
 } from '@/services/postApi.js';
 import PostForm from '@/components/ui/PostForm.jsx';
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav';
@@ -53,11 +53,11 @@ const Post = () => {
 
       <DataTable
         columns={columns}
-        useGetQuery={useGetPostsQuery}
-        useLazyGetByIdQuery={useLazyGetPostByIdQuery}
+        useGetQuery={useSearchPostsQuery}
+        useLazyGetByIdQuery={useLazyShowPostQuery}
         useCreateMutation={useCreatePostMutation}
         useUpdateMutation={useUpdatePostMutation}
-        useDeleteMutation={useDeletePostMutation}
+        useDeleteMutation={useRemovePostMutation}
         FormComponent={PostForm}
       />
     </>

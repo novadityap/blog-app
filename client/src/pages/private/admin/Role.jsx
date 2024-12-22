@@ -1,11 +1,11 @@
 import { createColumnHelper } from "@tanstack/react-table"
 import DataTable from "@/components/ui/DataTable"
 import { 
-  useGetRolesQuery,
-  useLazyGetRoleByIdQuery,
+  useSearchRolesQuery,
+  useLazyShowRoleQuery,
   useCreateRoleMutation,
   useUpdateRoleMutation,
-  useDeleteRoleMutation
+  useRemoveRoleMutation
  } from "@/services/roleApi"
 import RoleForm from "@/components/ui/RoleForm"
 import BreadcrumbNav from "@/components/ui/BreadcrumbNav"
@@ -25,11 +25,11 @@ const Role = () => {
       <h1 className="mb-4 text-2xl font-semibold">Roles</h1>
       <DataTable 
         columns={columns} 
-        useGetQuery={useGetRolesQuery}
-        useLazyGetByIdQuery={useLazyGetRoleByIdQuery}
+        useGetQuery={useSearchRolesQuery}
+        useLazyGetByIdQuery={useLazyShowRoleQuery}
         useCreateMutation={useCreateRoleMutation}
         useUpdateMutation={useUpdateRoleMutation}
-        useDeleteMutation={useDeleteRoleMutation}
+        useDeleteMutation={useRemoveRoleMutation}
         FormComponent={RoleForm}
       />
     </>

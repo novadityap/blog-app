@@ -6,12 +6,12 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useGetDashboardQuery } from '@/services/dashboardApi';
+import { useShowDashboardQuery } from '@/services/dashboardApi';
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { data, isLoading } = useGetDashboardQuery();
+  const { data, isLoading } = useShowDashboardQuery();
 
   return (
     <>

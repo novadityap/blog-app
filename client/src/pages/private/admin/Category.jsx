@@ -1,10 +1,10 @@
 import DataTable from '@/components/ui/DataTable';
 import {
-  useGetCategoriesQuery,
-  useLazyGetCategoryByIdQuery,
+  useSearchCategoriesQuery,
+  useLazyShowCategoryQuery,
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
-  useDeleteCategoryMutation,
+  useRemoveCategoryMutation,
 } from '@/services/categoryApi';
 import CategoryForm from '@/components/ui/CategoryForm';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -25,11 +25,11 @@ const Category = () => {
       <h1 className="mb-4 text-2xl font-semibold">Categories</h1>
       <DataTable
         columns={columns}
-        useGetQuery={useGetCategoriesQuery}
-        useLazyGetByIdQuery={useLazyGetCategoryByIdQuery}
+        useGetQuery={useSearchCategoriesQuery}
+        useLazyGetByIdQuery={useLazyShowCategoryQuery}
         useCreateMutation={useCreateCategoryMutation}
         useUpdateMutation={useUpdateCategoryMutation}
-        useDeleteMutation={useDeleteCategoryMutation}
+        useDeleteMutation={useRemoveCategoryMutation}
         FormComponent={CategoryForm}
       />
     </>

@@ -1,11 +1,11 @@
 import DataTable from '@/components/ui/DataTable';
 import { createColumnHelper } from '@tanstack/react-table';
 import {
-  useGetCommentsQuery,
-  useLazyGetCommentByIdQuery,
+  useSearchCommentsQuery,
+  useLazyShowCommentQuery,
   useCreateCommentMutation,
   useUpdateCommentMutation,
-  useDeleteCommentMutation,
+  useRemoveCommentMutation,
 } from '@/services/commentApi.js';
 import CommentForm from '@/components/ui/CommentForm.jsx';
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav';
@@ -38,11 +38,11 @@ const Comment = () => {
       
       <DataTable 
         columns={columns} 
-        useGetQuery={useGetCommentsQuery}
-        useLazyGetByIdQuery={useLazyGetCommentByIdQuery}
+        useGetQuery={useSearchCommentsQuery}
+        useLazyGetByIdQuery={useLazyShowCommentQuery}
         useCreateMutation={useCreateCommentMutation}
         useUpdateMutation={useUpdateCommentMutation}
-        useDeleteMutation={useDeleteCommentMutation}
+        useDeleteMutation={useRemoveCommentMutation}
         FormComponent={CommentForm}
         canAdd={false}
         canEdit={false}

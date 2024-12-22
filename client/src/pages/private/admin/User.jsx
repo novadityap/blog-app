@@ -1,11 +1,11 @@
 import DataTable from '@/components/ui/DataTable';
 import { createColumnHelper } from '@tanstack/react-table';
 import {
-  useGetUsersQuery,
-  useLazyGetUserByIdQuery,
+  useSearchUsersQuery,
+  useLazyShowUserQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
-  useDeleteUserMutation,
+  useRemoveUserMutation,
 } from '@/services/userApi.js';
 import UserForm from '@/components/ui/UserForm.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -68,11 +68,11 @@ const User = () => {
 
       <DataTable
         columns={columns}
-        useGetQuery={useGetUsersQuery}
-        useLazyGetByIdQuery={useLazyGetUserByIdQuery}
+        useGetQuery={useSearchUsersQuery}
+        useLazyGetByIdQuery={useLazyShowUserQuery}
         useCreateMutation={useCreateUserMutation}
         useUpdateMutation={useUpdateUserMutation}
-        useDeleteMutation={useDeleteUserMutation}
+        useDeleteMutation={useRemoveUserMutation}
         FormComponent={UserForm}
       />
     </>
