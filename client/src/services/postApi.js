@@ -13,20 +13,20 @@ const postApi = createApi({
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
     }),
-    getPosts: builder.query({
+    searchPosts: builder.query({
       query: (params = {}) => ({
         url: '/posts',
         method: 'GET',
         params,
       }),
     }),
-    getPostById: builder.query({
+    showPost: builder.query({
       query: id => ({
         url: `/posts/${id}`,
         method: 'GET',
       }),
     }),
-    deletePost: builder.mutation({
+    removePost: builder.mutation({
       query: id => ({
         url: `/posts/${id}`,
         method: 'DELETE',
@@ -40,16 +40,24 @@ const postApi = createApi({
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
     }),
+    likePost: builder.mutation({
+      query: id => ({
+        url: `/posts/${id}/like`,
+        method: 'PATCH',
+      }),
+    }),
   }),
 });
 
 export const {
+  useSearchPostsQuery,
+  useLazySearchPostsQuery,
+  useShowPostQuery,
+  useLazyShowPostQuery,
+  useLikePostMutation,
   useCreatePostMutation,
-  useGetPostsQuery,
-  useGetPostByIdQuery,
-  useLazyGetPostByIdQuery,
-  useDeletePostMutation,
   useUpdatePostMutation,
+  useRemovePostMutation,
 } = postApi;
 
 export default postApi;
