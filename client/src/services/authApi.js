@@ -31,15 +31,15 @@ const authApi = createApi({
         method: 'POST',
       }),
     }),
-    emailVerification: builder.mutation({
+    verifyEmail: builder.mutation({
       query: token => ({
-        url: `/auth/email-verification/${token}`,
+        url: `/auth/verify-email/${token}`,
         method: 'POST',
       }),
     }),
-    resendEmailVerification: builder.mutation({
+    resendVerification: builder.mutation({
       query: data => ({
-        url: '/auth/resend-email-verification',
+        url: '/auth/resend-verification',
         method: 'POST',
         data,
       }),
@@ -66,8 +66,8 @@ export const {
   useSigninMutation,
   useSignoutMutation,
   useRefreshTokenMutation,
-  useEmailVerificationMutation,
-  useResendEmailVerificationMutation,
+  useVerifyEmailMutation,
+  useResendVerificationMutation,
   useRequestResetPasswordMutation,
   useResetPasswordMutation
 } = authApi;
