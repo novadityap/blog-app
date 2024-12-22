@@ -5,14 +5,20 @@ const categoryApi = createApi({
   reducerPath: "categoryApi",
   baseQuery: axiosBaseQuery(),
   endpoints: builder => ({
-    getCategories: builder.query({
+    searchCategories: builder.query({
       query: (params = {}) => ({
         url: "/categories",
         method: "GET",
         params,
       }),
     }),
-    getCategoryById: builder.query({
+    listCategories: builder.query({
+      query: () => ({
+        url: "/categories/list",
+        method: "GET",
+      }),
+    }),
+    showCategory: builder.query({
       query: id => ({
         url: `/categories/${id}`,
         method: "GET",
@@ -32,7 +38,7 @@ const categoryApi = createApi({
         data,
       }),
     }),
-    deleteCategory: builder.mutation({
+    removeCategory: builder.mutation({
       query: id => ({
         url: `/categories/${id}`,
         method: "DELETE",
@@ -42,13 +48,15 @@ const categoryApi = createApi({
 });
 
 export const {
-  useGetCategoriesQuery,
-  useLazyGetCategoriesQuery,
-  useGetCategoryByIdQuery,
-  useLazyGetCategoryByIdQuery,
+  useSearchCategoriesQuery,
+  useLazySearchCategoriesQuery,
+  useListCategoriesQuery,
+  useLazyListCategoriesQuery,
+  useShowCategoryQuery,
+  useLazyShowCategoryQuery,
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
-  useDeleteCategoryMutation,
+  useRemoveCategoryMutation,
 } = categoryApi;
 
 export default categoryApi;
