@@ -225,7 +225,7 @@ const refreshToken = async (req, res, next) => {
   try {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
-      logger.warn('refresh token not provided');
+      logger.warn('refresh token is not provided');
       throw new ResponseError('Refresh token is not provided', 401);
     }
 
