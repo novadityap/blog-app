@@ -12,14 +12,14 @@ const userApi = createApi({
         data,
       }),
     }),
-    getUsers: builder.query({
+    searchUsers: builder.query({
       query: (params = {}) => ({
         url: '/users',
         method: 'GET',
         params,
       }),
     }),
-    getUserById: builder.query({
+    showUser: builder.query({
       query: id => ({
         url: `/users/${id}`,
         method: 'GET',
@@ -33,7 +33,7 @@ const userApi = createApi({
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
     }),
-    deleteUser: builder.mutation({
+    removeUser: builder.mutation({
       query: id => ({
         url: `/users/${id}`,
         method: 'DELETE',
@@ -43,12 +43,13 @@ const userApi = createApi({
 });
 
 export const {
+  useSearchUsersQuery,
+  useLazySearchUsersQuery,
+  useShowUserQuery,
+  useLazyShowUserQuery,
   useCreateUserMutation,
-  useGetUsersQuery,
-  useGetUserByIdQuery,
-  useLazyGetUserByIdQuery,
   useUpdateUserMutation,
-  useDeleteUserMutation,
+  useRemoveUserMutation,
 } = userApi;
 
 export default userApi;
