@@ -13,13 +13,13 @@ import { useFormik } from 'formik';
 import { TbLoader, TbCircleCheck } from 'react-icons/tb';
 import useAuth from '@/hooks/useAuth';
 
-const ResendEmailVerification = () => {
-  const { handleResendEmailVerification, isResendVerificationLoading, isResendVerificationSuccess, message, validationErrors } = useAuth();
+const ResendVerification = () => {
+  const { handleResendVerification, isResendVerificationLoading, isResendVerificationSuccess, message, validationErrors } = useAuth();
   const formik = useFormik({
     initialValues: {
       email: '',
     },
-    onSubmit: async (values, { resetForm }) => handleResendEmailVerification(values, resetForm),
+    onSubmit: async (values, { resetForm }) => handleResendVerification(values, resetForm),
   });
 
   return (
@@ -83,4 +83,4 @@ const ResendEmailVerification = () => {
   );
 };
 
-export default ResendEmailVerification;
+export default ResendVerification;
