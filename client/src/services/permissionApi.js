@@ -5,51 +5,17 @@ const permissionApi = createApi({
   reducerPath: 'permissionApi',
   baseQuery: axiosBaseQuery(),
   endpoints: builder => ({
-    getPermissions: builder.query({
-      query: (params = {}) => {
+    listPermissions: builder.query({
+      query: () => {
         return  {
-          url: '/permissions',
+          url: '/permissions/list',
           method: 'GET',
-          params
         }
       } ,
-    }),
-    createPermission: builder.mutation({
-      query: data => ({
-        url: '/permissions',
-        method: 'POST',
-        data
-      })
-    }),
-    updatePermission: builder.mutation({
-      query: ({ id, data }) => ({
-        url: `/permissions/${id}`,
-        method: 'PUT',
-        data
-      })
-    }),
-    deletePermission: builder.mutation({
-      query: id => ({
-        url: `/permissions/${id}`,
-        method: 'DELETE'
-      })
-    }),
-    getPermissionById: builder.query({
-      query: id => ({
-        url: `/permissions/${id}`,
-        method: 'GET'
-      })
     }),
   }),
 });
 
-export const { 
-  useGetPermissionsQuery,
-  useLazyGetPermissionsQuery,
-  useCreatePermissionMutation,
-  useLazyGetPermissionByIdQuery,
-  useUpdatePermissionMutation,
-  useDeletePermissionMutation
- } = permissionApi;
+export const { useListPermissionsQuery, useLazyListPermissionsQuery } = permissionApi;
  
 export default permissionApi;
