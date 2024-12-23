@@ -26,59 +26,59 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should return an error if user does not have permission', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .get(`/api/posts/${post._id}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.userToken}`);
 
-    expect(res.status).toBe(403);
-    expect(res.body.message).toBe('Permission denied');
+    expect(result.status).toBe(403);
+    expect(result.body.message).toBe('Permission denied');
   });
 
   it('should return an error if post id is invalid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .delete(`/api/posts/invalid-id/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Validation errors');
-    expect(res.body.errors.postId).toBeDefined();
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.postId).toBeDefined();
   });
 
   it('should return an error if post is not found', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .delete(`/api/posts/${global.validObjectId}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(404);
-    expect(res.body.message).toBe('Post not found');
+    expect(result.status).toBe(404);
+    expect(result.body.message).toBe('Post not found');
   });
 
   it('should return an error if comment id is invalid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/invalid-id`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Validation errors');
-    expect(res.body.errors.commentId).toBeDefined();
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.commentId).toBeDefined();
   });
 
   it('should return an error if comment is not found', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(404);
-    expect(res.body.message).toBe('Comment not found');
+    expect(result.status).toBe(404);
+    expect(result.body.message).toBe('Comment not found');
   });
 
   it('should return a comment if comment id is valid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .get(`/api/posts/${post._id}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Comment retrieved successfully');
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('Comment retrieved successfully');
   });
 });
 
@@ -92,60 +92,60 @@ describe('GET /api/comments', () => {
   });
 
   it('should return an error if user does not have permission', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .get('/api/comments')
       .set('Authorization', `Bearer ${global.userToken}`);
 
-    expect(res.status).toBe(403);
-    expect(res.body.message).toBe('Permission denied');
+    expect(result.status).toBe(403);
+    expect(result.body.message).toBe('Permission denied');
   });
 
   it('should return a list of comments with default pagination', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .get('/api/comments')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Comments retrieved successfully');
-    expect(res.body.data).toHaveLength(10);
-    expect(res.body.meta.pageSize).toBe(10);
-    expect(res.body.meta.totalItems).toBe(15);
-    expect(res.body.meta.currentPage).toBe(1);
-    expect(res.body.meta.totalPages).toBe(2);
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('Comments retrieved successfully');
+    expect(result.body.data).toHaveLength(10);
+    expect(result.body.meta.pageSize).toBe(10);
+    expect(result.body.meta.totalItems).toBe(15);
+    expect(result.body.meta.currentPage).toBe(1);
+    expect(result.body.meta.totalPages).toBe(2);
   });
 
   it('should return a list of comments with custom pagination', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .get('/api/comments')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
         page: 2,
       });
 
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Comments retrieved successfully');
-    expect(res.body.data.length).toBe(5);
-    expect(res.body.meta.pageSize).toBe(10);
-    expect(res.body.meta.totalItems).toBe(15);
-    expect(res.body.meta.currentPage).toBe(2);
-    expect(res.body.meta.totalPages).toBe(2);
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('Comments retrieved successfully');
+    expect(result.body.data.length).toBe(5);
+    expect(result.body.meta.pageSize).toBe(10);
+    expect(result.body.meta.totalItems).toBe(15);
+    expect(result.body.meta.currentPage).toBe(2);
+    expect(result.body.meta.totalPages).toBe(2);
   });
 
   it('should return a list of comments with custom search', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .get('/api/comments')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
         search: 'test10',
       });
 
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Comments retrieved successfully');
-    expect(res.body.data).toHaveLength(1);
-    expect(res.body.meta.pageSize).toBe(10);
-    expect(res.body.meta.totalItems).toBe(1);
-    expect(res.body.meta.currentPage).toBe(1);
-    expect(res.body.meta.totalPages).toBe(1);
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('Comments retrieved successfully');
+    expect(result.body.data).toHaveLength(1);
+    expect(result.body.meta.pageSize).toBe(10);
+    expect(result.body.meta.totalItems).toBe(1);
+    expect(result.body.meta.currentPage).toBe(1);
+    expect(result.body.meta.totalPages).toBe(1);
   });
 });
 
@@ -161,52 +161,52 @@ describe('POST /api/posts/:postId/comments', () => {
   });
 
   it('should return an error if user does not authenticate', async () => {
-    const res = await request(app).post(`/api/posts/${post._id}/comments`);
+    const result = await request(app).post(`/api/posts/${post._id}/comments`);
 
-    expect(res.status).toBe(401);
-    expect(res.body.message).toBe('Token is missing');
+    expect(result.status).toBe(401);
+    expect(result.body.message).toBe('Token is not provided');
   });
 
   it('should return an error if post is not found', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .post(`/api/posts/${global.validObjectId}/comments`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(404);
-    expect(res.body.message).toBe('Post not found');
+    expect(result.status).toBe(404);
+    expect(result.body.message).toBe('Post not found');
   });
 
   it('should return an error if post id is invalid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .post('/api/posts/invalid-id/comments')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Validation errors');
-    expect(res.body.errors.postId).toBeDefined();
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.postId).toBeDefined();
   });
 
   it('should return an error if input data is invalid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .post(`/api/posts/${post._id}/comments`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         text: '',
       });
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Validation errors');
-    expect(res.body.errors.text).toBeDefined();
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.text).toBeDefined();
   });
 
   it('should create a comment if input data is valid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .post(`/api/posts/${post._id}/comments`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .send({ text: 'test' });
 
-    expect(res.status).toBe(201);
-    expect(res.body.message).toBe('Comment created successfully');
+    expect(result.status).toBe(201);
+    expect(result.body.message).toBe('Comment created successfully');
   });
 });
 
@@ -225,63 +225,63 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should return an error if user does not have permission', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .patch(`/api/posts/${post._id}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.userToken}`);
 
-    expect(res.status).toBe(403);
-    expect(res.body.message).toBe('Permission denied');
+    expect(result.status).toBe(403);
+    expect(result.body.message).toBe('Permission denied');
   });
 
   it('should return an error if post id is invalid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .patch(`/api/posts/invalid-id/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Validation errors');
-    expect(res.body.errors.postId).toBeDefined();
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.postId).toBeDefined();
   });
 
   it('should return an error if post is not found', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .patch(`/api/posts/${global.validObjectId}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(404);
-    expect(res.body.message).toBe('Post not found');
+    expect(result.status).toBe(404);
+    expect(result.body.message).toBe('Post not found');
   });
 
   it('should return an error if comment id is invalid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .patch(`/api/posts/${post._id}/comments/invalid-id`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Validation errors');
-    expect(res.body.errors.commentId).toBeDefined();
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.commentId).toBeDefined();
   });
 
   it('should return an error if comment is not found', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .patch(`/api/posts/${post._id}/comments/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(404);
-    expect(res.body.message).toBe('Comment not found');
+    expect(result.status).toBe(404);
+    expect(result.body.message).toBe('Comment not found');
   });
 
   it('should update comment if input data is valid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .patch(`/api/posts/${post._id}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         text: 'test1',
       });
 
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Comment updated successfully');
-    expect(res.body.data.text).toBe('test1');
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('Comment updated successfully');
+    expect(result.body.data.text).toBe('test1');
   });
 });
 
@@ -300,58 +300,58 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should return an error if user is not owned by current user', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.userToken}`);
 
-    expect(res.status).toBe(403);
-    expect(res.body.message).toBe('Permission denied');
+    expect(result.status).toBe(403);
+    expect(result.body.message).toBe('Permission denied');
   });
 
   it('should return an error if post id is invalid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .delete(`/api/posts/invalid-id/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Validation errors');
-    expect(res.body.errors.postId).toBeDefined();
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.postId).toBeDefined();
   });
 
   it('should return an error if post is not found', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .delete(`/api/posts/${global.validObjectId}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(404);
-    expect(res.body.message).toBe('Post not found');
+    expect(result.status).toBe(404);
+    expect(result.body.message).toBe('Post not found');
   });
 
   it('should return an error if comment id is invalid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/invalid-id`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Validation errors');
-    expect(res.body.errors.commentId).toBeDefined();
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.commentId).toBeDefined();
   });
 
   it('should return an error if comment is not found', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(404);
-    expect(res.body.message).toBe('Comment not found');
+    expect(result.status).toBe(404);
+    expect(result.body.message).toBe('Comment not found');
   });
 
   it('should delete comment if comment id is valid', async () => {
-    const res = await request(app)
+    const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe('Comment deleted successfully');
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('Comment deleted successfully');
   });
 });
