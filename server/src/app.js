@@ -24,7 +24,7 @@ app.use(cookieParser());
 app.use('/uploads/avatars', express.static(process.env.AVATAR_DIR));
 app.use('/uploads/posts', express.static(process.env.POST_DIR));
 
-app.use(apiRouter);
+app.use('/api', apiRouter);
 
 app.use(errorHandler);
 
