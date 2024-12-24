@@ -1,4 +1,3 @@
-import { useFormik } from 'formik';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,29 +12,22 @@ import {
 import { TbLoader, TbCircleCheck } from 'react-icons/tb';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import useAuth from '@/hooks/useAuth';
+import { useSignupMutation } from '@/services/authApi';
+import useFormHandler from '@/hooks/useFormHandler';
 
 const Signup = () => {
-  const { message, validationErrors, handleSignup, isSignupLoading, isSignupError, isSignupSuccess } = useAuth();
-
-  const formik = useFormik({
-    initialValues: {
-      username: '',
-      email: '',
-      password: '',
-    },
-    onSubmit: (values, { resetForm }) => handleSignup(values, resetForm)
-  });
+  const {
+    register,
+    handleSubmit,
+    isLoading,
+    isError,
+    error,
+    isSuccess,
+    message,
+  } = useFormHandler(useSignupMutation);
 
   return (
     <div className="flex flex-col gap-y-4 items-center justify-center min-h-screen ">
-      {isSignupSuccess && (
-        <Alert className="w-96" variant="success">
-          <TbCircleCheck className="size-5 text-green-500" />
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>{message}</AlertDescription>
-        </Alert>
-      )}
       <Card className="w-full sm:w-[450px]">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-green-500">
@@ -43,7 +35,14 @@ const Signup = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={formik.handleSubmit}>
+          {isSuccess && (
+            <Alert variant="success" className="mb-4">
+              <TbCircleCheck className="size-5 text-green-500" />
+              <AlertTitle>Success</AlertTitle>
+              <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          )}
+          <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <Label htmlFor="username" className="text-gray-500">
                 Username
@@ -51,18 +50,14 @@ const Signup = () => {
               <Input
                 type="username"
                 id="username"
-                name="username"
-                value={formik.values.username}
-                onChange={formik.handleChange}
+                {...register('username')}
                 required
                 placeholder="Enter your username"
-                className={cn(isSignupError && 'border-red-200 focus:ring-red-200')}
+                className={cn(isError && 'border-red-200 focus:ring-red-200')}
               />
 
-              {validationErrors?.username && (
-                <p className="text-red-500 text-sm">
-                  {validationErrors.username}
-                </p>
+              {error?.errors?.username && (
+                <p className="text-red-500 text-sm">{error.errors.username}</p>
               )}
             </div>
 
@@ -73,18 +68,14 @@ const Signup = () => {
               <Input
                 type="email"
                 id="email"
-                name="email"
-                value={formik.values.email}
-                onChange={formik.handleChange}
+                {...register('email')}
                 required
                 placeholder="Enter your email"
-                className={cn(isSignupError && 'border-red-200 focus:ring-red-200')}
+                className={cn(isError && 'border-red-200 focus:ring-red-200')}
               />
 
-              {validationErrors?.email && (
-                <p className="text-red-500 text-sm">
-                  {validationErrors.email}
-                </p>
+              {error?.errors?.email && (
+                <p className="text-red-500 text-sm">{error.errors.email}</p>
               )}
             </div>
 
@@ -95,18 +86,14 @@ const Signup = () => {
               <Input
                 type="password"
                 id="password"
-                name="password"
-                value={formik.values.password}
-                onChange={formik.handleChange}
+                {...register('password')}
                 required
                 placeholder="Enter your password"
-                className={cn(isSignupError && 'border-red-200 focus:ring-red-200')}
+                className={cn(isError && 'border-red-200 focus:ring-red-200')}
               />
 
-              {validationErrors?.password && (
-                <p className="text-red-500 text-sm">
-                  {validationErrors.password}
-                </p>
+              {error?.errors?.password && (
+                <p className="text-red-500 text-sm">{error.errors.password}</p>
               )}
             </div>
 
@@ -114,9 +101,9 @@ const Signup = () => {
               variant="primary"
               type="submit"
               className="w-full "
-              disabled={isSignupLoading}
+              disabled={isLoading}
             >
-              {isSignupLoading ? (
+              {isLoading ? (
                 <>
                   <TbLoader className="animate-spin mr-2 size-5" />
                   Loading...
