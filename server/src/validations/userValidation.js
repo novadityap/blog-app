@@ -53,10 +53,5 @@ export const updateUserSchema = userSchema.fork(
 );
 
 export const resetPasswordSchema = Joi.object({
-  newPassword: Joi.string().min(6).required().messages({
-    'any.required': 'new password is required',
-    'string.min': 'new password should be at least 6 characters long',
-    'string.base': 'new password must be a string',
-    'string.empty': 'new password cannot be an empty field',
-  }),
+  newPassword: Joi.string().min(6).required(),
 });

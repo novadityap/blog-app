@@ -9,41 +9,34 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { useFormik } from 'formik';
-import useAuth from '@/hooks/useAuth';
-import { Link } from 'react-router-dom';
+import { useSigninMutation } from '@/services/authApi';
+import { useSelector } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { TbLoader, TbExclamationCircle } from 'react-icons/tb';
 import { cn } from '@/lib/utils.js';
-import { useNavigate } from 'react-router-dom';
+import useFormHandler from '@/hooks/useFormHandler';
 
 const Signin = () => {
   const navigate = useNavigate();
-  const { token, handleSignin, isSigninLoading, isSigninError, signinError, validationErrors, message } = useAuth();
-  const formik = useFormik({
-    initialValues: {
-      email: '',
-      password: '',
-    },
-    onSubmit: values => handleSignin(values)
-  });
+  const { token } = useSelector(state => state.auth);
+  const {
+    register,
+    handleSubmit,
+    isLoading,
+    isError,
+    error,
+    isSuccess,
+    message,
+  } = useFormHandler(useSigninMutation);
 
   useEffect(() => {
-    if (token) {
-      navigate('/');
-    }
-  }, [token, navigate]);
+    if (token || isSuccess) navigate('/');
+  }, [token, isSuccess, navigate]);
 
   if (!token) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-y-4">
-        {isSigninError && signinError?.code === 401 && (
-          <Alert className="w-96" variant="destructive">
-            <TbExclamationCircle className="size-5 text-red-500" />
-            <AlertTitle>Something went wrong</AlertTitle>
-            <AlertDescription>{message}</AlertDescription>
-          </Alert>
-        )}
         <Card className="w-full sm:w-[450px]">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-green-500">
@@ -51,7 +44,14 @@ const Signin = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={formik.handleSubmit}>
+            {error?.code === 401 && (
+              <Alert className="mb-4" variant="destructive">
+                <TbExclamationCircle className="size-5 text-red-500" />
+                <AlertTitle>Something went wrong</AlertTitle>
+                <AlertDescription>{message}</AlertDescription>
+              </Alert>
+            )}
+            <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <Label htmlFor="email" className="text-gray-500">
                   Email
@@ -59,18 +59,14 @@ const Signin = () => {
                 <Input
                   type="email"
                   id="email"
-                  name="email"
-                  value={formik.values.email}
-                  onChange={formik.handleChange}
+                  {...register('email')}
                   required
                   placeholder="Enter your email"
-                  className={cn(signinError && 'border-red-200 focus:ring-red-200')}
+                  className={cn(isError && 'border-red-200 focus:ring-red-200')}
                 />
 
-                {validationErrors?.email && (
-                  <p className="text-red-500 text-sm">
-                    {validationErrors.email}
-                  </p>
+                {error?.errors?.email && (
+                  <p className="text-red-500 text-sm">{error.errors.email}</p>
                 )}
               </div>
 
@@ -81,17 +77,15 @@ const Signin = () => {
                 <Input
                   type="password"
                   id="password"
-                  name="password"
-                  value={formik.values.password}
-                  onChange={formik.handleChange}
+                  {...register('password')}
                   required
                   placeholder="Enter your password"
-                  className={cn(signinError && 'border-red-200 focus:ring-red-200')}
+                  className={cn(isError && 'border-red-200 focus:ring-red-200')}
                 />
 
-                {validationErrors?.password && (
+                {error?.errors?.password && (
                   <p className="text-red-500 text-sm">
-                    {validationErrors.password}
+                    {error.errors.password}
                   </p>
                 )}
               </div>
@@ -100,12 +94,12 @@ const Signin = () => {
                 variant="primary"
                 type="submit"
                 className="w-full "
-                disabled={isSigninLoading}
+                disabled={isLoading}
               >
-                {isSigninLoading ? (
+                {isLoading ? (
                   <>
                     <TbLoader className="animate-spin mr-2 size-5" />
-                    Loading...
+                    Signing In...
                   </>
                 ) : (
                   'Sign In'
