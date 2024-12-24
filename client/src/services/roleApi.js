@@ -12,6 +12,12 @@ const roleApi = createApi({
         params,
       }),
     }),
+    listRoles: builder.query({
+      query: () => ({
+        url: '/roles/list',
+        method: 'GET',
+      }),
+    }),
     showRole: builder.query({
       query: roleId => ({
         url: `/roles/${roleId}`,
@@ -44,6 +50,8 @@ const roleApi = createApi({
 export const {
   useSearchRolesQuery,
   useLazySearchRolesQuery,
+  useListRolesQuery,
+  useLazyListRolesQuery,
   useShowRoleQuery,
   useLazyShowRoleQuery,
   useCreateRoleMutation,
