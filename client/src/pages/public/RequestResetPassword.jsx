@@ -9,40 +9,42 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { useFormik } from 'formik';
 import { TbLoader, TbCircleCheck } from 'react-icons/tb';
-import useAuth from '@/hooks/useAuth';
+import useFormHandler from '@/hooks/useFormHandler';
+import { useRequestResetPasswordMutation } from '@/services/authApi';
+import { cn } from '@/lib/utils';
 
 const RequestResetPassword = () => {
-  const { handleRequestResetPassword, isRequestResetLoading, isRequestResetSuccess, message, validationErrors } = useAuth();
-  const formik = useFormik({
-    initialValues: {
-      email: '',
-    },
-    onSubmit: (values, { resetForm }) => handleRequestResetPassword(values, resetForm)
-  });
+  const {
+    register,
+    handleSubmit,
+    isLoading,
+    isError,
+    error,
+    isSuccess,
+    message,
+  } = useFormHandler(useRequestResetPasswordMutation);
 
   return (
     <div className="flex flex-col gap-y-4 items-center justify-center min-h-screen ">
-      {isRequestResetSuccess && (
-        <Alert className="w-96" variant="success">
-          <TbCircleCheck className="size-5 text-green-500" />
-          <AlertTitle>Email Sent</AlertTitle>
-          <AlertDescription>{message}</AlertDescription>
-        </Alert>
-      )}
-      <Card className="w-96">
+      <Card className="full sm:w-[450px]">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-green-500">
             Request Reset Password
           </CardTitle>
           <CardDescription>
-            Enter your email and we will send you a password reset link to your
-            email
+            Enter your email and we will send you a password reset link
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={formik.handleSubmit}>
+          {isSuccess && (
+            <Alert className="mb-4" variant="success">
+              <TbCircleCheck className="size-5 text-green-500" />
+              <AlertTitle>Success</AlertTitle>
+              <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          )}
+          <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <Label htmlFor="email" className="text-gray-500">
                 Email
@@ -50,15 +52,14 @@ const RequestResetPassword = () => {
               <Input
                 type="email"
                 id="email"
-                name="email"
-                value={formik.values.email}
-                onChange={formik.handleChange}
+                {...register('email')}
                 required
                 placeholder="Enter your email"
+                className={cn(isError && 'border-red-200 focus:ring-red-200')}
               />
 
-              {validationErrors?.email && (
-                <p className="text-red-500 text-sm">{validationErrors.email}</p>
+              {error?.errors?.email && (
+                <p className="text-red-500 text-sm">{error.errors.email}</p>
               )}
             </div>
 
@@ -66,15 +67,15 @@ const RequestResetPassword = () => {
               variant="primary"
               type="submit"
               className="w-full "
-              disabled={isRequestResetLoading}
+              disabled={isLoading}
             >
-              {isRequestResetLoading ? (
+              {isLoading ? (
                 <>
                   <TbLoader className="animate-spin mr-2 size-5" />
                   Loading...
                 </>
               ) : (
-                'Send Password Reset Link'
+                'Send Reset Link'
               )}
             </Button>
           </form>

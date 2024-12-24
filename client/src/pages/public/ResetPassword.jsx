@@ -9,43 +9,20 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { useFormik } from 'formik';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { TbLoader, TbExclamationCircle, TbCircleCheck } from 'react-icons/tb';
 import { cn } from '@/lib/utils.js';
-import useAuth from '@/hooks/useAuth';
+import useFormHandler from '@/hooks/useFormHandler';
+import { useResetPasswordMutation } from '@/services/authApi';
 
 const ResetPassword = () => {
   const { token } = useParams();
-  const { handleResetPassword, isResetPasswordLoading, isResetPasswordSuccess, isResetPasswordError, resetPasswordError, message, validationErrors } = useAuth();
-  const formik = useFormik({
-    initialValues: {
-      newPassword: '',
-    },
-    onSubmit: (values, { resetForm }) => handleResetPassword(values, resetForm, token),
-  });
-
-  const isInvalidToken = isResetPasswordError && resetPasswordError.code === 401;
+  const { register, handleSubmit, isLoading, error, isSuccess, message } =
+    useFormHandler(useResetPasswordMutation, token);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen ">
-      {(isInvalidToken || isResetPasswordSuccess) && (
-        <Alert
-          className="mb-4 w-96"
-          variant={isResetPasswordError ? 'destructive' : 'success'}
-        >
-          {isResetPasswordError ? (
-            <TbExclamationCircle className="size-5 text-red-500" />
-          ) : (
-            <TbCircleCheck className="size-5 text-green-500" />
-          )}
-          <AlertTitle>
-            {isResetPasswordError ? 'Something went wrong' : 'Success'}
-          </AlertTitle>
-          <AlertDescription>{message}</AlertDescription>
-        </Alert>
-      )}
-      <Card className="w-96">
+      <Card className="w-full sm:w-[450px]">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-green-500">
             Reset Password
@@ -56,7 +33,31 @@ const ResetPassword = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={formik.handleSubmit}>
+          {(error?.code === 401 || isSuccess) && (
+            <Alert
+              className="mb-4"
+              variant={isSuccess ? 'success' : 'destructive'}
+            >
+              {isSuccess ? (
+                <TbCircleCheck className="size-5 text-green-500" />
+              ) : (
+                <TbExclamationCircle className="size-5 text-red-500" />
+              )}
+              <AlertTitle>
+                {isSuccess ? 'success' : 'Something went wrong'}
+              </AlertTitle>
+              <AlertDescription>
+                {message}.{' '}
+                <Link
+                  to="/request-reset-password"
+                  className="underline hover:text-primary"
+                >
+                  Click here to request a new link
+                </Link>
+              </AlertDescription>
+            </Alert>
+          )}
+          <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <Label htmlFor="newPassword" className="text-gray-500">
                 New Password
@@ -64,20 +65,15 @@ const ResetPassword = () => {
               <Input
                 type="password"
                 id="newPassword"
-                name="newPassword"
-                value={formik.values.newPassword}
-                onChange={formik.handleChange}
+                {...register('newPassword')}
                 required
                 placeholder="Enter your new password"
                 className={cn(
-                  isResetPasswordError &&
-                    resetPasswordError.code === 400 &&
-                    'border-red-200 focus:ring-red-200'
+                  error?.code === 400 && 'border-red-200 focus:ring-red-200'
                 )}
               />
-
-              {validationErrors?.newPassword && (
-                <p className="text-red-500">{validationErrors.newPassword}</p>
+              {error?.errors?.newPassword && (
+                <p className="text-red-500">{error.errors.newPassword}</p>
               )}
             </div>
 
@@ -85,9 +81,9 @@ const ResetPassword = () => {
               variant="primary"
               type="submit"
               className="w-full "
-              disabled={isResetPasswordLoading}
+              disabled={isLoading}
             >
-              {isResetPasswordLoading ? (
+              {isLoading ? (
                 <>
                   <TbLoader className="animate-spin mr-2 size-5" />
                   Loading...
