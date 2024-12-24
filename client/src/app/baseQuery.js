@@ -10,14 +10,10 @@ const axiosBaseQuery = ({ baseUrl } = { baseUrl: '' }) =>
         params,
         headers,
       });
-      
-      return { data: result.data };
-    } catch (axiosError) {
-      const err = axiosError;
 
-      return {
-        error: {...err?.response?.data},
-      };
+      return { data: result.data };
+    } catch (e) {
+      return { error: e.response.data };
     }
   };
 
