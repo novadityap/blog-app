@@ -22,11 +22,7 @@ const show = async (req, res, next) => {
 
     await checkOwnership(User, userId, currentUser);
 
-    const user = await User.findById(userId).populate({
-      path: 'roles',
-      select: '_id',
-      transform: doc => doc._id,
-    });
+    const user = await User.findById(userId).populate('role');
     if (!user) {
       logger.warn('user not found');
       throw new ResponseError('User not found', 404);
@@ -46,19 +42,15 @@ const show = async (req, res, next) => {
 const search = async (req, res, next) => {
   try {
     const query = validate(searchUserSchema, req.query);
-
     const { page, limit, search } = query;
 
     const [{ users, totalUsers }] = await User.aggregate()
       .lookup({
-        from: 'roles',
-        localField: 'roles',
+        from: 'role',
+        localField: 'role',
         foreignField: '_id',
-        as: 'roles',
+        as: 'role',
         pipeline: [{ $project: { name: 1 } }],
-      })
-      .addFields({
-        roles: { $map: { input: '$roles', as: 'role', in: '$$role.name' } },
       })
       .project({ password: 0 })
       .match(
@@ -67,7 +59,7 @@ const search = async (req, res, next) => {
               $or: [
                 { username: { $regex: search, $options: 'i' } },
                 { email: { $regex: search, $options: 'i' } },
-                { 'roles.name': { $regex: search, $options: 'i' } },
+                { 'role.name': { $regex: search, $options: 'i' } },
               ],
             }
           : {}
@@ -139,10 +131,8 @@ const create = async (req, res, next) => {
       });
     }
 
-    const totalRoles = await Role.countDocuments({
-      _id: { $in: fields.roles },
-    });
-    if (totalRoles !== fields.roles.length) {
+    const role = await Role.exists({ _id: fields.role });
+    if (!role) {
       logger.warn('validation errors');
       throw new ResponseError('Validation errors', 400, {
         roles: 'Invalid role id',
@@ -171,9 +161,7 @@ const create = async (req, res, next) => {
 const update = async (req, res, next) => {
   try {
     const userId = validate(getUserSchema, req.params.userId);
-    const currentUser = req.user;
-
-    await checkOwnership(User, userId, currentUser);
+    await checkOwnership(User, userId, req.user);
 
     const user = await User.findById(userId);
     if (!user) {
@@ -214,11 +202,9 @@ const update = async (req, res, next) => {
       }
     }
 
-    if (fields.roles?.length > 0) {
-      const totalRoles = await Role.countDocuments({
-        _id: { $in: fields.roles },
-      });
-      if (totalRoles !== fields.roles.length) {
+    if (fields.role) {
+      const role = await Role.exists({ _id: fields.role });
+      if (!role) {
         logger.warn('validation errors');
         throw new ResponseError('Validation errors', 400, {
           roles: 'Invalid role id',
@@ -254,9 +240,7 @@ const update = async (req, res, next) => {
 const remove = async (req, res, next) => {
   try {
     const userId = validate(getUserSchema, req.params.userId);
-    const currentUser = req.user;
-
-    await checkOwnership(User, userId, currentUser);
+    await checkOwnership(User, userId, req.user);
 
     const user = await User.findByIdAndDelete(userId);
     if (!user) {
