@@ -2,7 +2,7 @@ import logger from './logger.js';
 import ResponseError from './responseError.js';
 
 const checkOwnership = async (model, paramsId, currentUser) => {
-    const isAdmin = currentUser.roles.includes('admin');
+    const isAdmin = currentUser.role === 'admin';
 
     if (model.modelName === 'User') {
       if (isAdmin || currentUser.id === paramsId) return;
