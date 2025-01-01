@@ -51,7 +51,7 @@ apiRouter.patch('/posts/:postId/like', authorize(['admin', 'user']), postControl
 apiRouter.delete('/posts/:postId', authorize(['admin']), postController.remove);
 
 // Dashboard API
-apiRouter.get('/dashboard/', authorize(['admin']), dashboardController.stats);
+apiRouter.get('/dashboard', authorize(['admin']), dashboardController.stats);
 
 // Role API
 apiRouter.post('/roles', authorize(['admin']), roleController.create);
