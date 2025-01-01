@@ -17,11 +17,9 @@ const deleteAvatars = async excludeFilename => {
 };
 
 const seedUser = async () => {
-  const roles = await Role.find({ name: { $in: ['admin', 'user'] } });
-
+  const roles = await Role.find();
   const adminRole = roles.find(role => role.name === 'admin');
   const userRole = roles.find(role => role.name === 'user');
-
   const adminPassword = await bcrypt.hash('admin123', 10);
   const userPassword = await bcrypt.hash('user123', 10);
 
@@ -30,7 +28,7 @@ const seedUser = async () => {
       username: 'admin',
       email: 'admin@email.com',
       password: adminPassword,
-      roles: [adminRole._id, userRole._id],
+      role: adminRole._id,
       isVerified: true,
       verificationToken: null,
       verificationTokenExpires: null,
@@ -39,7 +37,7 @@ const seedUser = async () => {
       username: 'user',
       email: 'user@email.com',
       password: userPassword,
-      roles: [userRole._id],
+      role: userRole._id,
       isVerified: true,
       verificationToken: null,
       verificationTokenExpires: null,
@@ -47,10 +45,10 @@ const seedUser = async () => {
   ];
 
   if (process.env.NODE_ENV === 'development') {
-    await deleteAvatars('default.png');
+    await deleteAvatars('default.jpg');
     await User.deleteMany();
   }
-  
+
   await User.insertMany(users);
 
   logger.info('users seeded successfully');
