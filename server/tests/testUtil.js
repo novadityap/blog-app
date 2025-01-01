@@ -2,7 +2,6 @@ import { readFile, unlink, readdir, stat } from 'node:fs/promises';
 import User from '../src/models/userModel.js';
 import Category from '../src/models/categoryModel.js';
 import Post from '../src/models/postModel.js';
-import Permisssion from '../src/models/permissionModel.js';
 import Role from '../src/models/roleModel.js';
 import Comment from '../src/models/commentModel.js';
 import mongoose from 'mongoose';
@@ -11,15 +10,19 @@ import bcrypt from 'bcrypt';
 import path from 'node:path';
 
 export const createTestUser = async (fields = {}) => {
+  const role = await createTestRole({ name: 'admin' });
+
   return await User.create({
     username: 'test',
     email: 'test@me.com',
     password: await bcrypt.hash('test123', 10),
+    role: role._id,
     ...fields,
   });
 };
 
 export const createManyTestUsers = async () => {
+  const role = await createTestRole({ name: 'admin' });
   const users = [];
 
   for (let i = 0; i < 15; i++) {
@@ -27,6 +30,7 @@ export const createManyTestUsers = async () => {
       createTestUser({
         username: `test${i}`,
         email: `test${i}@me.com`,
+        role: role._id,
       })
     );
   }
@@ -88,17 +92,6 @@ export const createManyTestRoles = async () => {
 
 export const removeTestRole = async () => {
   await Role.deleteMany({ name: { $regex: /^test\d*/ } });
-};
-
-export const createTestPermission = async (fields = {}) => {
-  return await Permisssion.create({
-    name: 'test',
-    ...fields,
-  });
-};
-
-export const removeTestPermission = async () => {
-  await Permisssion.deleteMany({ name: { $regex: /^test\d*/ } });
 };
 
 export const createTestCategory = async (fields = {}) => {
@@ -164,7 +157,7 @@ export const createToken = (type, role, userId) => {
   return jwt.sign(
     {
       id: userId || new mongoose.Types.ObjectId(),
-      roles: [role],
+      role: role,
     },
     type === 'auth' ? process.env.JWT_SECRET : process.env.JWT_REFRESH_SECRET,
     {
