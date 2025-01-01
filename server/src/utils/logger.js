@@ -1,5 +1,4 @@
 import winston from "winston";
-import "winston-daily-rotate-file";
 import 'dotenv/config';
 
 const logFormat = winston.format.combine(
@@ -16,19 +15,11 @@ const logger = winston.createLogger({
   level: 'info',
   format: logFormat,
   transports: [
+    new winston.transports.File({filename: `src/logs/app-${new Date().toISOString().split('T')[0]}.log`}),
     new winston.transports.File({
       filename: 'src/logs/error.log', 
       level: 'error'
     }),
-    new winston.transports.DailyRotateFile({
-      filename: 'src/logs/app-%DATE%.log',
-      datePattern: 'YYYY-MM-DD',
-      zippedArchive: true,
-      maxSize: '20m',
-      maxFiles: '2',
-      format: logFormat,
-      utc: true
-    })
   ],
   exceptionHandlers: [
     new winston.transports.File({filename: 'src/logs/exception.log'})
