@@ -3,17 +3,6 @@ import mongoose from 'mongoose';
 
 const roleSchema = Joi.object({
   name: Joi.string().required(),
-  permissions: Joi.array()
-    .items(
-      Joi.string().custom((value, helpers) => {
-        if (!mongoose.Types.ObjectId.isValid(value))
-          return helpers.message('Invalid permission id');
-        return value;
-      })
-    )
-    .min(1)
-    .label('permissions')
-    .required(),
 });
 
 export const searchRoleSchema = Joi.object({
@@ -31,6 +20,6 @@ export const getRoleSchema = Joi.string()
   .required();
 export const createRoleSchema = roleSchema;
 export const updateRoleSchema = roleSchema.fork(
-  ['name', 'permissions'],
+  ['name'],
   schema => schema.optional()
 );
