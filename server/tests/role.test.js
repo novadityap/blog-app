@@ -4,11 +4,9 @@ import {
   createTestRole,
   createManyTestRoles,
   removeTestRole,
-  createTestPermission,
-  removeTestPermission,
 } from './testUtil.js';
 
-describe('GET /api/roles', () => {
+describe('GET /api/roles/list', () => {
   beforeAll(async () => {
     await createManyTestRoles();
   });
@@ -19,7 +17,7 @@ describe('GET /api/roles', () => {
 
   it('should return an error if user does not have permission', async () => {
     const result = await request(app)
-      .get('/api/roles')
+      .get('/api/roles/list')
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
@@ -28,7 +26,7 @@ describe('GET /api/roles', () => {
 
   it('should return all roles', async () => {
     const result = await request(app)
-      .get('/api/roles')
+      .get('/api/roles/list')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
@@ -148,15 +146,8 @@ describe('GET /api/roles/:roleId', () => {
 });
 
 describe('POST /api/roles', () => {
-  let permission;
-
-  beforeEach(async () => {
-    permission = await createTestPermission();
-  });
-
   afterEach(async () => {
     await removeTestRole();
-    await removeTestPermission();
   });
 
   it('should return an error if user does not have permission', async () => {
@@ -174,13 +165,11 @@ describe('POST /api/roles', () => {
       .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         name: '',
-        permissions: [],
       });
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
     expect(result.body.errors.name).toBeDefined();
-    expect(result.body.errors.permissions).toBeDefined();
   });
 
   it('should return an error if name already in use', async () => {
@@ -191,28 +180,11 @@ describe('POST /api/roles', () => {
       .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         name: 'test',
-        permissions: [`${permission._id}`],
       });
 
     expect(result.status).toBe(409);
     expect(result.body.message).toBe('Resource already in use');
     expect(result.body.errors.name).toBeDefined();
-  });
-
-  it('should return an error if permission id is invalid', async () => {
-    await createTestRole();
-
-    const result = await request(app)
-      .post('/api/roles')
-      .set('Authorization', `Bearer ${global.adminToken}`)
-      .send({
-        name: 'test',
-        permissions: ['invalid-id'],
-      });
-
-    expect(result.status).toBe(400);
-    expect(result.body.message).toBe('Validation errors');
-    expect(result.body.errors.permissions).toBeDefined();
   });
 
   it('should create a role if input data is valid', async () => {
@@ -221,7 +193,6 @@ describe('POST /api/roles', () => {
       .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         name: 'test',
-        permissions: [`${permission._id}`],
       });
 
     expect(result.status).toBe(201);
@@ -231,16 +202,13 @@ describe('POST /api/roles', () => {
 
 describe('PUT /api/roles/:roleId', () => {
   let role;
-  let permission;
 
   beforeEach(async () => {
     role = await createTestRole();
-    permission = await createTestPermission();
   });
 
   afterEach(async () => {
     await removeTestRole();
-    await removeTestPermission();
   });
 
   it('should return an error if user does not have permission', async () => {
@@ -260,22 +228,6 @@ describe('PUT /api/roles/:roleId', () => {
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
     expect(result.body.errors.roleId).toBeDefined();
-  });
-
-  it('should return an error if permission id is invalid', async () => {
-    await createTestRole();
-
-    const result = await request(app)
-      .put(`/api/roles/${role._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`)
-      .send({
-        name: 'test1',
-        permissions: ['invalid-id'],
-      });
-
-    expect(result.status).toBe(400);
-    expect(result.body.message).toBe('Validation errors');
-    expect(result.body.errors.permissions).toBeDefined();
   });
 
   it('should return an error if name already in use', async () => {
@@ -308,13 +260,11 @@ describe('PUT /api/roles/:roleId', () => {
       .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         name: 'test1',
-        permissions: [permission._id],
       });
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Role updated successfully');
     expect(result.body.data.name).toBe('test1');
-    expect(result.body.data.permissions).toContain(permission._id.toString());
   });
 });
 
