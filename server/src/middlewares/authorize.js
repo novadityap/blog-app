@@ -1,10 +1,10 @@
 import logger from '../utils/logger.js';
 import ResponseError from '../utils/responseError.js';
 
-const authorize = (roles) => {
+const authorize = (requiredRoles) => {
   return async (req, res, next) => {
     try {
-      if (roles.includes(req.user.role)) {
+      if (requiredRoles.includes(req.user.role)) {
         logger.info('permission granted');
         return next();
       };
