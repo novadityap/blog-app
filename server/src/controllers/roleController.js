@@ -1,5 +1,4 @@
 import Role from '../models/roleModel.js';
-import Permission from '../models/permissionModel.js';
 import ResponseError from '../utils/responseError.js';
 import logger from '../utils/logger.js';
 import validate from '../utils/validate.js';
@@ -22,19 +21,6 @@ const create = async (req, res, next) => {
       });
     }
 
-    if (fields.permissions?.length > 0) {
-      const totalPermissions = await Permission.countDocuments({
-        _id: { $in: fields.permissions },
-      });
-
-      if (totalPermissions !== fields.permissions.length) {
-        logger.warn('validation errors');
-        throw new ResponseError('Validation errors', 400, {
-          permissions: 'Invalid permission id',
-        });
-      }
-    }
-
     await Role.create(fields);
 
     logger.info('role created successfully');
@@ -53,45 +39,7 @@ const search = async (req, res, next) => {
     const { page, limit, search } = query;
 
     const [{ roles, totalRoles }] = await Role.aggregate()
-      .lookup({
-        from: 'permissions',
-        localField: 'permissions',
-        foreignField: '_id',
-        as: 'permissions',
-      })
-      .unwind({ path: '$permissions', preserveNullAndEmptyArrays: true })
-      .group({
-        _id: '$_id',
-        name: { $first: '$name' },
-        permissions: { $push: '$permissions.name' },
-        createdAt: { $first: '$createdAt' },
-        updatedAt: { $first: '$updatedAt' },
-      })
-      .addFields({
-        permissions: {
-          $map: {
-            input: '$permissions',
-            as: 'permission',
-            in: {
-              $replaceAll: {
-                input: '$$permission',
-                find: '_',
-                replacement: ' ',
-              },
-            },
-          },
-        },
-      })
-      .match(
-        search
-          ? {
-              $or: [
-                { name: { $regex: search, $options: 'i' } },
-                { 'permissions.name': { $regex: search, $options: 'i' } },
-              ],
-            }
-          : {}
-      )
+      .match(search ? { name: { $regex: search, $options: 'i' } } : {})
       .facet({
         roles: [
           { $sort: { createdAt: -1 } },
@@ -167,12 +115,7 @@ const show = async (req, res, next) => {
   try {
     const roleId = validate(getRoleSchema, req.params.roleId);
 
-    const role = await Role.findById(roleId).populate({
-      path: 'permissions',
-      select: '_id',
-      transform: doc => doc._id,
-    });
-
+    const role = await Role.findById(roleId)
     if (!role) {
       logger.warn('role not found');
       throw new ResponseError('Role not found', 404);
@@ -194,12 +137,7 @@ const update = async (req, res, next) => {
     const roleId = validate(getRoleSchema, req.params.roleId);
     const fields = validate(updateRoleSchema, req.body);
 
-    const role = await Role.findById(roleId).populate({
-      path: 'permissions',
-      select: '_id',
-      transform: doc => doc._id,
-    });
-
+    const role = await Role.findById(roleId)
     if (!role) {
       logger.warn('role not found');
       throw new ResponseError('Role not found', 404);
@@ -215,19 +153,6 @@ const update = async (req, res, next) => {
         logger.warn('resource already in use');
         throw new ResponseError('Resource already in use', 409, {
           name: 'Name already in use',
-        });
-      }
-    }
-
-    if (fields.permissions?.length > 0) {
-      const totalPermissions = await Permission.countDocuments({
-        _id: { $in: fields.permissions },
-      });
-
-      if (totalPermissions !== fields.permissions.length) {
-        logger.warn('validation errors');
-        throw new ResponseError('Validation errors', 400, {
-          permissions: 'Invalid permission id',
         });
       }
     }
