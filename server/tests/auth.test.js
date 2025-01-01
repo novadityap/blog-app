@@ -108,18 +108,22 @@ describe('POST /api/auth/resend-verification', () => {
   });
 
   it('should return an error if input data is invalid', async () => {
-    const result = await request(app).post('/api/auth/resend-verification').send({
-      email: '',
-    });
+    const result = await request(app)
+      .post('/api/auth/resend-verification')
+      .send({
+        email: '',
+      });
 
     expect(result.status).toBe(400);
     expect(result.body.errors.email).toBeDefined();
   });
 
   it('should not send verification email if user is not registered', async () => {
-    const result = await request(app).post('/api/auth/resend-verification').send({
-      email: 'test@me.com',
-    });
+    const result = await request(app)
+      .post('/api/auth/resend-verification')
+      .send({
+        email: 'test@me.com',
+      });
 
     const logMessage = 'user is not registered';
     const relevantLog = await findLog(logMessage, startTime);
@@ -131,9 +135,11 @@ describe('POST /api/auth/resend-verification', () => {
   it('should send verification email if user is registered', async () => {
     await createTestUser();
 
-    const result = await request(app).post('/api/auth/resend-verification').send({
-      email: 'test@me.com',
-    });
+    const result = await request(app)
+      .post('/api/auth/resend-verification')
+      .send({
+        email: 'test@me.com',
+      });
 
     const logMessage = 'verification email sent successfully';
     const relevantLog = await findLog(logMessage, startTime);
@@ -188,11 +194,11 @@ describe('POST /api/auth/signin', () => {
     expect(result.body.data.token).toBeDefined();
     expect(result.body.data.username).toBeDefined();
     expect(result.body.data.email).toBeDefined();
-    expect(result.body.data.roles).toBeDefined();
+    expect(result.body.data.role).toBeDefined();
 
     const decoded = jwt.verify(result.body.data.token, process.env.JWT_SECRET);
     expect(decoded.id).toBeDefined();
-    expect(decoded.roles).toBeDefined();
+    expect(decoded.role).toBeDefined();
 
     expect(result.headers['set-cookie']).toBeDefined();
     expect(result.headers['set-cookie'][0]).toMatch(/refreshToken=/);
@@ -290,7 +296,7 @@ describe('POST /api/auth/refresh-token', () => {
 
     const decoded = jwt.verify(result.body.data.token, process.env.JWT_SECRET);
     expect(decoded.id).toBeDefined();
-    expect(decoded.roles).toBeDefined();
+    expect(decoded.role).toBeDefined();
   });
 });
 
@@ -370,9 +376,11 @@ describe('POST /api/auth/reset-password/:token', () => {
     user.resetTokenExpires = Date.now() - 1000;
     await user.save();
 
-    const result = await request(app).post('/api/auth/reset-password/123').send({
-      newPassword: 'test123',
-    });
+    const result = await request(app)
+      .post('/api/auth/reset-password/123')
+      .send({
+        newPassword: 'test123',
+      });
 
     expect(result.status).toBe(401);
     expect(result.body.message).toBe('Reset token is invalid or has expired');
@@ -382,9 +390,11 @@ describe('POST /api/auth/reset-password/:token', () => {
     user.resetTokenExpires = Date.now() + 1 * 60 * 60 * 1000;
     await user.save();
 
-    const result = await request(app).post(`/api/auth/reset-password/123`).send({
-      newPassword: 'test123',
-    });
+    const result = await request(app)
+      .post(`/api/auth/reset-password/123`)
+      .send({
+        newPassword: 'test123',
+      });
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Password reset successfully');
