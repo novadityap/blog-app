@@ -157,7 +157,7 @@ describe('POST /api/users', () => {
         username: '',
         email: '',
         password: '',
-        roles: '',
+        role: '',
       });
 
     expect(result.status).toBe(400);
@@ -165,7 +165,7 @@ describe('POST /api/users', () => {
     expect(result.body.errors.username).toBeDefined();
     expect(result.body.errors.email).toBeDefined();
     expect(result.body.errors.password).toBeDefined();
-    expect(result.body.errors.roles).toBeDefined();
+    expect(result.body.errors.role).toBeDefined();
   });
 
   it('should return an error if email already in use', async () => {
@@ -178,7 +178,7 @@ describe('POST /api/users', () => {
         username: 'test1',
         email: 'test@me.com',
         password: 'test123',
-        roles: [adminRole._id],
+        role: adminRole._id,
       });
 
     expect(result.status).toBe(409);
@@ -196,7 +196,7 @@ describe('POST /api/users', () => {
         username: 'test',
         email: 'test1@me.com',
         password: 'test123',
-        roles: [adminRole._id],
+        role: adminRole._id,
       });
 
     expect(result.status).toBe(409);
@@ -212,12 +212,12 @@ describe('POST /api/users', () => {
         username: 'test',
         email: 'test@me.com',
         password: 'test123',
-        roles: ['invalid-id'],
+        role: 'invalid-id',
       });
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
-    expect(result.body.errors.roles).toBeDefined();
+    expect(result.body.errors.role).toBeDefined();
   });
 
   it('should create a user if input data is valid', async () => {
@@ -228,7 +228,7 @@ describe('POST /api/users', () => {
         username: 'test',
         email: 'test@me.com',
         password: 'test123',
-        roles: [adminRole._id],
+        role: adminRole._id,
       });
 
     expect(result.status).toBe(201);
@@ -298,11 +298,11 @@ describe('PUT /api/users/:userId', () => {
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
       .field('username', 'test1')
-      .field('roles', 'invalid-id');
+      .field('role', 'invalid-id');
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
-    expect(result.body.errors.roles).toBeDefined();
+    expect(result.body.errors.role).toBeDefined();
   });
 
   it('should return an error if email is already in use', async () => {
@@ -314,7 +314,7 @@ describe('PUT /api/users/:userId', () => {
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
       .field('username', 'test1')
-      .field('roles', adminRole._id.toString());
+      .field('role', adminRole._id.toString());
 
     expect(result.status).toBe(409);
     expect(result.body.message).toBe('Resource already in use');
@@ -330,7 +330,7 @@ describe('PUT /api/users/:userId', () => {
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
       .field('username', 'test1')
-      .field('roles', adminRole._id.toString());
+      .field('role', adminRole._id.toString());
 
     expect(result.status).toBe(409);
     expect(result.body.message).toBe('Resource already in use');
@@ -344,13 +344,13 @@ describe('PUT /api/users/:userId', () => {
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
       .field('username', 'test1')
-      .field('roles', adminRole._id.toString());
+      .field('role', adminRole._id.toString());
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('User updated successfully');
     expect(result.body.data.email).toBe('test1@me.com');
     expect(result.body.data.username).toBe('test1');
-    expect(result.body.data.roles).toContain(adminRole._id.toString());
+    expect(result.body.data.role).toBe(adminRole._id.toString());
   });
 
   it('should update user with changing avatar', async () => {
@@ -376,7 +376,6 @@ describe('PUT /api/users/:userId', () => {
     expect(avatarExists).toBe(true);
 
     await removeTestFile('avatar');
-    // await unlink(path.resolve(process.env.AVATAR_DIR, updatedUser.avatar));
   });
 });
 
