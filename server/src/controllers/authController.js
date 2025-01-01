@@ -1,6 +1,5 @@
 import User from '../models/userModel.js';
 import Role from '../models/roleModel.js';
-import Permission from '../models/permissionModel.js';
 import Blacklist from '../models/blacklistModel.js';
 import validate from '../utils/validate.js';
 import ResponseError from '../utils/responseError.js';
@@ -136,16 +135,7 @@ const signin = async (req, res, next) => {
   try {
     const fields = validate(signinSchema, req.body);
 
-    const user = await User.findOne({ email: fields.email }).populate({
-      path: 'roles',
-      select: 'name',
-      populate: {
-        path: 'permissions',
-        select: 'name',
-        transform: doc => doc.name,
-      },
-    });
-
+    const user = await User.findOne({ email: fields.email }).populate('role');
     if (!user) {
       logger.warn('user is not registered');
       throw new ResponseError('Email or password is invalid', 401);
@@ -157,15 +147,13 @@ const signin = async (req, res, next) => {
       throw new ResponseError('Email or password is invalid', 401);
     }
 
-    const roles = user.roles.map(role => role.name);
-    const token = jwt.sign({ id: user._id, roles }, process.env.JWT_SECRET, {
+    const payload = { id: user._id, role: user.role.name };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES,
     });
-    const refreshToken = jwt.sign(
-      { id: user._id, roles },
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: process.env.JWT_REFRESH_EXPIRES }
-    );
+    const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+      expiresIn: process.env.JWT_REFRESH_EXPIRES,
+    });
 
     user.refreshToken = refreshToken;
     await user.save();
@@ -184,7 +172,7 @@ const signin = async (req, res, next) => {
           username: user.username,
           email: user.email,
           avatar: user.avatarUrl,
-          roles: user.roles,
+          role: user.role.name,
           token,
         },
       });
@@ -235,7 +223,7 @@ const refreshToken = async (req, res, next) => {
       throw new ResponseError('Refresh token is invalid', 401);
     }
 
-    const user = await User.findOne({ refreshToken }).populate('roles', 'name');
+    const user = await User.findOne({ refreshToken }).populate('role');
     if (!user) {
       logger.warn('refresh token not found in the database');
       throw new ResponseError('Refresh token is invalid', 401);
@@ -248,10 +236,11 @@ const refreshToken = async (req, res, next) => {
       }
     });
 
-    const roles = user.roles.map(role => role.name);
-    const newToken = jwt.sign({ id: user._id, roles }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES,
-    });
+    const newToken = jwt.sign(
+      { id: user._id, role: user.role.name },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES }
+    );
 
     logger.info('token refreshed successfully');
     res.json({
