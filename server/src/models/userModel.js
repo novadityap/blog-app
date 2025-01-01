@@ -5,10 +5,10 @@ const userSchema = new mongoose.Schema({
   username: String,
   email: String,
   password: String,
-  roles: [{
+  role: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Role',
-  }],
+    ref: "Role",
+  },
   avatar: {
     type: String,
     default: 'default.jpg'
