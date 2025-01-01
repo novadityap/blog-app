@@ -1,4 +1,3 @@
-import seedPermission from "./permissionSeeder.js";
 import seedRole from "./roleSeeder.js";
 import seedUser from "./userSeeder.js";
 import seedCategory from "./categorySeeder.js";
@@ -9,7 +8,6 @@ import 'dotenv/config';
 const seed = async () => {
   try {
     await connectDB();
-    await seedPermission();
     await seedRole();
     await seedUser();
     await seedCategory();
