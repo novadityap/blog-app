@@ -5,16 +5,14 @@ const userSchema = Joi.object({
   username: Joi.string().alphanum().required(),
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
-  roles: Joi.array()
-    .items(
-      Joi.string().custom((value, helpers) => {
-        if (!mongoose.Types.ObjectId.isValid(value))
-          return helpers.message('Role id is invalid');
-        return value;
-      })
-    )
+  role: Joi.string()
+    .custom((value, helpers) => {
+      if (!mongoose.Types.ObjectId.isValid(value))
+        return helpers.message('Role id is invalid');
+      return value;
+    })
     .min(1)
-    .label('roles')
+    .label('role')
     .required(),
 });
 
@@ -33,7 +31,7 @@ export const getUserSchema = Joi.string()
   .label('userId')
   .required();
 
-export const signupSchema = userSchema.fork(['roles'], schema =>
+export const signupSchema = userSchema.fork(['role'], schema =>
   schema.optional()
 );
 
@@ -48,7 +46,7 @@ export const verifyEmailSchema = Joi.object({
 
 export const createUserSchema = userSchema;
 export const updateUserSchema = userSchema.fork(
-  ['username', 'email', 'password', 'roles'],
+  ['username', 'email', 'password', 'role'],
   schema => schema.optional()
 );
 
