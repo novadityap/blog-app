@@ -11,6 +11,7 @@ import {
 } from 'redux-persist';
 import { combineReducers } from 'redux';
 import storage from 'redux-persist/lib/storage';
+import queryReducer from '@/features/querySlice.js';
 import authReducer from '@/features/authSlice.js';
 import authApi from '@/services/authApi.js';
 import permissionApi from "@/services/permissionApi";
@@ -18,6 +19,8 @@ import postApi from "@/services/postApi.js";
 import userApi from "@/services/userApi.js";
 import roleApi from "@/services/roleApi.js";
 import categoryApi from '@/services/categoryApi.js';
+import dashboardApi from '@/services/dashboardApi.js';
+import commentApi from '@/services/commentApi.js';
 
 const rootPersistConfig = {
   key: 'root',
@@ -37,6 +40,9 @@ const rootReducer = combineReducers({
   [userApi.reducerPath]: userApi.reducer,
   [roleApi.reducerPath]: roleApi.reducer,
   [categoryApi.reducerPath]: categoryApi.reducer,
+  [dashboardApi.reducerPath]: dashboardApi.reducer,
+  [commentApi.reducerPath]: commentApi.reducer,
+  query: queryReducer,
   auth: persistReducer(authPersistConfig, authReducer)
 });
 
@@ -53,6 +59,8 @@ export const store = configureStore({
     roleApi.middleware,
     categoryApi.middleware,
     permissionApi.middleware,
+    dashboardApi.middleware,
+    commentApi.middleware,
   ),
 });
 
