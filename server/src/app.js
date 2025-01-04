@@ -8,21 +8,28 @@ import apiRouter from './routes/api.js';
 
 const app = express();
 
-app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(
   cors({
     origin: process.env.CLIENT_URL,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+app.use(helmet());
 app.use(requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use('/uploads/avatars', express.static(process.env.AVATAR_DIR));
-app.use('/uploads/posts', express.static(process.env.POST_DIR));
+app.use('/uploads/avatars', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(process.env.AVATAR_DIR));
+app.use('/uploads/posts', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(process.env.POST_DIR));
+
 
 app.use('/api', apiRouter);
 
