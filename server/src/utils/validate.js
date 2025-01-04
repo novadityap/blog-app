@@ -1,6 +1,6 @@
 import ResponseError from './responseError.js';
-import formatError from './formatError.js';
 import logger from './logger.js';
+import formatError from './formatError.js';
 
 const validate = (schema, body) => {
   const result = schema.validate(body, {
