@@ -16,54 +16,57 @@ axiosInstance.interceptors.request.use(
     if (token) config.headers['Authorization'] = `Bearer ${token}`;
     return config;
   },
-  err => Promise.reject(err)
+  e => Promise.reject(e)
 );
 
 axiosInstance.interceptors.response.use(
   res => res,
-  async err => {
-    const originalRequest = err.config;
+  async e => {
+    const originalRequest = e.config;
 
-    if (err.response && err.response.status === 401) {
-      const message = err.response.data.message;
+    if (e.response.status === 401) {
+      const message = e.response.data.message;
 
       const signoutMessages = [
         'Token is not provided',
         'Token is invalid',
-        'Refresh token is not provided',
-        'Refresh token is invalid',
-        'Refresh token has expired',
-      ] 
+      ];
 
       const ignoredMessages = [
         'Verification token is invalid or has expired',
         'Email or password is invalid',
         'Reset token is invalid or has expired',
-      ]; 
+      ];
 
-      if (ignoredMessages.includes(message)) return Promise.reject(err);
+      if (ignoredMessages.includes(message)) return Promise.reject(e);
 
-      if (message === 'Token has expired') { 
+      if (signoutMessages.includes(message)) {
+        store.dispatch(clearAuth());
+        return Promise.reject(e);
+      }
+
+      if (message === 'Token has expired') {
         try {
-          const { data } = await axios.post(
+          const result = await axios.post(
             `${import.meta.env.VITE_API_URL}/auth/refresh-token`,
             null,
             { withCredentials: true }
           );
 
-          originalRequest.headers.Authorization = `Bearer ${data.data.token}`;
-          store.dispatch(setToken(data.data.token));
-
+          originalRequest.headers.Authorization = `Bearer ${result.data.data.token}`;
+          store.dispatch(setToken(result.data.data.token));
+          
           return axiosInstance(originalRequest);
-        } catch (refreshError) {
-          if (signoutMessages.includes(message)) store.dispatch(clearAuth()); 
-          return Promise.reject(refreshError);
+        } catch (e) {
+          store.dispatch(clearAuth());
+          return Promise.reject(e);
         }
       }
     }
 
-    return Promise.reject(err);
+    return Promise.reject(e);
   }
 );
+
 
 export default axiosInstance;
