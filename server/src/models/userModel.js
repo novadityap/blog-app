@@ -1,55 +1,66 @@
-import mongoose from "mongoose";
-import crypto from "crypto";
+import mongoose from 'mongoose';
+import crypto from 'crypto';
 
-const userSchema = new mongoose.Schema({
-  username: String,
-  email: String,
-  password: String,
-  role: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Role",
+const userSchema = new mongoose.Schema(
+  {
+    username: String,
+    email: String,
+    password: String,
+    role: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Role',
+    },
+    avatar: {
+      type: String,
+      default: 'default.jpg',
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+      default: () => crypto.randomBytes(32).toString('hex'),
+    },
+    verificationTokenExpires: {
+      type: Date,
+      default: () => Date.now() + 24 * 60 * 60 * 1000,
+    },
+    resetToken: String,
+    resetTokenExpires: Date,
+    refreshToken: String,
   },
-  avatar: {
-    type: String,
-    default: 'default.jpg'
-  },
-  isVerified: {
-    type: Boolean,
-    default: false
-  },
-  verificationToken: {
-    type: String,
-    default: () => crypto.randomBytes(32).toString('hex')
-  },
-  verificationTokenExpires: {
-    type: Date,
-    default: () => Date.now() + (24 * 60 * 60 * 1000)
-  },
-  resetToken: String,
-  resetTokenExpires: Date,
-  refreshToken: String
-}, {
-  timestamps: true,
-  toJSON: {
-    transform: (doc, ret) => {
-      ret.avatar = `${process.env.SERVER_URL}/uploads/avatars/${ret.avatar}`;
-
-      delete ret.password;
-      delete ret.verificationToken;
-      delete ret.verificationTokenExpires;
-      delete ret.resetToken;
-      delete ret.resetTokenExpires;
-      delete ret.refreshToken;
-      return ret;
-    }
-  },
-  virtuals: {
-    avatarUrl: {
-      get() {
-        return `${process.env.SERVER_URL}/uploads/avatars/${this.avatar}`;
-      }
-    }
+  {
+    timestamps: true,
   }
+);
+
+const avatarUrl = `${process.env.SERVER_URL}/uploads/avatars/`;
+
+userSchema.set('toObject', {
+  transform: (doc, ret) => {
+    ret.avatar = avatarUrl + ret.avatar;
+    delete ret.password;
+    return ret;
+  },
+});
+
+userSchema.set('toJSON', {
+  transform: (doc, ret) => {
+    ret.avatar = avatarUrl + ret.avatar;
+    delete ret.password;
+    return ret;
+  },
+});
+
+userSchema.post('aggregate', function(docs, next) {
+  const [{ users }] = docs;
+  users.forEach(user => {
+    user.avatar = avatarUrl + user.avatar;
+    delete user.password;
+  });
+
+  next();
 });
 
 const User = mongoose.model('User', userSchema);
