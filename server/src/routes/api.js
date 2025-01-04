@@ -13,11 +13,12 @@ const apiRouter = express.Router();
 
 // Public API
 apiRouter.post('/auth/signup', authController.signup);
-apiRouter.post('/auth/verify-email/:token', authController.verifyEmail);
+apiRouter.post('/auth/verify-email/:verificationToken', authController.verifyEmail);
 apiRouter.post('/auth/resend-verification', authController.resendVerification);
+apiRouter.post('/auth/refresh-token', authController.refreshToken);
 apiRouter.post('/auth/signin', authController.signin);
 apiRouter.post('/auth/request-reset-password', authController.requestResetPassword);
-apiRouter.post('/auth/reset-password/:token', authController.resetPassword);
+apiRouter.post('/auth/reset-password/:resetToken', authController.resetPassword);
 apiRouter.get('/categories/list', categoryController.list);
 apiRouter.get('/posts', postController.search);
 apiRouter.get('/posts/:postId', postController.show);
@@ -26,7 +27,6 @@ apiRouter.get('/posts/:postId', postController.show);
 apiRouter.use(authenticate);
 
 // Auth API
-apiRouter.post('/auth/refresh-token', authController.refreshToken);
 apiRouter.post('/auth/signout', authController.signout);
 
 // Category API
