@@ -4,7 +4,7 @@ const postSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'User',
     },
     title: String,
     content: String,
@@ -17,29 +17,55 @@ const postSchema = new mongoose.Schema(
       ref: 'Category',
     },
     slug: String,
-    likes: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    }],
+    likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
     totalLikes: {
       type: Number,
       default: 0,
     },
-    comments: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Comment'
-    }]
+    comments: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment',
+      },
+    ],
   },
   {
     timestamps: true,
-    toJSON: {
-      transform: (doc, ret) => {
-        ret.postImage = `${process.env.SERVER_URL}/${process.env.POST_DIR}/${ret.postImage}`;
-        return ret;
-      }
-    }
   }
 );
+
+const postImageUrl = `${process.env.SERVER_URL}/uploads/posts/`;
+
+postSchema.set('toObject', {
+  transform: (doc, ret) => {
+    ret.postImage = postImageUrl + ret.postImage;
+    return ret;
+  },
+});
+
+postSchema.set('toJSON', {
+  transform: (doc, ret) => {
+    ret.postImage = postImageUrl + ret.postImage;
+    return ret;
+  },
+});
+
+postSchema.post('aggregate', function(docs, next) {
+  const [{ posts }] = docs;
+  if (posts) {
+    posts.forEach(post => {
+      post.postImage = postImageUrl + post.postImage;
+      delete post.password;
+    });
+  }
+
+  next();
+});
 
 const Post = mongoose.model('Post', postSchema);
 export default Post;
