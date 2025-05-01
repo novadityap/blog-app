@@ -2,7 +2,7 @@ import request from 'supertest';
 import app from '../src/app.js';
 import path from 'node:path';
 import User from '../src/models/userModel.js';
-import { access, copyFile, unlink } from 'node:fs/promises';
+import { access, copyFile } from 'node:fs/promises';
 import Role from '../src/models/roleModel.js';
 import {
   createTestUser,
@@ -12,11 +12,11 @@ import {
 } from './testUtil.js';
 
 const testAvatarPath = path.resolve(
-  process.env.TEST_AVATAR_DIR,
+  process.env.AVATAR_DIR_TEST,
   'test-avatar.jpg'
 );
 
-describe('GET /api/users', () => {
+describe('GET /api/users/search', () => {
   beforeEach(async () => {
     await createManyTestUsers();
   });
@@ -27,7 +27,7 @@ describe('GET /api/users', () => {
 
   it('should return an error if user does not have permission', async () => {
     const result = await request(app)
-      .get('/api/users')
+      .get('/api/users/search')
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
@@ -36,7 +36,7 @@ describe('GET /api/users', () => {
 
   it('should return a list of users with default pagination', async () => {
     const result = await request(app)
-      .get('/api/users')
+      .get('/api/users/search')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
@@ -50,7 +50,7 @@ describe('GET /api/users', () => {
 
   it('should return a list of users with custom pagination', async () => {
     const result = await request(app)
-      .get('/api/users')
+      .get('/api/users/search')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
         page: 2,
@@ -67,10 +67,10 @@ describe('GET /api/users', () => {
 
   it('should return a list of users with custom search', async () => {
     const result = await request(app)
-      .get('/api/users')
+      .get('/api/users/search')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
-        search: 'test10',
+        q: 'test10',
       });
 
     expect(result.status).toBe(200);
