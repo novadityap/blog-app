@@ -90,7 +90,7 @@ const search = async (req, res, next) => {
         user: { $arrayElemAt: ['$user', 0] },
         category: { $arrayElemAt: ['$category.name', 0] },
       })
-      .project({ userId: 0, comments: 0, likes: 0 })
+      .project({ userId: 0, likes: 0 })
       .facet({
         posts: [
           { $sort: { createdAt: -1 } },

@@ -29,15 +29,10 @@ const create = async (req, res, next) => {
     const postId = await validatePostId(req.params.postId);
     const fields = validate(createCommentSchema, req.body);
 
-    const comment = await Comment.create({
+    await Comment.create({
       ...fields,
       postId: postId,
       userId: req.user.id,
-    });
-
-    await Post.findByIdAndUpdate(postId, {
-      $push: { comments: comment._id },
-      $set: { updatedAt: Date.now() },
     });
 
     logger.info('comment created successfully');
