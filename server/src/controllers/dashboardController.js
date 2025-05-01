@@ -20,12 +20,13 @@ export const stats = async (req, res, next) => {
           {
             $lookup: {
               from: 'users',
-              localField: 'userId',
+              localField: 'user',
               foreignField: '_id',
               as: 'user',
               pipeline: [{ $project: { username: 1 } }],
             },
           },
+          { $unwind: '$user' },
           {
             $lookup: {
               from: 'categories',
@@ -35,6 +36,7 @@ export const stats = async (req, res, next) => {
               pipeline: [{ $project: { name: 1 } }],
             },
           },
+          { $unwind: '$category' },
         ],
       })
       .project({
@@ -53,21 +55,13 @@ export const stats = async (req, res, next) => {
           {
             $lookup: {
               from: 'users',
-              localField: 'userId',
+              localField: 'user',
               foreignField: '_id',
               as: 'user',
               pipeline: [{ $project: { username: 1 } }],
             },
           },
-          {
-            $lookup: {
-              from: 'posts',
-              localField: 'postId',
-              foreignField: '_id',
-              as: 'post',
-              pipeline: [{ $project: { title: 1 } }],
-            },
-          },
+          { $unwind: '$user' },
         ],
       })
       .project({

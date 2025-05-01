@@ -37,7 +37,7 @@ const create = async (req, res, next) => {
       }
     }
 
-    await Post.create({ ...fields, userId: req.user.id });
+    await Post.create({ ...fields, user: req.user.id });
 
     logger.info('post created successfully');
     res.status(201).json({
@@ -57,7 +57,7 @@ const search = async (req, res, next) => {
     const [{ posts, totalPosts }] = await Post.aggregate()
       .lookup({
         from: 'users',
-        localField: 'userId',
+        localField: 'user',
         foreignField: '_id',
         as: 'user',
         pipeline: [{ $project: { username: 1, email: 1, avatar: 1 } }],
@@ -86,11 +86,9 @@ const search = async (req, res, next) => {
             : {},
         ],
       })
-      .addFields({
-        user: { $arrayElemAt: ['$user', 0] },
-        category: { $arrayElemAt: ['$category.name', 0] },
-      })
-      .project({ userId: 0, likes: 0 })
+      .unwind('user')
+      .unwind('category')
+      .project({ likes: 0 })
       .facet({
         posts: [
           { $sort: { createdAt: -1 } },
@@ -145,7 +143,7 @@ const show = async (req, res, next) => {
     const postId = validate(getPostSchema, req.params.postId);
 
     const post = await Post.findById(postId)
-      .populate('userId', 'username avatar')
+      .populate('user', 'username avatar')
       .populate('category', 'name');
 
     if (!post) {
