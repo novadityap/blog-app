@@ -39,7 +39,7 @@ const avatarUrl = `${process.env.SERVER_URL}/uploads/avatars/`;
 
 userSchema.set('toObject', {
   transform: (doc, ret) => {
-    ret.avatar = avatarUrl + ret.avatar;
+    if (!ret.avatar.startsWith(avatarUrl)) ret.avatar = avatarUrl + ret.avatar;
     delete ret.password;
     return ret;
   },
@@ -47,7 +47,7 @@ userSchema.set('toObject', {
 
 userSchema.set('toJSON', {
   transform: (doc, ret) => {
-    ret.avatar = avatarUrl + ret.avatar;
+    if (!ret.avatar.startsWith(avatarUrl)) ret.avatar = avatarUrl + ret.avatar;  
     delete ret.password;
     return ret;
   },
