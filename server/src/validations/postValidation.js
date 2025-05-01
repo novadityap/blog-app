@@ -13,7 +13,7 @@ const postSchema = Joi.object({
 export const searchPostSchema = Joi.object({
   page: Joi.number().integer().positive().min(1).default(1),
   limit: Joi.number().integer().positive().min(1).max(100).default(10),
-  search: Joi.string().allow('').optional(),
+  q: Joi.string().allow('').optional(),
   category: Joi.string().custom((value, helpers) => {
     if (!mongoose.Types.ObjectId.isValid(value)) return helpers.message('Invalid category id');
     return value;
