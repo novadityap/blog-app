@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/components/shadcn-ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,52 +11,69 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { TbUser, TbApps, TbLogout, TbEdit, TbLogin } from 'react-icons/tb';
-import useAuth from '@/hooks/useAuth';
+} from '@/components/shadcn-ui/dropdown-menu';
+import {
+  TbHome,
+  TbUser,
+  TbApps,
+  TbLogout,
+  TbEdit,
+  TbLogin,
+} from 'react-icons/tb';
 import { cn } from '@/lib/utils';
+import { useSelector } from 'react-redux';
+import useSignout from '@/hooks/useSignout';
 
-const UserDropdown = ({className}) => {
-  const { token, currentUser, roles, handleSignout } = useAuth();
-
-  const hasAdminRole = roles?.includes('admin');
+const UserDropdown = ({ className }) => {
+  const { token, currentUser } = useSelector(state => state.auth);
+  const { handleSignout } = useSignout();
 
   const menuItems = [
-    hasAdminRole && { name: 'Dashboard', icon: TbApps, link: '/dashboard' },
-    !token && { name: 'Sign Up', icon: TbEdit, link: '/signup' },
-    !token && { name: 'Sign In', icon: TbLogin, link: '/signin' },
-    { name: 'Profile', icon: TbUser, link: '/profile' },
-    token && { name: 'Sign Out', icon: TbLogout, link: null },
-  ].filter(Boolean);
+    { name: 'Home', icon: TbHome, link: '/' },
+    ...(currentUser?.role === 'admin'
+      ? [{ name: 'Dashboard', icon: TbApps, link: '/dashboard' }]
+      : []),
+    ...(token
+      ? [
+          { name: 'Profile', icon: TbUser, link: '/profile' },
+          { name: 'Sign Out', icon: TbLogout, action: handleSignout },
+        ]
+      : [
+          { name: 'Sign Up', icon: TbEdit, link: '/signup' },
+          { name: 'Sign In', icon: TbLogin, link: '/signin' },
+        ]),
+  ];
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className={cn('outline-none', className)}>
         <Avatar>
-          <AvatarImage src={currentUser?.avatar} alt="User Avatar" />
+          <AvatarImage src={currentUser.avatar} alt="User Avatar" />
           <AvatarFallback>
-            {currentUser?.username.slice(0, 2).toUpperCase()}
+            {currentUser.username?.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
+      <DropdownMenuContent className="mr-4 w-40">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {menuItems.map(({ name, icon: Icon, link }, index) =>
-          name === 'Sign Out' ? (
-            <DropdownMenuItem key={index} onClick={handleSignout}>
-              <Icon className="mr-3 size-5" />
+        {menuItems.map(({ name, icon: Icon, link, action }, index) =>
+          link ? (
+            <Link key={index} to={link}>
+              <DropdownMenuItem className="cursor-pointer hover:focus:bg-gray-200">
+                <Icon className="mr-2 size-5" />
+                {name}
+              </DropdownMenuItem>
+            </Link>
+          ) : (
+            <DropdownMenuItem
+              key={index}
+              onClick={action}
+              className="cursor-pointer hover:focus:bg-gray-200"
+            >
+              <Icon className="mr-2 size-5" />
               {name}
             </DropdownMenuItem>
-          ) : (
-            link && (
-              <Link to={link} key={index}>
-                <DropdownMenuItem>
-                  <Icon className="mr-3 size-5" />
-                  {name}
-                </DropdownMenuItem>
-              </Link>
-            )
           )
         )}
       </DropdownMenuContent>
