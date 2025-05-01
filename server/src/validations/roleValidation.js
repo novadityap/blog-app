@@ -8,7 +8,7 @@ const roleSchema = Joi.object({
 export const searchRoleSchema = Joi.object({
   page: Joi.number().integer().positive().min(1).default(1),
   limit: Joi.number().integer().positive().min(1).max(100).default(10),
-  search: Joi.string().allow('').optional(),
+  q: Joi.string().allow('').optional(),
 });
 export const getRoleSchema = Joi.string()
   .custom((value, helpers) => {
@@ -19,7 +19,6 @@ export const getRoleSchema = Joi.string()
   .label('roleId')
   .required();
 export const createRoleSchema = roleSchema;
-export const updateRoleSchema = roleSchema.fork(
-  ['name'],
-  schema => schema.optional()
+export const updateRoleSchema = roleSchema.fork(['name'], schema =>
+  schema.optional()
 );
