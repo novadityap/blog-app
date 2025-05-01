@@ -27,10 +27,7 @@ const postApi = createApi({
         url: `/posts/${postId}`,
         method: 'GET',
       }),
-      providesTags: (result, error, postId) => {
-        console.log('provide postId', postId);
-        return [{ type: 'Post', id: postId }];
-      },
+      providesTags: (result, error, postId) => [{ type: 'Post', id: postId }]
     }),
     removePost: builder.mutation({
       query: postId => ({
@@ -51,10 +48,7 @@ const postApi = createApi({
         url: `/posts/${postId}/like`,
         method: 'PATCH',
       }),
-      invalidatesTags: (result, error, postId) => {
-        console.log('invalid postId', postId);
-        return [{ type: 'Post', id: postId }];
-      },
+      invalidatesTags: (result, error, postId) => [{ type: 'Post', id: postId }]
     }),
   }),
 });
