@@ -36,10 +36,10 @@ const create = async (req, res, next) => {
 const search = async (req, res, next) => {
   try {
     const query = validate(searchRoleSchema, req.query);
-    const { page, limit, search } = query;
+    const { page, limit, q } = query;
 
     const [{ roles, totalRoles }] = await Role.aggregate()
-      .match(search ? { name: { $regex: search, $options: 'i' } } : {})
+      .match(q ? { name: { $regex: q, $options: 'i' } } : {})
       .facet({
         roles: [
           { $sort: { createdAt: -1 } },
@@ -110,12 +110,11 @@ const list = async (req, res, next) => {
   }
 };
 
-
 const show = async (req, res, next) => {
   try {
     const roleId = validate(getRoleSchema, req.params.roleId);
 
-    const role = await Role.findById(roleId)
+    const role = await Role.findById(roleId);
     if (!role) {
       logger.warn('role not found');
       throw new ResponseError('Role not found', 404);
@@ -137,7 +136,7 @@ const update = async (req, res, next) => {
     const roleId = validate(getRoleSchema, req.params.roleId);
     const fields = validate(updateRoleSchema, req.body);
 
-    const role = await Role.findById(roleId)
+    const role = await Role.findById(roleId);
     if (!role) {
       logger.warn('role not found');
       throw new ResponseError('Role not found', 404);

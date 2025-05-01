@@ -42,31 +42,31 @@ const show = async (req, res, next) => {
 const search = async (req, res, next) => {
   try {
     const query = validate(searchUserSchema, req.query);
-    const { page, limit, search } = query;
+    const { page, limit, q } = query;
 
     const [{ users, totalUsers }] = await User.aggregate()
       .lookup({
-        from: 'role',
+        from: 'roles',
         localField: 'role',
         foreignField: '_id',
         as: 'role',
         pipeline: [{ $project: { name: 1 } }],
       })
-      .project({ password: 0 })
+      .unwind('role')
       .match(
-        search
+        q
           ? {
               $or: [
-                { username: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } },
-                { 'role.name': { $regex: search, $options: 'i' } },
+                { username: { $regex: q, $options: 'i' } },
+                { email: { $regex: q, $options: 'i' } },
+                { 'role.name': { $regex: q, $options: 'i' } },
               ],
             }
           : {}
       )
       .facet({
         users: [
-          { $sort: { createdAt: -1 } },
+          { $sort: { 'role.name': 1, createdAt: -1 } },
           { $skip: (page - 1) * limit },
           { $limit: limit },
         ],
