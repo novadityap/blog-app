@@ -10,13 +10,12 @@ import {
   TableRow,
   TableCell,
   TableBody,
-} from '@/components/ui/table';
+} from '@/components/shadcn-ui/table';
 import { useState } from 'react';
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { createColumnHelper } from '@tanstack/react-table';
 import { TbEdit, TbTrash, TbPlus } from 'react-icons/tb';
-import Pagination from '@/components/ui/Pagination';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/shadcn-ui/input';
 import {
   Dialog,
   DialogContent,
@@ -25,82 +24,261 @@ import {
   DialogTitle,
   DialogDescription,
   DialogClose,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '@/components/shadcn-ui/dialog';
+import { Button } from '@/components/shadcn-ui/button';
+import { Skeleton } from '@/components/shadcn-ui/skeleton';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import ConfirmDeleteModal from '@/components/ui/ConfirmDeleteModal';
-import ManageItemModal from '@/components/ui/ManageItemModal';
+} from '@/components/shadcn-ui/select';
+import dayjs from 'dayjs';
+import ReactPaginate from 'react-paginate';
+import { cn } from '@/lib/utils';
+import { useLocation } from 'react-router-dom';
+
+const Pagination = ({ pageCount, onPageChange, currentPage, forcePage }) => (
+  <ReactPaginate
+    forcePage={forcePage}
+    previousLabel={<span className="">Prev</span>}
+    nextLabel={<span className="">Next</span>}
+    breakLabel={'...'}
+    pageCount={pageCount}
+    marginPagesDisplayed={2}
+    pageRangeDisplayed={5}
+    onPageChange={onPageChange}
+    containerClassName={'flex items-center space-x-2'}
+    pageLinkClassName={
+      'px-3 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 transition-colors'
+    }
+    activeLinkClassName={
+      'text-purple-600 border border-purple-600 bg-white rounded-md'
+    }
+    breakClassName={'px-3 py-2 text-gray-700'}
+    previousLinkClassName={cn(
+      'px-3 py-2 rounded-md transition-colors',
+      currentPage === 0
+        ? 'text-gray-300 bg-gray-100 cursor-not-allowed'
+        : 'text-gray-500 bg-gray-100 hover:bg-gray-200'
+    )}
+    nextLinkClassName={cn(
+      'px-3 py-2 rounded-md transition-colors',
+      currentPage === pageCount - 1
+        ? 'text-gray-300 bg-gray-100 cursor-not-allowed'
+        : 'text-gray-500 bg-gray-100 hover:bg-gray-200'
+    )}
+    disabledClassName={'pointer-events-none'}
+    ariaDisabledClassName={'text-gray-300'}
+    pageClassName={'flex items-center'}
+  />
+);
+
+const ManageItemModal = ({
+  isOpen,
+  onToggle,
+  title,
+  children,
+  isRemove,
+  onConfirm,
+}) => {
+  return (
+    <Dialog open={isOpen} onOpenChange={onToggle}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {isRemove && (
+            <DialogDescription>
+              Are you sure you want to remove this item?
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
+        {children}
+        {isRemove && (
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="secondary">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={onConfirm}>
+              Remove
+            </Button>
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const PageSizeSelector = ({ value, onChange }) => (
+  <div className="flex items-center gap-x-3 w-16 text-sm">
+    <span>Show</span>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger>
+        <SelectValue placeholder="10" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={10}>10</SelectItem>
+        <SelectItem value={25}>25</SelectItem>
+        <SelectItem value={50}>50</SelectItem>
+      </SelectContent>
+    </Select>
+    <span>entries</span>
+  </div>
+);
+
+const TableWrapper = ({ table }) => {
+  const { getHeaderGroups, getRowModel, getVisibleFlatColumns } = table;
+  const emptyRows = 10 - getRowModel().rows.length;
+
+  return (
+    <Table>
+      <TableHeader>
+        {getHeaderGroups().map(headerGroup => (
+          <TableRow key={headerGroup.id} className="bg-gray-600/80 ">
+            {headerGroup.headers.map(header => (
+              <TableHead
+                key={header.id}
+                className="text-gray-50 font-bold border-x-2 border-gray-100/30"
+                style={{
+                  width: header.column.columnDef.size,
+                  minWidth: header.column.columnDef.size,
+                  maxWidth: header.column.columnDef.size,
+                }}
+              >
+                {header.isPlaceholder
+                  ? null
+                  : flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+              </TableHead>
+            ))}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {getRowModel().rows.length === 0 && (
+          <TableRow>
+            <TableCell
+              colSpan={getVisibleFlatColumns().length}
+              className="h-24 text-center"
+            >
+              No results.
+            </TableCell>
+          </TableRow>
+        )}
+        {getRowModel().rows.map(row => (
+          <TableRow key={row.id} className="hover:bg-gray-200/80">
+            {row.getVisibleCells().map(cell => (
+              <TableCell
+                key={cell.id}
+                style={{
+                  width: cell.column.columnDef.size,
+                  minWidth: cell.column.columnDef.size,
+                  maxWidth: cell.column.columnDef.size,
+                }}
+              >
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+
+        {Array.from({ length: emptyRows }).map((_, index) => (
+          <TableRow key={`empty-${index}`} className="border-b-0">
+            <TableCell colSpan={getVisibleFlatColumns().length}></TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+};
+
+const LoadingSkeleton = () => (
+  <div className="flex flex-col gap-y-4">
+    {Array.from({ length: 10 }).map((_, index) => (
+      <Skeleton key={`row-skeleton-${index}`} className="h-6" />
+    ))}
+  </div>
+);
 
 const DataTable = ({
   columns,
-  useGetQuery,
-  useLazyGetByIdQuery,
-  useCreateMutation,
-  useUpdateMutation,
-  useDeleteMutation,
+  searchQuery,
+  lazyShowQuery,
+  createMutation,
+  updateMutation,
+  removeMutation,
   FormComponent,
-  canAdd = true,
-  canEdit = true,
+  allowCreate = true,
+  allowUpdate = true,
 }) => {
   const columnsHelper = createColumnHelper();
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setcurrentPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [selectedId, setSelectedId] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
 
   const {
-    data: allData,
-    isLoading: isLoadingAllData,
-    isFetching: isFetchingAllData,
-    refetch,
-  } = useGetQuery({
+    data: items,
+    isLoading: isLoadingItems,
+    isFetching: isFetchingItems,
+  } = searchQuery({
     page: searchTerm ? 1 : currentPage + 1,
     limit,
-    search: searchTerm,
+    q: searchTerm,
   });
-  const [
-    triggerGetById,
-    { data: singleData, isFetching: isFetchingSingleData },
-  ] = useLazyGetByIdQuery();
-  const [createMutation] = useCreateMutation();
-  const [updateMutation] = useUpdateMutation();
-  const [deleteMutation] = useDeleteMutation();
+  const [fetchShowQuery, { data: item }] = lazyShowQuery();
+  const [removeMutate] = removeMutation();
 
   const mergedColumns = [
     columnsHelper.display({
       header: '#',
-      size: 20,
+      size: 30,
       cell: info =>
         searchTerm
           ? info.row.index + 1
-          : info.row.index + 1 + currentPage * allData?.meta?.pageSize,
+          : info.row.index + 1 + currentPage * items?.meta?.pageSize,
     }),
     ...columns,
+    columnsHelper.accessor('createdAt', {
+      header: 'Created At',
+      size: 100,
+      cell: info => dayjs(info.getValue()).format('DD MMM YYYY hh:mm A'),
+    }),
+    columnsHelper.accessor('updatedAt', {
+      header: 'Updated At',
+      size: 100,
+      cell: info => dayjs(info.getValue()).format('DD MMM YYYY hh:mm A'),
+    }),
     columnsHelper.display({
       header: 'Actions',
-      size: 40,
+      size: 80,
       cell: ({ row }) => {
+        let postId;
+
+        if (location.pathname.includes('comments'))
+          postId = row.original.post._id;
+
         return (
           <div className="flex gap-x-2">
-            {canEdit && (
+            {allowUpdate && (
               <TbEdit
                 className="size-5 cursor-pointer text-orange-600"
-                onClick={() => handleEdit(row.original._id)}
+                onClick={() => handleUpdate(row.original._id)}
               />
             )}
             <TbTrash
               className="size-5 cursor-pointer text-red-600"
-              onClick={() => handleDelete(row.original._id)}
+              onClick={() =>
+                handleRemove({ id: row.original._id, parentId: postId })
+              }
             />
           </div>
         );
@@ -108,245 +286,132 @@ const DataTable = ({
     }),
   ];
 
-  const handlePageChange = page => setcurrentPage(page.selected);
-  const handleSearchChange = e => setSearchTerm(e.target.value);
+  const handleModalToggle = open => {
+    setIsCreateModalOpen(open);
+    setIsUpdateModalOpen(open);
+  };
 
   const handleCreate = () => {
     setSelectedId(null);
     setIsCreateModalOpen(true);
   };
 
-  const handleEdit = async id => {
-    await triggerGetById(id);
-    setIsEditModalOpen(true);
+  const handleUpdate = async id => {
+    await fetchShowQuery(id);
+    setIsUpdateModalOpen(true);
   };
 
-  const handleDelete = id => {
-    setSelectedId(id);
-    setIsDeleteModalOpen(true);
+  const handleRemove = ({ id, parentId }) => {
+    if (location.pathname.includes('comments') && parentId) {
+      setSelectedId({ postId: parentId, commentId: id });
+    } else {
+      setSelectedId(id);
+    }
+
+    setIsRemoveModalOpen(true);
   };
 
-  const handleCreateConfirm = async values => {
+  const handleCreateComplete = result => {
+    setIsCreateModalOpen(false);
+    setSelectedId(null);
+    toast.success(result.message);
+  };
+
+  const handleUpdateComplete = result => {
+    setIsUpdateModalOpen(false);
+    setSelectedId(null);
+    toast.success(result.message);
+  };
+
+  const handleRemoveConfirm = async () => {
     try {
-      const res = await createMutation(values).unwrap();
+      const result = await removeMutate(selectedId).unwrap();
 
-      setIsCreateModalOpen(false);
+      setIsRemoveModalOpen(false);
       setSelectedId(null);
-      refetch();
-      toast.success(res.message);
-    } catch (err) {
-      return { errors: err.errors };
+      toast.success(result.message);
+    } catch (e) {
+      toast.error('Failed to remove item');
     }
   };
 
-  const handleUpdateConfirm = async values => {
-    try {
-      const res = await updateMutation({
-        id: singleData?.data?._id,
-        data: values,
-      }).unwrap();
-
-      setIsEditModalOpen(false);
-      setSelectedId(null);
-      refetch();
-      toast.success(res.message);
-
-      return { data: res.data, errors: null };
-    } catch (err) {
-      return { data: null, errors: err.errors };
-    }
-  };
-
-  const handleDeleteConfirm = async () => {
-    try {
-      const res = await deleteMutation(selectedId).unwrap();
-
-      setIsDeleteModalOpen(false);
-      setSelectedId(null);
-      toast.success(res.message);
-      refetch();
-    } catch (err) {
-      toast.error(err.message);
-    }
+  const handlePageSizeChange = value => {
+    setLimit(value);
+    setcurrentPage(0);
   };
 
   const table = useReactTable({
-    data: allData?.data || [],
+    data: items?.data || [],
     columns: mergedColumns,
     getCoreRowModel: getCoreRowModel(),
     manualFiltering: true,
     manualPagination: true,
-    rowCount: allData?.meta?.totalItems || 0,
+    rowCount: items?.meta?.totalItems || 0,
   });
 
   return (
     <>
-      <Toaster position="top-right" reverseOrder={false} />
       <div className="flex items-center justify-between mb-4">
         <Input
           type="text"
           placeholder="Search..."
           className="w-64 lg:w-80"
-          onChange={handleSearchChange}
+          onChange={e => setSearchTerm(e.target.value)}
         />
-        {canAdd && (
+        {allowCreate && (
           <Button onClick={handleCreate}>
             <TbPlus className="mr-2 size-5" />
-            Add New
+            Add
           </Button>
         )}
       </div>
 
-      {isLoadingAllData || isFetchingAllData ? (
-       <div className="flex flex-col gap-y-4">
-       {Array.from({ length: 5 }).map((_, index) => (
-         <Skeleton key={`row-skeleton-${index}`} className="h-4 w-full" />
-       ))}
-       {Array.from({ length: 5 }).map((_, index) => (
-         <Skeleton
-           key={`row-skeleton-large-${index}`}
-           className="h-6 w-full"
-         />
-      ))}
-     </div>
+      {isLoadingItems || isFetchingItems ? (
+        <LoadingSkeleton />
       ) : (
-        <div className='rounded-md shadow-md overflow-x-auto min-h-96'>
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id} >
-                  {headerGroup.headers.map(header => (
-                    <TableHead
-                      key={header.id}
-                      style={{
-                        width: `${header.getSize()}px`,
-                      }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map(row => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell
-                      key={cell.id}
-                      style={{
-                        width: `${cell.column.getSize()}px`,
-                      }}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <TableWrapper table={table} />
       )}
 
       <div className="flex justify-between mt-4">
-        <div className="flex items-center gap-x-3 w-16 text-sm">
-          <span>Show</span>
-          <Select
-            value={allData?.meta?.pageSize}
-            onValueChange={value => {
-              setLimit(value);
-              setcurrentPage(0);
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="10" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={10}>10</SelectItem>
-              <SelectItem value={25}>25</SelectItem>
-              <SelectItem value={50}>50</SelectItem>
-            </SelectContent>
-          </Select>
-          <span>entries</span>
-        </div>
+        <PageSizeSelector
+          value={limit}
+          onChange={value => handlePageSizeChange(value)}
+        />
 
         <Pagination
           currentPage={currentPage}
-          pageCount={allData?.meta?.totalPages}
-          onPageChange={handlePageChange}
+          pageCount={items?.meta?.totalPages}
+          onPageChange={page => setcurrentPage(page.selected)}
           forcePage={currentPage}
         />
       </div>
 
       <ManageItemModal
-        open={isEditModalOpen || isCreateModalOpen}
-        onToggle={(open) => {
-          setIsCreateModalOpen(open);
-          setIsEditModalOpen(open);
-
-          if (isCreateModalOpen && singleData?.data) singleData.data = null;
-        }}
+        isOpen={isCreateModalOpen || isUpdateModalOpen}
+        onToggle={open => handleModalToggle(open)}
         title={isCreateModalOpen ? 'Create' : 'Update'}
       >
-         <FormComponent
-            initialValues={
-              isEditModalOpen && singleData?.data ? singleData?.data : {}
-            }
-            onSubmit={
-              isCreateModalOpen ? handleCreateConfirm : handleUpdateConfirm
-            }
-            onCancel={() => {
-              setIsCreateModalOpen(false);
-              setIsEditModalOpen(false);
-            }}
-            isCreate={isCreateModalOpen}
-            isLoading={isFetchingSingleData}
-          />
+        <FormComponent
+          isCreate={isCreateModalOpen}
+          mutation={isCreateModalOpen ? createMutation : updateMutation}
+          initialValues={!isCreateModalOpen && item?.data ? item.data : {}}
+          onComplete={
+            isCreateModalOpen ? handleCreateComplete : handleUpdateComplete
+          }
+          onCancel={
+            isCreateModalOpen
+              ? () => setIsCreateModalOpen(false)
+              : () => setIsUpdateModalOpen(false)
+          }
+        />
       </ManageItemModal>
 
-      {/* <Dialog
-        className="w-3/4"
-        open={isCreateModalOpen || isEditModalOpen}
-        onOpenChange={() => {
-          setIsCreateModalOpen(false);
-          setIsEditModalOpen(false);
-
-          if (isCreateModalOpen && singleData?.data) singleData.data = null;
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{isCreateModalOpen ? 'Create' : 'Update'}</DialogTitle>
-          </DialogHeader>
-          <FormComponent
-            initialValues={
-              isEditModalOpen && singleData?.data ? singleData?.data : {}
-            }
-            onSubmit={
-              isCreateModalOpen ? handleCreateConfirm : handleUpdateConfirm
-            }
-            onCancel={() => {
-              setIsCreateModalOpen(false);
-              setIsEditModalOpen(false);
-            }}
-            isCreate={isCreateModalOpen}
-            isLoading={isFetchingSingleData}
-          />
-        </DialogContent>
-      </Dialog> */}
-
-      <ConfirmDeleteModal
-        isOpen={isDeleteModalOpen}
-        onToggle={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleDeleteConfirm}
+      <ManageItemModal
+        isOpen={isRemoveModalOpen}
+        isRemove={true}
+        title="Remove"
+        onToggle={() => setIsRemoveModalOpen(false)}
+        onConfirm={handleRemoveConfirm}
       />
     </>
   );
