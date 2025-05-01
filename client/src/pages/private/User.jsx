@@ -42,13 +42,9 @@ const User = () => {
       header: 'Username',
       size: 100,
     }),
-    columnsHelper.accessor('email', {
-      header: 'Email',
-      size: 100,
-    }),
     columnsHelper.accessor('role', {
       header: 'Role',
-      size: 100,
+      size: 60,
       cell: info => {
         const role = info.getValue();
         if (role.name === 'admin')

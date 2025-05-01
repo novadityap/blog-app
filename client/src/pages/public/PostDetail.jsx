@@ -50,7 +50,7 @@ const CreateComment = ({
     ids: { postId, parentCommentId },
     mutation: useCreateCommentMutation,
     defaultValues: {
-      postId,
+      post: postId,
       parentCommentId,
       text: replyTo || '',
     },
@@ -121,16 +121,16 @@ const Comments = ({ comments, postId, token }) => {
         <div key={comment._id} className="flex gap-x-4">
           <Avatar className="size-10 mt-2">
             <AvatarImage
-              src={comment.userId.avatar}
-              alt={comment.userId.username}
+              src={comment.user.avatar}
+              alt={comment.user.username}
             />
             <AvatarFallback>
-              {comment.userId.username.charAt(0).toUpperCase()}
+              {comment.user.username.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <p className="font-semibold text-gray-800">
-              {comment.userId.username}
+              {comment.user.username}
             </p>
             <p className="text-gray-600 text-sm">{comment.text}</p>
             {token && (
@@ -144,7 +144,7 @@ const Comments = ({ comments, postId, token }) => {
             )}
             {replyToCommentId === comment._id && (
               <CreateComment
-                avatarUrl={comment.userId.avatar}
+                avatarUrl={comment.user.avatar}
                 isReply={true}
                 postId={postId}
                 parentCommentId={comment._id}
@@ -158,16 +158,16 @@ const Comments = ({ comments, postId, token }) => {
                   <div className="flex gap-x-4">
                     <Avatar className="size-8 mt-2">
                       <AvatarImage
-                        src={reply.userId.avatar}
-                        alt={reply.userId.username}
+                        src={reply.user.avatar}
+                        alt={reply.user.username}
                       />
                       <AvatarFallback>
-                        {reply.userId.username.charAt(0).toUpperCase()}
+                        {reply.user.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-semibold text-gray-800">
-                        {reply.userId.username}
+                        {reply.user.username}
                       </p>
                       <p className="text-gray-600 text-sm">{reply.text}</p>
                       {token && (
@@ -183,12 +183,12 @@ const Comments = ({ comments, postId, token }) => {
                   </div>
                   {replyToCommentId === reply._id && (
                     <CreateComment
-                      avatarUrl={reply.userId.avatar}
+                      avatarUrl={reply.user.avatar}
                       isReply={true}
                       postId={postId}
                       parentCommentId={comment._id}
                       onCancelReply={() => setReplyToCommentId(null)}
-                      replyTo={`@${reply.userId.username} `}
+                      replyTo={`@${reply.user.username} `}
                     />
                   )}
                 </div>
@@ -279,7 +279,7 @@ const PostDetail = () => {
     data: post,
     isLoading: isLoadingPost,
     error,
-  } = useShowPostQuery(String(postId), {
+  } = useShowPostQuery(postId, {
     refetchOnMountOrArgChange: true,
   });
 
@@ -317,16 +317,16 @@ const PostDetail = () => {
         <div className="flex items-center gap-x-2 mb-6">
           <Avatar className="w-10 h-10">
             <AvatarImage
-              src={post?.data?.userId?.avatar}
-              alt={post?.data?.userId?.username}
+              src={post?.data?.user?.avatar}
+              alt={post?.data?.user?.username}
             />
             <AvatarFallback>
-              {post?.data?.userId?.username.charAt(0).toUpperCase()}
+              {post?.data?.user?.username.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
             <CardDescription className="font-semibold capitalize">
-              {post?.data?.userId?.username}
+              {post?.data?.user?.username}
             </CardDescription>
             <CardDescription className="text-sm text-gray-500">
               <span className="text-gray-600">Published on </span>
@@ -364,9 +364,7 @@ const PostDetail = () => {
       <CardFooter className="flex flex-col gap-y-6">
         {token ? (
           <CreateComment
-            avatarUrl={
-              post?.data?.userId?.avatar || import.meta.env.VITE_API_URL
-            }
+            avatarUrl={post?.data?.user?.avatar || import.meta.env.VITE_API_URL}
             postId={post?.data?._id}
           />
         ) : (
@@ -384,6 +382,10 @@ const PostDetail = () => {
 
         {isLoadingComments ? (
           <CommentsSkeleton />
+        ) : comments?.data?.length === 0 ? (
+          <p className="text-center text-muted-foreground py-4">
+            No comments yet. Be the first to comment!
+          </p>
         ) : (
           <Comments
             token={token}
