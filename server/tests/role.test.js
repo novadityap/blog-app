@@ -6,18 +6,10 @@ import {
   removeTestRole,
 } from './testUtil.js';
 
-describe('GET /api/roles/list', () => {
-  beforeAll(async () => {
-    await createManyTestRoles();
-  });
-
-  afterAll(async () => {
-    await removeTestRole();
-  });
-
+describe('GET /api/roles', () => {
   it('should return an error if user does not have permission', async () => {
     const result = await request(app)
-      .get('/api/roles/list')
+      .get('/api/roles')
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
@@ -25,17 +17,21 @@ describe('GET /api/roles/list', () => {
   });
 
   it('should return all roles', async () => {
+    await createManyTestRoles();
+
     const result = await request(app)
-      .get('/api/roles/list')
+      .get('/api/roles')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Roles retrieved successfully');
     expect(result.body.data).toBeDefined();
+
+    await removeTestRole();
   });
 });
 
-describe('GET /api/roles', () => {
+describe('GET /api/roles/search', () => {
   beforeEach(async () => {
     await createManyTestRoles();
   });
@@ -46,7 +42,7 @@ describe('GET /api/roles', () => {
 
   it('should return an error if user does not have permission', async () => {
     const result = await request(app)
-      .get('/api/roles')
+      .get('/api/roles/search')
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
@@ -55,7 +51,7 @@ describe('GET /api/roles', () => {
 
   it('should return a list of roles with default pagination', async () => {
     const result = await request(app)
-      .get('/api/roles')
+      .get('/api/roles/search')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
@@ -69,7 +65,7 @@ describe('GET /api/roles', () => {
 
   it('should return a list of roles with custom pagination', async () => {
     const result = await request(app)
-      .get('/api/roles')
+      .get('/api/roles/search')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
         page: 2,
@@ -86,10 +82,10 @@ describe('GET /api/roles', () => {
 
   it('should return a list of roles with custom search', async () => {
     const result = await request(app)
-      .get('/api/roles')
+      .get('/api/roles/search')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
-        search: 'test10',
+        q: 'test10',
       });
 
     expect(result.status).toBe(200);
