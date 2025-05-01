@@ -37,7 +37,7 @@ const signup = async (req, res, next) => {
 
     const newUser = await User.create({
       ...fields,
-      roles: [userRole._id],
+      role: userRole._id,
     });
 
     const html = await ejs.renderFile('./src/views/verifyEmail.ejs', {
@@ -61,7 +61,7 @@ const verifyEmail = async (req, res, next) => {
   try {
     const user = await User.findOneAndUpdate(
       {
-        verificationToken: req.params.token,
+        verificationToken: req.params.verificationToken,
         verificationTokenExpires: { $gt: Date.now() },
       },
       {
@@ -149,7 +149,7 @@ const signin = async (req, res, next) => {
 
     const payload = { id: user._id, role: user.role.name };
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES,
+      expiresIn: parseInt(process.env.JWT_EXPIRES),
     });
     const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
       expiresIn: process.env.JWT_REFRESH_EXPIRES,
@@ -157,6 +157,8 @@ const signin = async (req, res, next) => {
 
     user.refreshToken = refreshToken;
     await user.save();
+
+    const transformedUser = user.toObject();
 
     logger.info('signed in successfully');
     res
@@ -168,11 +170,11 @@ const signin = async (req, res, next) => {
         code: 200,
         message: 'Signed in successfully',
         data: {
-          _id: user._id,
-          username: user.username,
-          email: user.email,
-          avatar: user.avatarUrl,
-          role: user.role.name,
+          _id: transformedUser._id,
+          username: transformedUser.username,
+          email: transformedUser.email,
+          avatar: transformedUser.avatar,
+          role: transformedUser.role.name,
           token,
         },
       });
@@ -230,16 +232,21 @@ const refreshToken = async (req, res, next) => {
     }
 
     jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (err, decoded) => {
-      if (err instanceof jwt.TokenExpiredError) {
-        logger.warn('refresh token has expired');
-        throw new ResponseError('Refresh token has expired', 401);
+      if (err) {
+        if (err.name === 'TokenExpiredError') {
+          logger.warn('refresh token has expired');
+          throw new ResponseError('Refresh token has expired', 401);
+        }
+
+        logger.warn('refresh token is invalid');
+        throw new ResponseError('Refresh token is invalid', 401);
       }
     });
 
     const newToken = jwt.sign(
       { id: user._id, role: user.role.name },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES }
+      { expiresIn: parseInt(process.env.JWT_EXPIRES) }
     );
 
     logger.info('token refreshed successfully');
@@ -300,7 +307,7 @@ const resetPassword = async (req, res, next) => {
 
     const user = await User.findOneAndUpdate(
       {
-        resetToken: req.params.token,
+        resetToken: req.params.resetToken,
         resetTokenExpires: { $gt: Date.now() },
       },
       {

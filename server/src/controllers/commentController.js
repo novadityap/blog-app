@@ -1,6 +1,5 @@
 import logger from '../utils/logger.js';
 import Comment from '../models/commentModel.js';
-import User from '../models/userModel.js';
 import Post from '../models/postModel.js';
 import ResponseError from '../utils/responseError.js';
 import validate from '../utils/validate.js';
@@ -28,12 +27,17 @@ const validatePostId = async id => {
 const create = async (req, res, next) => {
   try {
     const postId = await validatePostId(req.params.postId);
-
     const fields = validate(createCommentSchema, req.body);
-    await Comment.create({
+
+    const comment = await Comment.create({
       ...fields,
       postId: postId,
       userId: req.user.id,
+    });
+
+    await Post.findByIdAndUpdate(postId, {
+      $push: { comments: comment._id },
+      $set: { updatedAt: Date.now() },
     });
 
     logger.info('comment created successfully');
@@ -46,10 +50,38 @@ const create = async (req, res, next) => {
   }
 };
 
+const listByPost = async (req, res, next) => {
+  try {
+    const postId = await validatePostId(req.params.postId);
+    const comments = await Comment.find({ postId }).populate({
+      path: 'userId',
+      select: 'username email avatar',
+    });
+
+    if (comments.length === 0) {
+      logger.info('no comments found');
+      return res.json({
+        code: 200,
+        message: 'No comments found',
+        data: [],
+      });
+    }
+
+    logger.info('comments retrieved successfully');
+    res.json({
+      code: 200,
+      message: 'Comments retrieved successfully',
+      data: comments,
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+
 const search = async (req, res, next) => {
   try {
     const query = validate(searchCommentSchema, req.query);
-    const { page, limit, search } = query;
+    const { page, limit, q } = query;
 
     const [{ comments, totalComments }] = await Comment.aggregate()
       .lookup({
@@ -67,12 +99,12 @@ const search = async (req, res, next) => {
         pipeline: [{ $project: { title: 1 } }],
       })
       .match(
-        search
+        q
           ? {
               $or: [
-                { text: { $regex: search, $options: 'i' } },
-                { 'user.username': { $regex: search, $options: 'i' } },
-                { 'post.title': { $regex: search, $options: 'i' } },
+                { text: { $regex: q, $options: 'i' } },
+                { 'user.username': { $regex: q, $options: 'i' } },
+                { 'post.title': { $regex: q, $options: 'i' } },
               ],
             }
           : {}
@@ -194,4 +226,4 @@ const remove = async (req, res, next) => {
   }
 };
 
-export default { create, show, update, remove, search };
+export default { create, show, update, remove, search, listByPost };
