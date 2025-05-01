@@ -31,8 +31,8 @@ const create = async (req, res, next) => {
 
     await Comment.create({
       ...fields,
-      postId: postId,
-      userId: req.user.id,
+      post: postId,
+      user: req.user.id,
     });
 
     logger.info('comment created successfully');
@@ -48,8 +48,8 @@ const create = async (req, res, next) => {
 const listByPost = async (req, res, next) => {
   try {
     const postId = await validatePostId(req.params.postId);
-    const comments = await Comment.find({ postId }).populate({
-      path: 'userId',
+    const comments = await Comment.find({ post: postId }).populate({
+      path: 'user',
       select: 'username email avatar',
     });
 
@@ -81,14 +81,14 @@ const search = async (req, res, next) => {
     const [{ comments, totalComments }] = await Comment.aggregate()
       .lookup({
         from: 'users',
-        localField: 'userId',
+        localField: 'user',
         foreignField: '_id',
         as: 'user',
         pipeline: [{ $project: { username: 1 } }],
       })
       .lookup({
         from: 'posts',
-        localField: 'postId',
+        localField: 'post',
         foreignField: '_id',
         as: 'post',
         pipeline: [{ $project: { title: 1 } }],
@@ -104,6 +104,8 @@ const search = async (req, res, next) => {
             }
           : {}
       )
+      .unwind('user')
+      .unwind('post')
       .facet({
         comments: [
           { $sort: { createdAt: -1 } },
