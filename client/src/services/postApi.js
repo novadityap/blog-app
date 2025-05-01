@@ -1,9 +1,11 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import axiosBaseQuery from '@/app/baseQuery.js';
+import sanitizeData from '@/utils/sanitizeData.js';
 
 const postApi = createApi({
   reducerPath: 'postApi',
   baseQuery: axiosBaseQuery(),
+  tagTypes: ['Post'],
   endpoints: builder => ({
     createPost: builder.mutation({
       query: data => ({
@@ -14,8 +16,8 @@ const postApi = createApi({
       }),
     }),
     searchPosts: builder.query({
-      query: (params = {}) => ({
-        url: '/posts',
+      query: params => ({
+        url: '/posts/search',
         method: 'GET',
         params,
       }),
@@ -25,6 +27,10 @@ const postApi = createApi({
         url: `/posts/${postId}`,
         method: 'GET',
       }),
+      providesTags: (result, error, postId) => {
+        console.log('provide postId', postId);
+        return [{ type: 'Post', id: postId }];
+      },
     }),
     removePost: builder.mutation({
       query: postId => ({
@@ -36,7 +42,7 @@ const postApi = createApi({
       query: ({ data, postId }) => ({
         url: `/posts/${postId}`,
         method: 'PUT',
-        data,
+        data: sanitizeData(data),
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
     }),
@@ -45,6 +51,10 @@ const postApi = createApi({
         url: `/posts/${postId}/like`,
         method: 'PATCH',
       }),
+      invalidatesTags: (result, error, postId) => {
+        console.log('invalid postId', postId);
+        return [{ type: 'Post', id: postId }];
+      },
     }),
   }),
 });
