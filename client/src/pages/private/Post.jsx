@@ -24,15 +24,11 @@ const Post = () => {
       header: 'Title',
       size: 200,
     }),
-    columnsHelper.accessor('user', {
+    columnsHelper.accessor('user.username', {
       header: 'Author',
       size: 100,
-      cell: info => {
-        const user = info.getValue();
-        return user.username;
-      },
     }),
-    columnsHelper.accessor('category', {
+    columnsHelper.accessor('category.name', {
       header: 'Category',
       size: 100,
     }),
