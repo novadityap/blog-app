@@ -46,7 +46,7 @@ export const createTestComment = async (fields = {}) => {
   const user = await createTestUser();
   return await Comment.create({
     text: 'test',
-    userId: user._id,
+    user: user._id,
     ...fields,
   });
 };
@@ -123,7 +123,7 @@ export const createTestPost = async (fields = {}) => {
     title: 'test',
     slug: 'test',
     content: 'test',
-    userId: user._id,
+    user: user._id,
     category: category._id,
     ...fields,
   });
@@ -140,7 +140,7 @@ export const createManyTestPosts = async () => {
         title: `test${i}`,
         slug: `test${i}`,
         content: `test${i}`,
-        userId: users[i]._id,
+        user: users[i]._id,
         category: categories[i]._id,
       })
     );
