@@ -14,6 +14,7 @@ const postApi = createApi({
         data,
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
+      invalidatesTags: [{ type: 'Post', id: 'LIST' }],
     }),
     searchPosts: builder.query({
       query: params => ({
@@ -21,19 +22,33 @@ const postApi = createApi({
         method: 'GET',
         params,
       }),
+      providesTags: result =>
+        result
+          ? [
+              ...result.data.map(({ id }) => ({ type: 'Post', id })),
+              { type: 'Post', id: 'LIST' },
+            ]
+          : [{ type: 'Post', id: 'LIST' }],
     }),
     showPost: builder.query({
       query: postId => ({
         url: `/posts/${postId}`,
         method: 'GET',
       }),
-      providesTags: (result, error, postId) => [{ type: 'Post', id: postId }]
+      providesTags: (result, error, postId) => [
+        { type: 'Post', id: postId },
+        { type: 'Post', id: 'LIST' },
+      ],
     }),
     removePost: builder.mutation({
       query: postId => ({
         url: `/posts/${postId}`,
         method: 'DELETE',
       }),
+      invalidatesTags: (result, error, postId) => [
+        { type: 'Post', id: postId },
+        { type: 'Post', id: 'LIST' },
+      ],
     }),
     updatePost: builder.mutation({
       query: ({ data, postId }) => ({
@@ -42,13 +57,19 @@ const postApi = createApi({
         data: sanitizeData(data),
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
+      invalidatesTags: (result, error, { postId }) => [
+        { type: 'Post', id: postId },
+        { type: 'Post', id: 'LIST' },
+      ],
     }),
     likePost: builder.mutation({
       query: postId => ({
         url: `/posts/${postId}/like`,
         method: 'PATCH',
       }),
-      invalidatesTags: (result, error, postId) => [{ type: 'Post', id: postId }]
+      invalidatesTags: (result, error, postId) => [
+        { type: 'Post', id: postId },
+      ],
     }),
   }),
 });
