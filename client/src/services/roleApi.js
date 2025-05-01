@@ -1,20 +1,21 @@
 import axiosBaseQuery from '@/app/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
+import sanitizeData from '@/utils/sanitizeData';
 
 const roleApi = createApi({
   reducerPath: 'roleApi',
   baseQuery: axiosBaseQuery(),
   endpoints: builder => ({
     searchRoles: builder.query({
-      query: (params = {}) => ({
-        url: '/roles',
+      query: params => ({
+        url: '/roles/search',
         method: 'GET',
         params,
       }),
     }),
     listRoles: builder.query({
       query: () => ({
-        url: '/roles/list',
+        url: '/roles',
         method: 'GET',
       }),
     }),
@@ -35,7 +36,7 @@ const roleApi = createApi({
       query: ({ roleId, data }) => ({
         url: `/roles/${roleId}`,
         method: 'PUT',
-        data,
+        data: sanitizeData(data),
       }),
     }),
     removeRole: builder.mutation({

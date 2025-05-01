@@ -1,5 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import axiosBaseQuery from '@/app/baseQuery.js';
+import sanitizeData from '@/utils/sanitizeData.js';
 
 const userApi = createApi({
   reducerPath: 'userApi',
@@ -13,8 +14,8 @@ const userApi = createApi({
       }),
     }),
     searchUsers: builder.query({
-      query: (params = {}) => ({
-        url: '/users',
+      query: params => ({
+        url: '/users/search',
         method: 'GET',
         params,
       }),
@@ -29,7 +30,7 @@ const userApi = createApi({
       query: ({ data, userId }) => ({
         url: `/users/${userId}`,
         method: 'PUT',
-        data,
+        data: sanitizeData(data),
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
     }),
