@@ -1,18 +1,11 @@
 import { Outlet, Navigate } from 'react-router-dom';
-import useAuth from '@/hooks/useAuth';
-import hasRole from '@/utils/hasRole';
-import hasPermission from '@/utils/hasPermission';
+import { useSelector } from 'react-redux';
 
-const PrivateRoute = ({ requiredRoles, requiredPermissions }) => {
-  const { token, roles, permissions } = useAuth();
+const PrivateRoute = ({ requiredRoles }) => {
+  const { token, currentUser } = useSelector(state => state.auth);
 
   if (!token) return <Navigate to="/" />;
-
-  const roleAllowed = requiredRoles ? requiredRoles.some(role => hasRole(roles, role)) : true;
-
-  const permissionAllowed = requiredPermissions ? requiredPermissions.some(permission => hasPermission(permissions, permission.action, permission.resource)) : true;
-
-  if (!roleAllowed || !permissionAllowed) return <Navigate to="unauthorized" />;
+  if (!requiredRoles.includes(currentUser.role)) return <Navigate to="unauthorized" />;
 
   return <Outlet />;
 };
