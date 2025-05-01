@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const postSchema = new mongoose.Schema(
   {
-    userId: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
@@ -67,7 +67,7 @@ postSchema.pre(
   { document: false, query: true },
   async function (next) {
     const postId = this.getQuery()._id;
-    await mongoose.model('Comment').deleteMany({ postId });
+    await mongoose.model('Comment').deleteMany({ post: postId });
     next();
   }
 );

@@ -68,8 +68,8 @@ userSchema.pre(
   { document: false, query: true },
   async function (next) {
     const userId = this.getQuery()._id;
-    await mongoose.model('Post').deleteMany({ userId });
-    await mongoose.model('Comment').deleteMany({ userId });
+    await mongoose.model('Post').deleteMany({ user: userId });
+    await mongoose.model('Comment').deleteMany({ user: userId });
     next();
   }
 );
