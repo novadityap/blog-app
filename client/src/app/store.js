@@ -14,7 +14,6 @@ import storage from 'redux-persist/lib/storage';
 import queryReducer from '@/features/querySlice.js';
 import authReducer from '@/features/authSlice.js';
 import authApi from '@/services/authApi.js';
-import permissionApi from "@/services/permissionApi";
 import postApi from "@/services/postApi.js";
 import userApi from "@/services/userApi.js";
 import roleApi from "@/services/roleApi.js";
@@ -35,7 +34,6 @@ const authPersistConfig = {
 
 const rootReducer = combineReducers({
   [authApi.reducerPath]: authApi.reducer,
-  [permissionApi.reducerPath]: permissionApi.reducer,
   [postApi.reducerPath]: postApi.reducer,
   [userApi.reducerPath]: userApi.reducer,
   [roleApi.reducerPath]: roleApi.reducer,
@@ -58,7 +56,6 @@ export const store = configureStore({
     userApi.middleware,
     roleApi.middleware,
     categoryApi.middleware,
-    permissionApi.middleware,
     dashboardApi.middleware,
     commentApi.middleware,
   ),

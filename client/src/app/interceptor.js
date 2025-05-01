@@ -7,7 +7,7 @@ const axiosInstance = axios.create({
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
-  }
+  },
 });
 
 axiosInstance.interceptors.request.use(
@@ -27,9 +27,10 @@ axiosInstance.interceptors.response.use(
     if (e.response.status === 401) {
       const message = e.response.data.message;
 
-      const signoutMessages = [
+      const refreshTokenMessages = [
         'Token is not provided',
         'Token is invalid',
+        'Token has expired',
       ];
 
       const ignoredMessages = [
@@ -40,12 +41,7 @@ axiosInstance.interceptors.response.use(
 
       if (ignoredMessages.includes(message)) return Promise.reject(e);
 
-      if (signoutMessages.includes(message)) {
-        store.dispatch(clearAuth());
-        return Promise.reject(e);
-      }
-
-      if (message === 'Token has expired') {
+      if (refreshTokenMessages.includes(message)) {
         try {
           const result = await axios.post(
             `${import.meta.env.VITE_API_URL}/auth/refresh-token`,
@@ -55,7 +51,7 @@ axiosInstance.interceptors.response.use(
 
           originalRequest.headers.Authorization = `Bearer ${result.data.data.token}`;
           store.dispatch(setToken(result.data.data.token));
-          
+
           return axiosInstance(originalRequest);
         } catch (e) {
           store.dispatch(clearAuth());
@@ -67,6 +63,5 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(e);
   }
 );
-
 
 export default axiosInstance;
