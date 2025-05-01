@@ -7,7 +7,7 @@ const dashboardApi = createApi({
   endpoints: builder => ({
     showDashboard: builder.query({
       query: () => ({
-        url: '/dashboard/stats',
+        url: '/dashboard',
         method: 'GET',
       }),
     }),
