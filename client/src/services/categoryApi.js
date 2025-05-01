@@ -5,6 +5,7 @@ import sanitizeData from '@/utils/sanitizeData';
 const categoryApi = createApi({
   reducerPath: 'categoryApi',
   baseQuery: axiosBaseQuery(),
+  tagTypes: ['Category'],
   endpoints: builder => ({
     searchCategories: builder.query({
       query: (params = {}) => ({
@@ -12,18 +13,36 @@ const categoryApi = createApi({
         method: 'GET',
         params,
       }),
+      providesTags: result =>
+        result
+          ? [
+              ...result.data.map(({ id }) => ({ type: 'Category', id })),
+              { type: 'Category', id: 'LIST' },
+            ]
+          : [{ type: 'Category', id: 'LIST' }],
     }),
     listCategories: builder.query({
       query: () => ({
         url: '/categories',
         method: 'GET',
       }),
+      providesTags: result =>
+        result
+          ? [
+              ...result.data.map(({ id }) => ({ type: 'Category', id })),
+              { type: 'Category', id: 'LIST' },
+            ]
+          : [{ type: 'Category', id: 'LIST' }],
     }),
     showCategory: builder.query({
       query: categoryId => ({
         url: `/categories/${categoryId}`,
         method: 'GET',
       }),
+      providesTags: (result, error, categoryId) => [
+        { type: 'Category', id: categoryId },
+        { type: 'Category', id: 'LIST' },
+      ],
     }),
     createCategory: builder.mutation({
       query: data => ({
@@ -31,6 +50,7 @@ const categoryApi = createApi({
         method: 'POST',
         data,
       }),
+      invalidatesTags: [{ type: 'Category', id: 'LIST' }],
     }),
     updateCategory: builder.mutation({
       query: ({ categoryId, data }) => ({
@@ -38,12 +58,20 @@ const categoryApi = createApi({
         method: 'PUT',
         data: sanitizeData(data),
       }),
+      invalidatesTags: (result, error, { categoryId }) => [
+        { type: 'Category', id: categoryId },
+        { type: 'Category', id: 'LIST' },
+      ],
     }),
     removeCategory: builder.mutation({
       query: categoryId => ({
         url: `/categories/${categoryId}`,
         method: 'DELETE',
       }),
+      invalidatesTags: (result, error, categoryId) => [
+        { type: 'Category', id: categoryId },
+        { type: 'Category', id: 'LIST' },
+      ],
     }),
   }),
 });
