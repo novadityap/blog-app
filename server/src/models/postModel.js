@@ -60,7 +60,7 @@ postSchema.post('aggregate', function(docs, next) {
   if (posts) {
     posts.forEach(post => {
       post.postImage = postImageUrl + post.postImage;
-      delete post.password;
+      post.user.avatar = `${process.env.SERVER_URL}/uploads/users/` + post.user.avatar;
     });
   }
 
