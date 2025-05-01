@@ -4,10 +4,12 @@ import seedCategory from "./categorySeeder.js";
 import logger from "../utils/logger.js";
 import connectDB from '../config/connection.js';
 import 'dotenv/config';
+import mongoose from 'mongoose';
 
 const seed = async () => {
   try {
     await connectDB();
+    await mongoose.connection.db.dropDatabase();
     await seedRole();
     await seedUser();
     await seedCategory();
