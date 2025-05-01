@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import UserDropdown from '@/components/ui/UserDropdown';
 import { TbMenu2 } from 'react-icons/tb';
 import {
+  TbHome,
   TbApps,
   TbUsersGroup,
   TbNews,
@@ -14,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { forwardRef } from 'react';
 import Brand from '@/components/ui/Brand';
+import { Toaster } from 'react-hot-toast';
 
 const Header = ({ toggleSidebar }) => {
   return (
@@ -29,6 +31,7 @@ const Header = ({ toggleSidebar }) => {
 
 const Sidebar = forwardRef(({ isOpen }, ref) => {
   const menuItems = [
+    { name: 'Home', icon: TbHome, link: '/' },
     { name: 'Dashboard', icon: TbApps, link: '/dashboard' },
     { name: 'Users', icon: TbUsersGroup, link: '/dashboard/users' },
     { name: 'Posts', icon: TbNews, link: '/dashboard/posts' },
@@ -41,7 +44,7 @@ const Sidebar = forwardRef(({ isOpen }, ref) => {
     <aside
       ref={ref}
       className={cn(
-        'w-64 fixed lg:static inset-y-0 z-30 bg-gray-900 text-gray-200 flex flex-col transition duration-500 lg:translate-x-0',
+        'w-64 fixed h-screen inset-y-0 z-30 lg:z-30 bg-gray-900 text-gray-200 flex flex-col transition duration-500 lg:translate-x-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
@@ -77,11 +80,12 @@ const DashboardLayout = () => {
   }, [isSidebarOpen]);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex min-h-screen">
+      <Toaster position="top-right" />
       <Sidebar isOpen={isSidebarOpen} ref={sidebarRef} />
-      <div className="flex flex-col flex-1 h-full overflow-y-auto">
+      <div className="flex flex-col flex-grow lg:pl-64 overflow-x-hidden">
         <Header toggleSidebar={handleSidebar} />
-        <main className="container mx-auto p-5 lg:px-10 xl:px-20 flex-1">
+        <main className="container mx-auto p-5 lg:px-10 xl:px-10">
           <Outlet />
         </main>
       </div>
