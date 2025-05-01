@@ -5,6 +5,7 @@ import sanitizeData from '@/utils/sanitizeData';
 const roleApi = createApi({
   reducerPath: 'roleApi',
   baseQuery: axiosBaseQuery(),
+  tagTypes: ['Role'],
   endpoints: builder => ({
     searchRoles: builder.query({
       query: params => ({
@@ -12,18 +13,33 @@ const roleApi = createApi({
         method: 'GET',
         params,
       }),
+      providesTags: result =>
+        result
+          ? [
+              ...result.data.map(({ id }) => ({ type: 'Role', id })),
+              { type: 'Role', id: 'LIST' },
+            ]
+          : [{ type: 'Role', id: 'LIST' }],
     }),
     listRoles: builder.query({
       query: () => ({
         url: '/roles',
         method: 'GET',
       }),
+      providesTags: result =>
+        result
+          ? [
+              ...result.data.map(({ id }) => ({ type: 'Role', id })),
+              { type: 'Role', id: 'LIST' },
+            ]
+          : [{ type: 'Role', id: 'LIST' }],
     }),
     showRole: builder.query({
       query: roleId => ({
         url: `/roles/${roleId}`,
         method: 'GET',
       }),
+      providesTags: (result, error, roleId) => [{ type: 'Role', id: roleId }],
     }),
     createRole: builder.mutation({
       query: data => ({
@@ -31,6 +47,7 @@ const roleApi = createApi({
         method: 'POST',
         data,
       }),
+      invalidatesTags: [{ type: 'Role', id: 'LIST' }],
     }),
     updateRole: builder.mutation({
       query: ({ roleId, data }) => ({
@@ -38,12 +55,20 @@ const roleApi = createApi({
         method: 'PUT',
         data: sanitizeData(data),
       }),
+      invalidatesTags: (result, error, { roleId }) => [
+        { type: 'Role', id: roleId },
+        { type: 'Role', id: 'LIST' },
+      ],
     }),
     removeRole: builder.mutation({
       query: roleId => ({
         url: `/roles/${roleId}`,
         method: 'DELETE',
       }),
+      invalidatesTags: (result, error, roleId) => [
+        { type: 'Role', id: roleId },
+        { type: 'Role', id: 'LIST' },
+      ],
     }),
   }),
 });
