@@ -30,7 +30,7 @@ describe('GET /api/posts/:postId/comments', () => {
   });
 
   it('should return comments if post id is valid', async () => {
-    const comment = await createTestComment({ postId: post._id });
+    const comment = await createTestComment({ post: post._id });
 
     const result = await request(app)
       .get(`/api/posts/${post._id}/comments`)
