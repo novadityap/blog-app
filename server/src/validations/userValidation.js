@@ -19,7 +19,7 @@ const userSchema = Joi.object({
 export const searchUserSchema = Joi.object({
   page: Joi.number().integer().positive().min(1).default(1),
   limit: Joi.number().integer().positive().min(1).max(100).default(10),
-  search: Joi.string().allow('').optional(),
+  q: Joi.string().allow('').optional(),
 });
 
 export const getUserSchema = Joi.string()
