@@ -19,10 +19,10 @@ apiRouter.post('/auth/refresh-token', authController.refreshToken);
 apiRouter.post('/auth/signin', authController.signin);
 apiRouter.post('/auth/request-reset-password', authController.requestResetPassword);
 apiRouter.post('/auth/reset-password/:resetToken', authController.resetPassword);
-apiRouter.get('/categories/list', categoryController.list);
-apiRouter.get('/posts', postController.search);
+apiRouter.get('/categories', categoryController.list);
+apiRouter.get('/posts/search', postController.search);
 apiRouter.get('/posts/:postId', postController.show);
-
+apiRouter.get('/posts/:postId/comments', commentController.listByPost);
 
 apiRouter.use(authenticate);
 
@@ -31,14 +31,14 @@ apiRouter.post('/auth/signout', authController.signout);
 
 // Category API
 apiRouter.post('/categories', authorize(['admin']), categoryController.create);
-apiRouter.get('/categories', authorize(['admin']), categoryController.search);
+apiRouter.get('/categories/search', authorize(['admin']), categoryController.search);
 apiRouter.get('/categories/:categoryId', authorize(['admin']), categoryController.show);
 apiRouter.put('/categories/:categoryId', authorize(['admin']), categoryController.update);
 apiRouter.delete('/categories/:categoryId', authorize(['admin']), categoryController.remove
 );
 
 // Comment API
-apiRouter.get('/comments', authorize(['admin']), commentController.search);
+apiRouter.get('/comments/search', authorize(['admin']), commentController.search);
 apiRouter.post('/posts/:postId/comments', authorize(['admin', 'user']), commentController.create);
 apiRouter.get('/posts/:postId/comments/:commentId', authorize(['admin']), commentController.show);
 apiRouter.patch('/posts/:postId/comments/:commentId', authorize(['admin']), commentController.update);
@@ -55,17 +55,17 @@ apiRouter.get('/dashboard', authorize(['admin']), dashboardController.stats);
 
 // Role API
 apiRouter.post('/roles', authorize(['admin']), roleController.create);
-apiRouter.get('/roles', authorize(['admin']), roleController.search);
-apiRouter.get('/roles/list', authorize(['admin']), roleController.list);
+apiRouter.get('/roles/search', authorize(['admin']), roleController.search);
+apiRouter.get('/roles', authorize(['admin']), roleController.list);
 apiRouter.get('/roles/:roleId', authorize(['admin']), roleController.show);
 apiRouter.put('/roles/:roleId', authorize(['admin']), roleController.update);
 apiRouter.delete('/roles/:roleId', authorize(['admin']), roleController.remove);
 
 // User API
-apiRouter.get('/users/', authorize(['admin']), userController.search);
-apiRouter.post('/users/', authorize(['admin']), userController.create);
+apiRouter.get('/users/search', authorize(['admin']), userController.search);
+apiRouter.post('/users', authorize(['admin']), userController.create);
 apiRouter.get('/users/:userId', authorize(['admin', 'user']), userController.show);
 apiRouter.put('/users/:userId', authorize(['admin', 'user']), userController.update);
-apiRouter.delete('/users/:userId', authorize(['admin']), userController.remove);
+apiRouter.delete('/users/:userId', authorize(['admin', 'user']), userController.remove);
 
 export default apiRouter;
