@@ -16,11 +16,11 @@ import { access, copyFile } from 'node:fs/promises';
 import Post from '../src/models/postModel.js';
 
 const testPostImagePath = path.resolve(
-  process.env.TEST_POST_DIR,
+  process.env.POST_DIR_TEST,
   'test-post.jpg'
 );
 
-describe('GET /api/posts', () => {
+describe('GET /api/posts/search', () => {
   beforeEach(async () => {
     await createManyTestPosts();
   });
@@ -31,7 +31,7 @@ describe('GET /api/posts', () => {
 
   it('should return a list of posts with default pagination', async () => {
     const result = await request(app)
-      .get('/api/posts')
+      .get('/api/posts/search')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
@@ -45,7 +45,7 @@ describe('GET /api/posts', () => {
 
   it('should return a list of posts with custom pagination', async () => {
     const result = await request(app)
-      .get('/api/posts')
+      .get('/api/posts/search')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
         page: 2,
@@ -62,10 +62,10 @@ describe('GET /api/posts', () => {
 
   it('should return a list of posts with custom search', async () => {
     const result = await request(app)
-      .get('/api/posts')
+      .get('/api/posts/search')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
-        search: 'test10',
+        q: 'test10',
       });
 
     expect(result.status).toBe(200);
