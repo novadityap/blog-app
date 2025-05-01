@@ -104,32 +104,35 @@ const Dashboard = () => {
               formatter={post => (
                 <li
                   key={post._id}
-                  className="hover:text-blue-600 transition-colors"
+                  className="flex justify-between items-center py-1"
                 >
                   <Link
-                    to={`/dashboard/posts/${post.id}`}
-                    className="hover:underline"
+                    to={`/posts/${post.slug}`}
+                    state={{ postId: post?._id }}
+                    className="hover:underline text-blue-700 font-medium truncate"
                   >
                     {post.title}
                   </Link>
+                  <span className="text-xs text-gray-500">
+                    {new Date(post.createdAt).toLocaleDateString()}
+                  </span>
                 </li>
               )}
             />
+
             <RecentItemsCard
               title="Recent Comments"
               items={data?.data?.recentComments}
               link="/dashboard/comments"
               formatter={comment => (
-                <li
-                  key={comment._id}
-                  className="hover:text-blue-600 transition-colors"
-                >
-                  <Link
-                    to={`/dashboard/comments/${comment.id}`}
-                    className="hover:underline"
-                  >
-                    {comment.content}
-                  </Link>
+                <li key={comment._id} className="flex flex-col py-1">
+                  <p className="text-gray-800 line-clamp-2">{comment.text}</p>
+                  <div className="text-xs text-gray-500 flex justify-between">
+                    <span>{comment.user.username || 'Anonymous'}</span>
+                    <span>
+                      {new Date(comment.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
                 </li>
               )}
             />
