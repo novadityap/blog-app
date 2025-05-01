@@ -6,12 +6,12 @@ import {
   removeTestCategory,
 } from './testUtil.js';
 
-describe('GET /api/categories/list', () => {
+describe('GET /api/categories', () => {
   it('should return all categories', async () => {
     await createManyTestCategories();
 
     const result = await request(app)
-      .get('/api/categories/list')
+      .get('/api/categories')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
@@ -19,9 +19,9 @@ describe('GET /api/categories/list', () => {
 
     await removeTestCategory();
   });
-})
+});
 
-describe('GET /api/categories', () => {
+describe('GET /api/categories/search', () => {
   beforeEach(async () => {
     await createManyTestCategories();
   });
@@ -32,7 +32,7 @@ describe('GET /api/categories', () => {
 
   it('should return a list of categories with default pagination', async () => {
     const result = await request(app)
-      .get('/api/categories')
+      .get('/api/categories/search')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
@@ -46,7 +46,7 @@ describe('GET /api/categories', () => {
 
   it('should return a list of categories with custom pagination', async () => {
     const result = await request(app)
-      .get('/api/categories')
+      .get('/api/categories/search')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
         page: 2,
@@ -63,10 +63,10 @@ describe('GET /api/categories', () => {
 
   it('should return a list of categories with custom search', async () => {
     const result = await request(app)
-      .get('/api/categories')
+      .get('/api/categories/search')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
-        search: 'test10',
+        q: 'test10',
       });
 
     expect(result.status).toBe(200);
