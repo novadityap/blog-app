@@ -113,7 +113,7 @@ const show = async (req, res, next) => {
 export const search = async (req, res, next) => {
   try {
     const query = validate(searchCategorySchema, req.query);
-    const { page, limit, search } = query;
+    const { page, limit, q } = query;
 
     const [{ categories, totalCategories }] = await Category.aggregate()
       .lookup({
@@ -127,7 +127,7 @@ export const search = async (req, res, next) => {
         totalPosts: { $ifNull: [{ $arrayElemAt: ['$posts.count', 0] }, 0] },
       })
       .project({ posts: 0 })
-      .match(search ? { name: { $regex: search, $options: 'i' } } : {})
+      .match(q ? { name: { $regex: q, $options: 'i' } } : {})
       .facet({
         categories: [
           { $sort: { createdAt: -1 } },

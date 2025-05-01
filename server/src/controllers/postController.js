@@ -52,8 +52,7 @@ const create = async (req, res, next) => {
 const search = async (req, res, next) => {
   try {
     const query = validate(searchPostSchema, req.query);
-
-    const { page, limit, search, category } = query;
+    const { page, limit, q, category } = query;
 
     const [{ posts, totalPosts }] = await Post.aggregate()
       .lookup({
@@ -71,14 +70,14 @@ const search = async (req, res, next) => {
       })
       .match({
         $and: [
-          search
+          q
             ? {
                 $or: [
-                  { title: { $regex: search, $options: 'i' } },
-                  { content: { $regex: search, $options: 'i' } },
-                  { 'user.username': { $regex: search, $options: 'i' } },
-                  { 'user.email': { $regex: search, $options: 'i' } },
-                  { 'category.name': { $regex: search, $options: 'i' } },
+                  { title: { $regex: q, $options: 'i' } },
+                  { content: { $regex: q, $options: 'i' } },
+                  { 'user.username': { $regex: q, $options: 'i' } },
+                  { 'user.email': { $regex: q, $options: 'i' } },
+                  { 'category.name': { $regex: q, $options: 'i' } },
                 ],
               }
             : {},
@@ -146,8 +145,9 @@ const show = async (req, res, next) => {
     const postId = validate(getPostSchema, req.params.postId);
 
     const post = await Post.findById(postId)
-      .populate('userId', 'username')
-      .populate('category');
+      .populate('userId', 'username avatar')
+      .populate('category', 'name');
+
     if (!post) {
       logger.warn('post not found');
       throw new ResponseError('Post not found', 404);
