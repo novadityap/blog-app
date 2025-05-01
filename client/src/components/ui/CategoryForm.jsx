@@ -1,50 +1,56 @@
-import { useFormik } from 'formik';
-import { useState } from 'react';
-import transformErrors from '@/utils/transformErrors';
-import { Input } from '@/components/ui/input.jsx';
-import {Button} from '@/components/ui/button.jsx'
+import { Button } from '@/components/shadcn-ui/button';
+import { Input } from '@/components/shadcn-ui/input';
+import useFormHandler from '@/hooks/useFormHandler';
+import {
+  Form,
+  FormField,
+  FormLabel,
+  FormMessage,
+  FormItem,
+  FormControl,
+} from '@/components/shadcn-ui/form';
 
-const CategoryForm = ({ initialValues, onSubmit, onCancel, isCreate }) => {
-  const [validationErrors, setValidationErrors] = useState(null);
-
-  const formik = useFormik({
-    initialValues: {
-      name: initialValues?.name || '',
-    },
-    enableReinitialize: true,
-    onSubmit: (values) => {
-      const {errors} = onSubmit(values);
-      if (errors) setValidationErrors(transformErrors(errors));
+const CategoryForm = ({
+  initialValues,
+  mutation,
+  onComplete,
+  onCancel,
+  isCreate,
+}) => {
+  const { form, handleSubmit } = useFormHandler({
+    isDatatableForm: true,
+    ...(!isCreate && { ids: { categoryId: initialValues._id } }),
+    mutation,
+    onComplete,
+    defaultValues: {
+      name: initialValues.name || '',
     },
   });
 
   return (
-    <form onSubmit={formik.handleSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="name">Category Name</label>
-        <Input
-          id="name"
+    <Form {...form}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <FormField
+          control={form.control}
           name="name"
-          type="text"
-          onChange={formik.handleChange}
-          value={formik.values.name}
-          placeholder="Enter category name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        
-        {
-          validationErrors?.name && (
-            <div className="text-red-500 text-sm">{validationErrors.name}</div>
-          )
-        }
-      </div>
-
-      <div className="flex justify-end space-x-2">
+        <div className="flex justify-end gap-x-2">
           <Button variant="secondary" type="button" onClick={onCancel}>
             Cancel
           </Button>
           <Button type="submit">{isCreate ? 'Create' : 'Save Changes'}</Button>
         </div>
-    </form>
+      </form>
+    </Form>
   );
 };
 

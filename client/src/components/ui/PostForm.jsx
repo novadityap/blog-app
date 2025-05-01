@@ -1,142 +1,164 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import {  Select,
+import { Button } from '@/components/shadcn-ui/button';
+import { Input } from '@/components/shadcn-ui/input';
+import { useLazyListCategoriesQuery } from '@/services/categoryApi';
+import useFormHandler from '@/hooks/useFormHandler';
+import {
+  Select,
   SelectContent,
-  SelectItem,
   SelectTrigger,
-  SelectValue, } from '@/components/ui/select';
-import { TbLoader } from 'react-icons/tb';
-import { useFormik } from 'formik';
-import transformErrors from '@/utils/transformErrors';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-import { useListCategoriesQuery } from '@/services/categoryApi';
+  SelectValue,
+  SelectItem,
+} from '@/components/shadcn-ui/select';
+import {
+  Form,
+  FormField,
+  FormLabel,
+  FormMessage,
+  FormItem,
+  FormControl,
+} from '@/components/shadcn-ui/form';
+import { useEffect } from 'react';
+import ReactQuill from 'react-quill-new';
+import { AspectRatio } from '@/components/shadcn-ui/aspect-ratio';
 
 const PostForm = ({
   initialValues,
-  onSubmit,
+  mutation,
+  onComplete,
   onCancel,
   isCreate,
-  isLoading,
 }) => {
-  const { data: categories } = useListCategoriesQuery();
-  const [validationErrors, setValidationErrors] = useState({});
-
-  const formik = useFormik({
-    initialValues: {
-      postImage: initialValues?.postImage || '',
-      title: initialValues?.title || '',
-      content: initialValues?.content || '',
-      category: initialValues?.category?._id || '',
-    },
-    enableReinitialize: true,
-    onSubmit: async values => {
-      if (!values.postImage) delete values.postImage
-
-      const { errors } = await onSubmit(values);
-      if (errors) setValidationErrors(transformErrors(errors));
+  const [fetchCategories, { data: categories }] = useLazyListCategoriesQuery();
+  const { form, handleSubmit } = useFormHandler({
+    isDatatableForm: true,
+    ...(!isCreate && { ids: { postId: initialValues._id } }),
+    mutation,
+    onComplete,
+    defaultValues: {
+      postImage: '',
+      title: initialValues.title || '',
+      content: initialValues.content || '',
+      category: initialValues.category?._id || '',
     },
   });
 
-  const handleContentChange = value => formik.setFieldValue('content', value)
-  const handlePostImageChange = e => formik.setFieldValue('postImage', e.target.files[0]);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-80">
-        <TbLoader className="size-10 animate-spin" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!isCreate) fetchCategories();
+  }, [fetchCategories, isCreate]);
 
   return (
-    <div className="max-h-[80vh] overflow-y-scroll px-2">
-      <form className="space-y-6" onSubmit={formik.handleSubmit}>
-        <div>
-          {(!isCreate && initialValues?.postImage) && (
-            <img src={initialValues?.postImage} alt="post image" className='w-full h-72 object-cover mb-3' />
-          )}
-
-          {isCreate && (
-            <Label htmlFor="postImage">Post Image</Label>
-          )}
-          <Input
-            id="postImage"
-            name="postImage"
-            type="file"
-            accept="image/*"
-            onChange={handlePostImageChange}
-          />
-          {validationErrors?.postImage && (
-            <p className="text-red-500 text-sm">{validationErrors.postImage}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            name="title"
-            type="text"
-            onChange={formik.handleChange}
-            value={formik.values.title}
-          />
-          {validationErrors?.title && (
-            <p className="text-red-500 text-sm">{validationErrors.title}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="content">Content</Label>
-            <ReactQuill
-              className='border border-neutral-200 rounded-md overflow-hidden focus:ring-2 focus:ring-blue-200 h-40'
-              theme="snow"
-              value={formik.values.content}
-              onChange={handleContentChange}
+    <Form {...form}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        {!isCreate && (
+          <AspectRatio ratio={16 / 9}>
+            <img
+              src={initialValues.postImage}
+              alt="post image"
+              className="size-full object-cover"
             />
-          {validationErrors?.content && (
-            <p className="text-red-500 text-sm">{validationErrors.content}</p>
+          </AspectRatio>
+        )}
+        <FormField
+          control={form.control}
+          name="postImage"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Image</FormLabel>
+              <FormControl>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => field.onChange(e.target.files[0])}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-
-        <div>
-          <Label htmlFor="category">Category</Label>
-          <Select
-            onValueChange={(value) => formik.setFieldValue('category', value)}
-            id="category"
-            value={formik.values.category}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-
-            <SelectContent>
-              {categories?.data?.map(category => (
-                <SelectItem 
-                  key={category._id} 
-                  value={category._id}
-                >
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-           
-          </Select>
-          {validationErrors?.category && (
-            <p className="text-red-500 text-sm">{validationErrors.category}</p>
+        />
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-
-        <div className="flex justify-end space-x-2">
+        />
+        <FormField
+          control={form.control}
+          name="content"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Content</FormLabel>
+              <FormControl>
+                <ReactQuill
+                  theme="snow"
+                  value={field.value}
+                  onChange={field.onChange}
+                  style={{ height: '200px', marginBottom: '90px' }}
+                  modules={{
+                    toolbar: [
+                      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      ['blockquote', 'code-block'],
+                      [{ list: 'ordered' }, { list: 'bullet' }],
+                      [{ script: 'sub' }, { script: 'super' }],
+                      [{ indent: '-1' }, { indent: '+1' }],
+                      ['link', 'image', 'video'],
+                      ['clean'],
+                    ],
+                  }}
+                  placeholder="Write something..."
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                onOpenChange={open => open && !categories && fetchCategories()}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {categories?.data?.map(category => (
+                    <SelectItem
+                      key={category._id}
+                      value={category._id}
+                      selected={category._id === field.value}
+                    >
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end gap-x-2">
           <Button variant="secondary" type="button" onClick={onCancel}>
             Cancel
           </Button>
           <Button type="submit">{isCreate ? 'Create' : 'Save Changes'}</Button>
         </div>
       </form>
-    </div>
+    </Form>
   );
 };
 
