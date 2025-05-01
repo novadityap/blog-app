@@ -7,7 +7,7 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node src/index.js",
     "dev": "cross-env NODE_ENV=development nodemon src/index.js",
-    "test": "cross-env NODE_ENV=development jest --detectOpenHandles --runInBand",
+    "test": "cross-env NODE_ENV=test jest --detectOpenHandles --runInBand",
     "seed": "node src/seeders/seed.js",
     "pretest:k6": "npm run seed && node benchmark/pretest.js",
     "run-k6": "k6 run benchmark/k6.js"
@@ -45,6 +45,7 @@
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.7",
     "jest": "^29.7.0",
+    "nodemon": "^3.1.10",
     "supertest": "^7.0.0"
   }
 }
