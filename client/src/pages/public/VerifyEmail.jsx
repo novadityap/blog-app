@@ -1,29 +1,32 @@
 import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { useParams, Link } from 'react-router-dom';
+import { Button } from '@/components/shadcn-ui/button';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardFooter,
-} from '@/components/ui/card';
+} from '@/components/shadcn-ui/card';
 import { TbMailX, TbCircleCheck } from 'react-icons/tb';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Link } from 'react-router-dom';
-import useAuth from '@/hooks/useAuth';
+import { Skeleton } from '@/components/shadcn-ui/skeleton';
+import { useVerifyEmailMutation } from '@/services/authApi';
+import { cn } from '@/lib/utils';
 
 const VerifyEmail = () => {
-  const { token } = useParams();
-  const { handleVerifyEmail, isVerificationLoading, isVerificationError, isVerificationSuccess, message } = useAuth();
+  const { verificationToken } = useParams();
+  const [verifyEmail, { isLoading, isError, isSuccess, error, data }] =
+    useVerifyEmailMutation();
 
   useEffect(() => {
-    handleVerifyEmail(token);
-  }, [token]);
+    if (verificationToken) verifyEmail(verificationToken);
+  }, [verificationToken, verifyEmail]);
+
+  const message = isError ? error?.message : data?.message;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      {isVerificationLoading && (
+    <div className="w-full sm:w-[450px]">
+      {isLoading && (
         <div className="flex flex-col gap-y-5">
           <Skeleton className="h-56 w-96 rounded-xl" />
           <div className="space-y-2">
@@ -34,26 +37,26 @@ const VerifyEmail = () => {
         </div>
       )}
 
-      {(isVerificationError || isVerificationSuccess) && (
-        <Card className="w-96">
-          <CardHeader>
-            {isVerificationError ? (
-              <TbMailX className="text-red-500 size-32 w-full text-center mb-4" />
+      {(isError || isSuccess) && (
+        <Card>
+          <CardHeader className="text-center">
+            {isError ? (
+              <TbMailX className="text-red-500 size-28 w-full mb-4" />
             ) : (
-              <TbCircleCheck className="text-green-500 size-32 w-full text-center mb-4" />
+              <TbCircleCheck className="text-green-500 size-28 w-full mb-4" />
             )}
-            <CardTitle className="text-gray-500">
-              {isVerificationError ? 'Email Verification Failed' : 'Email Verified'}
+            <CardTitle className={cn(isError && 'text-red-500')}>
+              {isError ? 'Failed' : 'Success'}
             </CardTitle>
             <CardDescription>{message}</CardDescription>
           </CardHeader>
           <CardFooter>
             <Link
-              to={isVerificationError ? '/resend-email-verification' : '/signin'}
+              to={isError ? '/resend-verification' : '/signin'}
               className="w-full"
             >
               <Button variant="primary" className="w-full">
-                {isVerificationError ? 'Resend Email' : 'Sign In'}
+                {isError ? 'Resend Email' : 'Sign In'}
               </Button>
             </Link>
           </CardFooter>
