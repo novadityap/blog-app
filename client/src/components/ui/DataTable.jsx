@@ -211,7 +211,7 @@ const DataTable = ({
   createMutation,
   updateMutation,
   removeMutation,
-  FormComponent,
+  FormComponent = null,
   allowCreate = true,
   allowUpdate = true,
 }) => {
@@ -391,19 +391,21 @@ const DataTable = ({
         onToggle={open => handleModalToggle(open)}
         title={isCreateModalOpen ? 'Create' : 'Update'}
       >
-        <FormComponent
-          isCreate={isCreateModalOpen}
-          mutation={isCreateModalOpen ? createMutation : updateMutation}
-          initialValues={!isCreateModalOpen && item?.data ? item.data : {}}
-          onComplete={
-            isCreateModalOpen ? handleCreateComplete : handleUpdateComplete
-          }
-          onCancel={
-            isCreateModalOpen
-              ? () => setIsCreateModalOpen(false)
-              : () => setIsUpdateModalOpen(false)
-          }
-        />
+        {FormComponent && (
+          <FormComponent
+            isCreate={isCreateModalOpen}
+            mutation={isCreateModalOpen ? createMutation : updateMutation}
+            initialValues={!isCreateModalOpen && item?.data ? item.data : {}}
+            onComplete={
+              isCreateModalOpen ? handleCreateComplete : handleUpdateComplete
+            }
+            onCancel={
+              isCreateModalOpen
+                ? () => setIsCreateModalOpen(false)
+                : () => setIsUpdateModalOpen(false)
+            }
+          />
+        )}
       </ManageItemModal>
 
       <ManageItemModal

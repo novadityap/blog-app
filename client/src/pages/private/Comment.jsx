@@ -5,7 +5,6 @@ import {
   useLazyShowCommentQuery,
   useRemoveCommentMutation,
 } from '@/services/commentApi.js';
-import CommentForm from '@/components/ui/CommentForm.jsx';
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav';
 import {
   Card,
@@ -46,7 +45,6 @@ const Comment = () => {
             searchQuery={useSearchCommentsQuery}
             lazyShowQuery={useLazyShowCommentQuery}
             removeMutation={useRemoveCommentMutation}
-            FormComponent={CommentForm}
             allowCreate={false}
             allowUpdate={false}
           />
