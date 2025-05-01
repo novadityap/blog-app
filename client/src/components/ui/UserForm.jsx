@@ -1,143 +1,169 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { useFormik } from 'formik';
-import transformErrors from '@/utils/transformErrors';
+import { Button } from '@/components/shadcn-ui/button';
+import { Input } from '@/components/shadcn-ui/input';
 import { useLazyListRolesQuery } from '@/services/roleApi';
-import { Checkbox } from '@/components/ui/checkbox';
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
-import {TbLoader} from 'react-icons/tb';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/components/shadcn-ui/avatar';
+import useFormHandler from '@/hooks/useFormHandler';
+import {
+  Select,
+  SelectContent,
+  SelectTrigger,
+  SelectValue,
+  SelectItem,
+} from '@/components/shadcn-ui/select';
+import {
+  Form,
+  FormField,
+  FormLabel,
+  FormMessage,
+  FormItem,
+  FormControl,
+} from '@/components/shadcn-ui/form';
+import { useEffect } from 'react';
 
-const UserForm = ({ initialValues, onSubmit, onCancel, isCreate, isLoading }) => {
-  const { data: roles } = useLazyListRolesQuery();
-  const roleIds = initialValues?.roles?.map(role => role._id);
-  const [validationErrors, setValidationErrors] = useState({});
-  const formik = useFormik({
-    initialValues: {
-      avatar: null,
-      username: initialValues?.username || '',
-      email: initialValues?.email || '',
+const UserForm = ({
+  initialValues,
+  mutation,
+  onComplete,
+  onCancel,
+  isCreate,
+}) => {
+  const [fetchRoles, { data: roles }] = useLazyListRolesQuery();
+  const { form, handleSubmit } = useFormHandler({
+    isDatatableForm: true,
+    ...(!isCreate && { ids: { userId: initialValues._id } }),
+    mutation,
+    onComplete,
+    defaultValues: {
+      avatar: '',
+      username: initialValues.username || '',
+      email: initialValues.email || '',
       password: '',
-      roles: roleIds || [],
-    },
-    enableReinitialize: true,
-    onSubmit: values => {
-      if (!values.avatar) delete values.avatar;
-      
-      const { errors } = onSubmit(values);
-      if (errors) setValidationErrors(transformErrors(errors));
+      role: initialValues.role?._id || '',
     },
   });
 
-  const handleAvatarChange = e => formik.setFieldValue('avatar', e.target.files[0]);
-  const handleCheckboxChange = roleId => {
-    const currentRoles = formik.values.roles;
-
-    const updatedRoles = currentRoles.includes(roleId)
-      ? currentRoles.filter(id => id !== roleId)
-      : [...currentRoles, roleId];
-    formik.setFieldValue('roles', updatedRoles);
-  }
-
-  if (isLoading) return (
-    <div className="flex items-center justify-center h-80">
-      <TbLoader className="size-10 animate-spin" />
-    </div>
-  );
-
+  useEffect(() => {
+    if (!isCreate) fetchRoles();
+  }, [fetchRoles, isCreate]);
 
   return (
-    <form className="space-y-6" onSubmit={formik.handleSubmit}>
-      {!isCreate && (
-        <div className='flex items-center gap-x-8'>
-          <Avatar className="size-20">
-            <AvatarImage src={initialValues?.avatar} />
-            <AvatarFallback>
-              <TbLoader className="size-5 animate-spin" />
-            </AvatarFallback>
-          </Avatar>
-          <Input
-            name="avatar"
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarChange}
-          />
-
-          {validationErrors?.avatar && (
-            <p className="text-red-500 text-sm">{validationErrors.avatar}</p>
-          )}
-        </div>
-      )}
-      <div>
-        <Label htmlFor="username">Username</Label>
-        <Input
-          id="username"
-          name="username"
-          type="text"
-          onChange={formik.handleChange}
-          value={formik.values.username}
-        />
-
-        {validationErrors?.username && (
-          <p className="text-red-500 text-sm">{validationErrors.username}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          name="email"
-          type="text"
-          onChange={formik.handleChange}
-          value={formik.values.email}
-        />
-
-        {validationErrors?.email && (
-          <p className="text-red-500 text-sm">{validationErrors.email}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          onChange={formik.handleChange}
-          value={formik.values.password}
-        />
-
-        {validationErrors?.password && (
-          <p className="text-red-500 text-sm">{validationErrors.password}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="roles">Roles</Label>
-
-        {roles?.data?.map(role => (
-          <div key={role._id} className='my-2'>
-            <div className='flex items-center gap-x-2'>
-            <Checkbox
-              id={role._id}
-              checked={formik.values.roles.includes(role._id)}
-              onCheckedChange={() => handleCheckboxChange(role._id)}
-            />
-            <Label htmlFor={role._id}>{role.name}</Label>
+    <Form {...form}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        {!isCreate && (
+          <>
+            <div className="flex justify-center">
+              <Avatar className="size-32">
+                <AvatarImage
+                  src={initialValues?.avatar}
+                  fallback={
+                    <AvatarFallback>{initialValues?.username}</AvatarFallback>
+                  }
+                />
+              </Avatar>
             </div>
-          </div>
-        ))}
-
-        {validationErrors?.roles && (
-          <p className="text-red-500 text-sm">{validationErrors.roles}</p>
+            <FormField
+              control={form.control}
+              name="avatar"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Avatar</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => field.onChange(e.target.files[0])}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
         )}
-      </div>
-      <div className="flex justify-end space-x-2">
-        <Button variant="secondary" type="button" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit">{isCreate ? 'Create' : 'Save Changes'}</Button>
-      </div>
-    </form>
+
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input type="password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="role"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Role</FormLabel>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+                onOpenChange={open => open && !roles && fetchRoles()}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {roles?.data?.map(role => (
+                    <SelectItem
+                      key={role._id}
+                      value={role._id}
+                      selected={role._id === field.value}
+                    >
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end gap-x-2">
+          <Button variant="secondary" type="button" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit">{isCreate ? 'Create' : 'Save Changes'}</Button>
+        </div>
+      </form>
+    </Form>
   );
 };
 
