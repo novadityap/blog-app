@@ -1,73 +1,75 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.jsx';
+import { Button } from '@/components/shadcn-ui/button';
+import { Input } from '@/components/shadcn-ui/input';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/shadcn-ui/alert.jsx';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { useFormik } from 'formik';
+} from '@/components/shadcn-ui/card';
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/shadcn-ui/form';
 import { TbLoader, TbCircleCheck } from 'react-icons/tb';
-import useAuth from '@/hooks/useAuth';
+import useFormHandler from '@/hooks/useFormHandler';
+import { useResendVerificationMutation } from '@/services/authApi';
 
 const ResendVerification = () => {
-  const { handleResendVerification, isResendVerificationLoading, isResendVerificationSuccess, message, validationErrors } = useAuth();
-  const formik = useFormik({
-    initialValues: {
+  const { form, handleSubmit, isLoading, isSuccess, message } = useFormHandler({
+    mutation: useResendVerificationMutation,
+    defaultValues: {
       email: '',
     },
-    onSubmit: async (values, { resetForm }) => handleResendVerification(values, resetForm),
   });
 
   return (
-    <div className="flex flex-col gap-y-4 items-center justify-center min-h-screen ">
-      {isResendVerificationSuccess && (
-        <Alert className="w-96" variant="success">
-          <TbCircleCheck className="size-5 text-green-500" />
-          <AlertTitle>Email Sent</AlertTitle>
-          <AlertDescription>{message}</AlertDescription>
-        </Alert>
-      )}
-      <Card className="w-96">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-green-500">
-            Resend Email Verification
-          </CardTitle>
-          <CardDescription>
-            Please enter your email and we will send you a verification link
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={formik.handleSubmit}>
-            <div className="mb-4">
-              <Label htmlFor="email" className="text-gray-500">
-                Email
-              </Label>
-              <Input
-                type="email"
-                id="email"
-                name="email"
-                value={formik.values.email}
-                onChange={formik.handleChange}
-                required
-                placeholder="Enter your email"
-              />
-
-              {validationErrors?.email && (
-                <p className="text-red-500 text-sm">{validationErrors.email}</p>
+    <Card className="w-full sm:w-[450px]">
+      <CardHeader>
+        <CardTitle>Resend Email Verification</CardTitle>
+        <CardDescription>
+          Please enter your email and we will send you a verification link
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isSuccess && (
+          <Alert variant="success">
+            <TbCircleCheck className="size-5 text-green-500" />
+            <AlertTitle>Email Sent</AlertTitle>
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
+        )}
+        <Form {...form}>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-
+            />
             <Button
               variant="primary"
               type="submit"
-              className="w-full "
-              disabled={isResendVerificationLoading}
+              className="w-full"
+              disabled={isLoading}
             >
-              {isResendVerificationLoading ? (
+              {isLoading ? (
                 <>
                   <TbLoader className="animate-spin mr-2 size-5" />
                   Loading...
@@ -77,9 +79,9 @@ const ResendVerification = () => {
               )}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };
 
