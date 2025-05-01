@@ -2,13 +2,23 @@ import Joi from 'joi';
 import mongoose from 'mongoose';
 
 const commentSchema = Joi.object({
+  parentCommentId: Joi.string()
+    .custom((value, helpers) => {
+      if (!value) return value;
+      if (!mongoose.Types.ObjectId.isValid(value))
+        return helpers.message('Parent comment id is invalid');
+      return value;
+    })
+    .label('parentCommentId')
+    .optional()
+    .allow(null),
   text: Joi.string().required(),
 });
 
 export const searchCommentSchema = Joi.object({
   page: Joi.number().integer().positive().min(1).default(1),
   limit: Joi.number().integer().positive().min(1).max(100).default(10),
-  search: Joi.string().allow('').optional(),
+  q: Joi.string().allow('').optional(),
 });
 export const getCommentSchema = Joi.string()
   .custom((value, helpers) => {
