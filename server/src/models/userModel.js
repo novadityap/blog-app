@@ -47,13 +47,13 @@ userSchema.set('toObject', {
 
 userSchema.set('toJSON', {
   transform: (doc, ret) => {
-    if (!ret.avatar.startsWith(avatarUrl)) ret.avatar = avatarUrl + ret.avatar;  
+    if (!ret.avatar.startsWith(avatarUrl)) ret.avatar = avatarUrl + ret.avatar;
     delete ret.password;
     return ret;
   },
 });
 
-userSchema.post('aggregate', function(docs, next) {
+userSchema.post('aggregate', function (docs, next) {
   const [{ users }] = docs;
   users.forEach(user => {
     user.avatar = avatarUrl + user.avatar;
@@ -62,6 +62,17 @@ userSchema.post('aggregate', function(docs, next) {
 
   next();
 });
+
+userSchema.pre(
+  'findByIdAndDelete',
+  { document: false, query: true },
+  async function (next) {
+    const userId = this.getQuery()._id;
+    await mongoose.model('Post').deleteMany({ userId });
+    await mongoose.model('Comment').deleteMany({ userId });
+    next();
+  }
+);
 
 const User = mongoose.model('User', userSchema);
 export default User;

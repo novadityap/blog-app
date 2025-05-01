@@ -27,12 +27,6 @@ const postSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    comments: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Comment',
-      },
-    ],
   },
   {
     timestamps: true,
@@ -55,17 +49,28 @@ postSchema.set('toJSON', {
   },
 });
 
-postSchema.post('aggregate', function(docs, next) {
+postSchema.post('aggregate', function (docs, next) {
   const [{ posts }] = docs;
   if (posts) {
     posts.forEach(post => {
       post.postImage = postImageUrl + post.postImage;
-      post.user.avatar = `${process.env.SERVER_URL}/uploads/users/` + post.user.avatar;
+      post.user.avatar =
+        `${process.env.SERVER_URL}/uploads/users/` + post.user.avatar;
     });
   }
 
   next();
 });
+
+postSchema.pre(
+  'findByIdAndDelete',
+  { document: false, query: true },
+  async function (next) {
+    const postId = this.getQuery()._id;
+    await mongoose.model('Comment').deleteMany({ postId });
+    next();
+  }
+);
 
 const Post = mongoose.model('Post', postSchema);
 export default Post;
