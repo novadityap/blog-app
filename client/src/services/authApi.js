@@ -32,8 +32,8 @@ const authApi = createApi({
       }),
     }),
     verifyEmail: builder.mutation({
-      query: token => ({
-        url: `/auth/verify-email/${token}`,
+      query: verificationToken => ({
+        url: `/auth/verify-email/${verificationToken}`,
         method: 'POST',
       }),
     }),
@@ -52,8 +52,8 @@ const authApi = createApi({
       }),
     }),
     resetPassword: builder.mutation({
-      query: ({data, token}) => ({
-        url: `/auth/reset-password/${token}`,
+      query: ({data, resetToken}) => ({
+        url: `/auth/reset-password/${resetToken}`,
         method: 'POST',
         data,
       }),
