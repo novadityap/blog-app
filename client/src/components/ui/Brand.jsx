@@ -3,7 +3,9 @@ import { cn } from '@/lib/utils';
 
 const Brand = ({ className }) => {
   return (
-    <div className={cn('text-3xl cursor-pointer font-bold text-center', className)}>
+    <div
+      className={cn('text-3xl cursor-pointer font-bold text-center', className)}
+    >
       <Link to="/">Adit&apos;s Blog</Link>
     </div>
   );
