@@ -4,12 +4,46 @@ import {
   createTestComment,
   createManyTestComments,
   removeTestComment,
-  createToken,
-  createTestUser,
-  removeTestUser,
   createTestPost,
   removeTestPost,
 } from './testUtil.js';
+
+describe('GET /api/posts/:postId/comments', () => {
+  let post;
+
+  beforeEach(async () => {
+    post = await createTestPost();
+  });
+
+  afterEach(async () => {
+    await removeTestPost();
+  });
+
+  it('should return an empty list if post has no comments', async () => {
+    const result = await request(app)
+      .get(`/api/posts/${post._id}/comments`)
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('No comments found');
+    expect(result.body.data).toHaveLength(0);
+  });
+
+  it('should return comments if post id is valid', async () => {
+    const comment = await createTestComment({ postId: post._id });
+
+    const result = await request(app)
+      .get(`/api/posts/${post._id}/comments`)
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('Comments retrieved successfully');
+    expect(result.body.data).toHaveLength(1);
+    expect(result.body.data[0]._id).toEqual(comment._id.toString());
+
+    await removeTestComment();
+  });
+});
 
 describe('GET /api/posts/:postId/comments/:commentId', () => {
   let comment;
@@ -82,7 +116,7 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
   });
 });
 
-describe('GET /api/comments', () => {
+describe('GET /api/comments/search', () => {
   beforeEach(async () => {
     await createManyTestComments();
   });
@@ -93,7 +127,7 @@ describe('GET /api/comments', () => {
 
   it('should return an error if user does not have permission', async () => {
     const result = await request(app)
-      .get('/api/comments')
+      .get('/api/comments/search')
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
@@ -102,7 +136,7 @@ describe('GET /api/comments', () => {
 
   it('should return a list of comments with default pagination', async () => {
     const result = await request(app)
-      .get('/api/comments')
+      .get('/api/comments/search')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
@@ -116,7 +150,7 @@ describe('GET /api/comments', () => {
 
   it('should return a list of comments with custom pagination', async () => {
     const result = await request(app)
-      .get('/api/comments')
+      .get('/api/comments/search')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
         page: 2,
@@ -133,10 +167,10 @@ describe('GET /api/comments', () => {
 
   it('should return a list of comments with custom search', async () => {
     const result = await request(app)
-      .get('/api/comments')
+      .get('/api/comments/search')
       .set('Authorization', `Bearer ${global.adminToken}`)
       .query({
-        search: 'test10',
+        q: 'test10',
       });
 
     expect(result.status).toBe(200);
