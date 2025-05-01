@@ -20,7 +20,7 @@ const checkOwnership = async (model, paramsId, currentUser) => {
       );
     }
 
-    const isOwner = resource.userId.toString() === currentUser.id;
+    const isOwner = resource.user.toString() === currentUser.id;
     if (isAdmin || isOwner) return;
 
     logger.warn('permission denied');
