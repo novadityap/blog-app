@@ -1,72 +1,73 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.jsx';
+import { Button } from '@/components/shadcn-ui/button';
+import { Input } from '@/components/shadcn-ui/input';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/shadcn-ui/alert.jsx';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
+} from '@/components/shadcn-ui/card';
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/shadcn-ui/form';
 import { TbLoader, TbCircleCheck } from 'react-icons/tb';
 import useFormHandler from '@/hooks/useFormHandler';
 import { useRequestResetPasswordMutation } from '@/services/authApi';
-import { cn } from '@/lib/utils';
 
 const RequestResetPassword = () => {
-  const {
-    register,
-    handleSubmit,
-    isLoading,
-    isError,
-    error,
-    isSuccess,
-    message,
-  } = useFormHandler(useRequestResetPasswordMutation);
+  const { form, handleSubmit, isLoading, isSuccess, message } =
+    useFormHandler({
+      mutation: useRequestResetPasswordMutation,
+      defaultValues: {
+        email: '',
+      },
+    });
 
   return (
-    <div className="flex flex-col gap-y-4 items-center justify-center min-h-screen ">
-      <Card className="full sm:w-[450px]">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-green-500">
-            Request Reset Password
-          </CardTitle>
-          <CardDescription>
-            Enter your email and we will send you a password reset link
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isSuccess && (
-            <Alert className="mb-4" variant="success">
-              <TbCircleCheck className="size-5 text-green-500" />
-              <AlertTitle>Success</AlertTitle>
-              <AlertDescription>{message}</AlertDescription>
-            </Alert>
-          )}
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <Label htmlFor="email" className="text-gray-500">
-                Email
-              </Label>
-              <Input
-                type="email"
-                id="email"
-                {...register('email')}
-                required
-                placeholder="Enter your email"
-                className={cn(isError && 'border-red-200 focus:ring-red-200')}
-              />
-
-              {error?.errors?.email && (
-                <p className="text-red-500 text-sm">{error.errors.email}</p>
+    <Card className="w-full sm:w-[450px]">
+      <CardHeader>
+        <CardTitle>Request Reset Password</CardTitle>
+        <CardDescription>
+          Enter your email and we will send you a password reset link
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isSuccess && (
+          <Alert variant="success">
+            <TbCircleCheck className="size-5 text-green-500" />
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
+        )}
+        <Form {...form}>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-
+            />
             <Button
-              variant="primary"
               type="submit"
-              className="w-full "
+              variant="primary"
+              className="w-full"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -75,13 +76,13 @@ const RequestResetPassword = () => {
                   Loading...
                 </>
               ) : (
-                'Send Reset Link'
+                'Request Reset Password'
               )}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };
 

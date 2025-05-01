@@ -1,11 +1,10 @@
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"; 
-import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/shadcn-ui/card"; 
+import { Button } from "@/components/shadcn-ui/button";
 import { useNavigate } from "react-router-dom";
 import notFound from '@/assets/notFound.jpg';
 
 const NotFound = () => {
   const navigate = useNavigate();
-  const handleGoHome = () => navigate("/");
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -24,7 +23,7 @@ const NotFound = () => {
           />
         </CardContent>
         <CardFooter className="flex justify-center mt-6">
-          <Button onClick={handleGoHome} className="bg-blue-600 text-white">
+          <Button onClick={() => navigate("/")} className="bg-blue-600 text-white">
             Back to Home
           </Button>
         </CardFooter>
