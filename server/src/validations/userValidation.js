@@ -45,6 +45,10 @@ export const verifyEmailSchema = Joi.object({
 });
 
 export const createUserSchema = userSchema;
+export const updateProfileSchema = userSchema.fork(
+  ['username', 'email', 'password', 'role'],
+  schema => schema.optional()
+);
 export const updateUserSchema = userSchema.fork(
   ['username', 'email', 'password', 'role'],
   schema => schema.optional()
