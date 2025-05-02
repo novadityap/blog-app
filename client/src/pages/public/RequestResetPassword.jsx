@@ -36,7 +36,7 @@ const RequestResetPassword = () => {
   return (
     <Card className="w-full sm:w-[450px]">
       <CardHeader>
-        <CardTitle>Request Reset Password</CardTitle>
+        <CardTitle className="text-gray-600">Request Reset Password</CardTitle>
         <CardDescription>
           Enter your email and we will send you a password reset link
         </CardDescription>
@@ -66,7 +66,6 @@ const RequestResetPassword = () => {
             />
             <Button
               type="submit"
-              variant="primary"
               className="w-full"
               disabled={isLoading}
             >

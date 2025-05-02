@@ -31,7 +31,7 @@ const ResetPassword = () => {
   const { form, handleSubmit, isLoading, error, isSuccess, message } =
     useFormHandler({
       mutation: useResetPasswordMutation,
-      token: resetToken,
+      tokens: { resetToken },
       defaultValues: {
         newPassword: '',
       },
@@ -40,7 +40,7 @@ const ResetPassword = () => {
   return (
     <Card className="w-full sm:w-[450px]">
       <CardHeader>
-        <CardTitle>Reset Password</CardTitle>
+        <CardTitle className="text-gray-600">Reset Password</CardTitle>
         <CardDescription>
           Enter your new password. Make sure it&apos;s at least 6 characters
           long
@@ -91,12 +91,7 @@ const ResetPassword = () => {
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              variant="primary"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <TbLoader className="animate-spin mr-2 size-5" />

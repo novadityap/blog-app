@@ -47,7 +47,7 @@ const Signin = () => {
     return (
       <Card className="w-full sm:w-[450px]">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-green-500">
+          <CardTitle className="text-2xl font-bold text-gray-600">
             Sign In
           </CardTitle>
         </CardHeader>
@@ -88,9 +88,8 @@ const Signin = () => {
                 )}
               />
               <Button
-                variant="primary"
                 type="submit"
-                className="w-full "
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? (
