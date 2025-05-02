@@ -3,20 +3,8 @@ import logger from "../utils/logger.js";
 
 const connectDB = async () => {
   try {
-    let uri;
-
-    switch (process.env.NODE_ENV) {
-      case 'production':
-        uri = process.env.MONGO_URI_PROD;
-        break;
-      case 'test':
-        uri = process.env.MONGO_URI_TEST;
-        break;
-      default:
-        uri = process.env.MONGO_URI_DEV;
-    }
-
-    await mongoose.connect(uri);
+    const uri = process.env.NODE_ENV === 'development' ? process.env.MONGO_URI_DEV : process.env.MONGO_URI;
+    await mongoose.connect(process.env.MONGO_URI);
     logger.info('Database connected successfully');
   } catch(e) {
     logger.error('Database connection failed');
