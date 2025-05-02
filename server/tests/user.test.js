@@ -236,7 +236,7 @@ describe('POST /api/users', () => {
   });
 });
 
-describe('PUT /api/users/:userId', () => {
+describe('PATCH /api/users/:userId/profile', () => {
   let user;
   let adminRole;
 
@@ -251,7 +251,7 @@ describe('PUT /api/users/:userId', () => {
 
   it('should return an error if user is not owned by current user', async () => {
     const result = await request(app)
-      .put(`/api/users/${user._id}`)
+      .patch(`/api/users/${user._id}/profile`)
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
@@ -260,7 +260,7 @@ describe('PUT /api/users/:userId', () => {
 
   it('should return an error if user id is invalid', async () => {
     const result = await request(app)
-      .put('/api/users/invalid-id')
+      .patch('/api/users/invalid-id')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(400);
@@ -270,7 +270,7 @@ describe('PUT /api/users/:userId', () => {
 
   it('should return an error if user is not found', async () => {
     const result = await request(app)
-      .put(`/api/users/${global.validObjectId}`)
+      .patch(`/api/users/${global.validObjectId}/profile`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(404);
@@ -279,7 +279,7 @@ describe('PUT /api/users/:userId', () => {
 
   it('should return an error if input data is invalid', async () => {
     const result = await request(app)
-      .put(`/api/users/${user._id}`)
+      .patch(`/api/users/${user._id}/profile`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', '')
@@ -291,25 +291,11 @@ describe('PUT /api/users/:userId', () => {
     expect(result.body.errors.email).toBeDefined();
   });
 
-  it('should return an error if role is invalid', async () => {
-    const result = await request(app)
-      .put(`/api/users/${user._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`)
-      .set('Content-Type', 'multipart/form-data')
-      .field('email', 'test1@me.com')
-      .field('username', 'test1')
-      .field('role', 'invalid-id');
-
-    expect(result.status).toBe(400);
-    expect(result.body.message).toBe('Validation errors');
-    expect(result.body.errors.role).toBeDefined();
-  });
-
   it('should return an error if email is already in use', async () => {
     await createTestUser({ email: 'test1@me.com' });
 
     const result = await request(app)
-      .put(`/api/users/${user._id}`)
+      .patch(`/api/users/${user._id}/profile`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
@@ -325,7 +311,150 @@ describe('PUT /api/users/:userId', () => {
     await createTestUser({ username: 'test1' });
 
     const result = await request(app)
-      .put(`/api/users/${user._id}`)
+      .patch(`/api/users/${user._id}/profile`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', 'test1@me.com')
+      .field('username', 'test1')
+      .field('role', adminRole._id.toString());
+
+    expect(result.status).toBe(409);
+    expect(result.body.message).toBe('Resource already in use');
+    expect(result.body.errors.username).toBeDefined();
+  });
+
+  it('should update profile without changing avatar', async () => {
+    const result = await request(app)
+      .patch(`/api/users/${user._id}/profile`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', 'test1@me.com')
+      .field('username', 'test1')
+      .field('role', adminRole._id.toString());
+
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('Profile updated successfully');
+    expect(result.body.data.email).toBe('test1@me.com');
+    expect(result.body.data.username).toBe('test1');
+    expect(result.body.data.role).toBe(adminRole._id.toString());
+  });
+
+  it.only('should update profile with changing avatar', async () => {
+    const result = await request(app)
+      .patch(`/api/users/${user._id}/profile`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', 'test1@me.com')
+      .field('username', 'test1')
+      .attach('avatar', testAvatarPath);
+
+    const updatedUser = await User.findById(user._id);
+    const avatarExists = await access(
+      path.resolve(process.env.AVATAR_DIR, updatedUser.avatar)
+    )
+      .then(() => true)
+      .catch(() => false);
+
+    expect(result.status).toBe(200);
+    expect(result.body.message).toBe('Profile updated successfully');
+    expect(result.body.data.email).toBe('test1@me.com');
+    expect(result.body.data.username).toBe('test1');
+    expect(avatarExists).toBe(true);
+
+    await removeTestFile('avatar');
+  });
+})
+
+describe('PATCH /api/users/:userId', () => {
+  let user;
+  let adminRole;
+
+  beforeEach(async () => {
+    adminRole = await Role.findOne({ name: 'admin' });
+    user = await createTestUser();
+  });
+
+  afterEach(async () => {
+    await removeTestUser();
+  });
+
+  it('should return an error if user is not owned by current user', async () => {
+    const result = await request(app)
+      .patch(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.userToken}`);
+
+    expect(result.status).toBe(403);
+    expect(result.body.message).toBe('Permission denied');
+  });
+
+  it('should return an error if user id is invalid', async () => {
+    const result = await request(app)
+      .patch('/api/users/invalid-id')
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.userId).toBeDefined();
+  });
+
+  it('should return an error if user is not found', async () => {
+    const result = await request(app)
+      .patch(`/api/users/${global.validObjectId}`)
+      .set('Authorization', `Bearer ${global.adminToken}`);
+
+    expect(result.status).toBe(404);
+    expect(result.body.message).toBe('User not found');
+  });
+
+  it('should return an error if input data is invalid', async () => {
+    const result = await request(app)
+      .patch(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', '')
+      .field('username', '');
+
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.username).toBeDefined();
+    expect(result.body.errors.email).toBeDefined();
+  });
+
+  it('should return an error if role is invalid', async () => {
+    const result = await request(app)
+      .patch(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', 'test1@me.com')
+      .field('username', 'test1')
+      .field('role', 'invalid-id');
+
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
+    expect(result.body.errors.role).toBeDefined();
+  });
+
+  it('should return an error if email is already in use', async () => {
+    await createTestUser({ email: 'test1@me.com' });
+
+    const result = await request(app)
+      .patch(`/api/users/${user._id}`)
+      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Content-Type', 'multipart/form-data')
+      .field('email', 'test1@me.com')
+      .field('username', 'test1')
+      .field('role', adminRole._id.toString());
+
+    expect(result.status).toBe(409);
+    expect(result.body.message).toBe('Resource already in use');
+    expect(result.body.errors.email).toBeDefined();
+  });
+
+  it('should return an error if username is already in use', async () => {
+    await createTestUser({ username: 'test1' });
+
+    const result = await request(app)
+      .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
@@ -339,7 +468,7 @@ describe('PUT /api/users/:userId', () => {
 
   it('should update user without changing avatar', async () => {
     const result = await request(app)
-      .put(`/api/users/${user._id}`)
+      .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
@@ -355,7 +484,7 @@ describe('PUT /api/users/:userId', () => {
 
   it('should update user with changing avatar', async () => {
     const result = await request(app)
-      .put(`/api/users/${user._id}`)
+      .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
