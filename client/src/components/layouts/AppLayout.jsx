@@ -7,32 +7,14 @@ import { Input } from '@/components/shadcn-ui/input';
 import { setSearchTerm } from '@/features/querySlice';
 import { TbSearch, TbX, TbMenu2 } from 'react-icons/tb';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/shadcn-ui/scroll-area';
-import { useLocation } from 'react-router-dom';
-import { useLazyListCategoriesQuery } from '@/services/categoryApi';
 import { useDispatch, useSelector } from 'react-redux';
-import { setFilters } from '@/features/querySlice';
 import { Separator } from '@/components/shadcn-ui/separator';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/shadcn-ui/collapsible';
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from '@/components/shadcn-ui/avatar';
-import {
-  TbChevronDown,
-  TbFolders,
-  TbLogin,
-  TbLogout,
-  TbEdit,
-  TbUser,
-  TbApps,
-  TbHome,
-} from 'react-icons/tb';
+import { TbLogin, TbLogout, TbEdit, TbApps, TbHome } from 'react-icons/tb';
 import Brand from '@/components/ui/Brand';
 import useSignout from '@/hooks/useSignout';
 import SidebarMenu from '@/components/ui/SidebarMenu';
@@ -83,16 +65,20 @@ const Header = ({ onToggleSidebar }) => {
               <UserDropdown className="md:order-2" />
             ) : (
               <>
-                <Link to="/signup">
-                  <Button variant="ghost">Sign Up</Button>
-                </Link>
                 <Link to="/signin">
-                  <Button variant="ghost">Sign In</Button>
+                  <Button
+                    variant="ghost"
+                    className="font-semibold text-gray-800"
+                  >
+                    Sign In
+                  </Button>
                 </Link>
               </>
             )}
             <Link to="/" className="md:order-1">
-              <Button variant="primary">Home</Button>
+              <Button variant="ghost" className="font-semibold text-gray-800">
+                Home
+              </Button>
             </Link>
           </div>
         </nav>
@@ -124,86 +110,15 @@ const UserProfile = ({ currentUser }) => (
   </div>
 );
 
-const Categories = ({
-  isOpenCategories,
-  handleCategories,
-  categories,
-  dispatch,
-}) => (
-  <Collapsible
-    open={isOpenCategories}
-    onOpenChange={handleCategories}
-    className="text-gray-200"
-  >
-    <CollapsibleTrigger asChild>
-      <div className="space-y-1 ">
-        <div className="flex items-center gap-x-3 px-4 py-3 rounded-xl hover:bg-gray-200 hover:text-gray-800">
-          <TbFolders className="size-5" />
-          <span>Categories</span>
-          <TbChevronDown
-            className={cn(
-              'absolute top-30 right-10 size-5',
-              isOpenCategories && 'rotate-180'
-            )}
-          />
-        </div>
-      </div>
-    </CollapsibleTrigger>
-    <CollapsibleContent>
-      <ScrollArea className="h-60">
-        <ul className="mx-4">
-          {categories?.data?.map(({ _id, name }) => (
-            <li
-              key={_id}
-              className="ps-6 py-3 rounded-xl hover:bg-gray-200 hover:text-gray-800"
-              onClick={() => dispatch(setFilters({ category: _id }))}
-            >
-              {name}
-            </li>
-          ))}
-        </ul>
-      </ScrollArea>
-    </CollapsibleContent>
-  </Collapsible>
-);
-
 const Sidebar = forwardRef(({ isSidebarOpen }, ref) => {
-  const dispatch = useDispatch();
   const { token, currentUser } = useSelector(state => state.auth);
-  const { pathname } = useLocation();
   const { handleSignout } = useSignout();
-  const [isOpenCategories, setIsOpenCategories] = useState(false);
-  const [getCategories, { data: categories }] = useLazyListCategoriesQuery();
-
-  const handleCategories = open => {
-    setIsOpenCategories(open);
-    if (open) getCategories();
-  };
 
   const menuItems = [
     { name: 'Home', icon: TbHome, link: '/' },
-    ...(pathname === '/'
-      ? [
-          {
-            name: 'categories',
-            icon: TbFolders,
-            component: (
-              <Categories
-                isOpenCategories={isOpenCategories}
-                handleCategories={handleCategories}
-                categories={categories}
-                dispatch={dispatch}
-              />
-            ),
-          },
-        ]
-      : []),
-    ...(currentUser?.role === 'admin'
-      ? [{ name: 'Dashboard', icon: TbApps, link: '/dashboard' }]
-      : []),
     ...(token
       ? [
-          { name: 'Profile', icon: TbUser, link: '/profile' },
+          { name: 'Dashboard', icon: TbApps, link: '/dashboard' },
           { name: 'Sign Out', icon: TbLogout, action: handleSignout },
         ]
       : []),
@@ -219,14 +134,14 @@ const Sidebar = forwardRef(({ isSidebarOpen }, ref) => {
     <aside
       ref={ref}
       className={cn(
-        'w-64 fixed md:hidden z-50 h-screen left-0 top-0 overflow-y-hidden flex flex-col bg-gradient-to-b from-green-500 via-green-600 to-green-700 transition-transform duration-300',
+        'w-64 fixed md:hidden z-50 h-screen left-0 top-0 overflow-y-hidden flex flex-col text-gray-200 bg-gray-900 transition-transform duration-300',
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
       {token ? (
         <UserProfile currentUser={currentUser} />
       ) : (
-        <Brand className="p-4 text-gray-200" />
+        <Brand className="border-b border-gray-700 p-4" />
       )}
 
       <Separator />
