@@ -271,7 +271,7 @@ const PostDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { token, currentUser } = useSelector(state => state.auth);
-  const postId = location.state.postId;
+  const [postId, setPostId] = useState(null);
   const [likePost] = useLikePostMutation();
   const { data: comments, isLoading: isLoadingComments } =
     useListCommentsByPostQuery(postId);
@@ -292,10 +292,13 @@ const PostDetail = () => {
   };
 
   useEffect(() => {
-    if (!isLoadingPost && !post) {
-      navigate('/404');
+    const id = location.state?.postId;
+    if (!id) {
+      navigate('/not-found');
+    } else {
+      setPostId(id);
     }
-  }, [isLoadingPost, post, navigate]);
+  }, [isLoadingPost, post, navigate, location.state]);
 
   if (isLoadingPost) return <PostDetailSkeleton />;
 
