@@ -65,7 +65,8 @@ apiRouter.delete('/roles/:roleId', authorize(['admin']), roleController.remove);
 apiRouter.get('/users/search', authorize(['admin']), userController.search);
 apiRouter.post('/users', authorize(['admin']), userController.create);
 apiRouter.get('/users/:userId', authorize(['admin', 'user']), userController.show);
-apiRouter.put('/users/:userId', authorize(['admin', 'user']), userController.update);
+apiRouter.patch('/users/:userId', authorize(['admin']), userController.update);
+apiRouter.patch('/users/:userId/profile', authorize(['admin', 'user']), userController.updateProfile);
 apiRouter.delete('/users/:userId', authorize(['admin', 'user']), userController.remove);
 
 export default apiRouter;
