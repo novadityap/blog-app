@@ -39,7 +39,19 @@ const userApi = createApi({
     updateUser: builder.mutation({
       query: ({ data, userId }) => ({
         url: `/users/${userId}`,
-        method: 'PUT',
+        method: 'PATCH',
+        data: sanitizeData(data),
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+      invalidatesTags: (result, error, { userId }) => [
+        { type: 'User', id: userId },
+        { type: 'User', id: 'LIST' },
+      ],
+    }),
+    updateProfile: builder.mutation({
+      query: ({ data, userId }) => ({
+        url: `/users/${userId}/profile`,
+        method: 'PATCH',
         data: sanitizeData(data),
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
@@ -68,6 +80,7 @@ export const {
   useLazyShowUserQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
+  useUpdateProfileMutation,
   useRemoveUserMutation,
 } = userApi;
 
