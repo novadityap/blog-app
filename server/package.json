@@ -5,9 +5,9 @@
   "description": "server",
   "main": "src/index.js",
   "scripts": {
-    "start": "cross-env NODE_ENV=production node src/index.js",
-    "dev": "cross-env NODE_ENV=development nodemon src/index.js",
-    "test": "cross-env NODE_ENV=test jest --detectOpenHandles --runInBand",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest --detectOpenHandles --runInBand",
     "seed": "node src/seeders/seed.js"
   },
   "author": "Nova Aditya",
@@ -40,7 +40,6 @@
   "devDependencies": {
     "@babel/preset-env": "^7.25.8",
     "babel-jest": "^29.7.0",
-    "cross-env": "^7.0.3",
     "dotenv": "^16.4.7",
     "jest": "^29.7.0",
     "nodemon": "^3.1.10",
