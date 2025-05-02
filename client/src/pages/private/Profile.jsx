@@ -1,180 +1,202 @@
-import { useState, useEffect } from 'react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useFormik } from 'formik';
-import { useDispatch, useSelector } from 'react-redux';
-import { useGetUserByIdQuery, useUpdateUserMutation } from '@/services/userApi';
-import transformErrors from '@/utils/transformErrors';
-import { TbCircleCheck } from 'react-icons/tb';
-import { Skeleton } from '@/components/ui/skeleton';
-import { setCurrentUser } from '@/features/authSlice';
+import { Button } from '@/components/shadcn-ui/button';
+import { Input } from '@/components/shadcn-ui/input';
+import BreadcrumbNav from '@/components/ui/BreadcrumbNav';
+import { Skeleton } from '@/components/shadcn-ui/skeleton';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/shadcn-ui/card';
+import {
+  Form,
+  FormField,
+  FormLabel,
+  FormMessage,
+  FormItem,
+  FormControl,
+} from '@/components/shadcn-ui/form';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/components/shadcn-ui/avatar';
+import { useSelector } from 'react-redux';
+import { useShowUserQuery, useUpdateProfileMutation } from '@/services/userApi';
+import useFormHandler from '@/hooks/useFormHandler';
+import { useEffect } from 'react';
+import { TbLoader } from 'react-icons/tb';
 
 const Profile = () => {
-  const dispatch = useDispatch();
-  const currentUser = useSelector(state => state.auth?.currentUser ?? {});
-  const { id } = currentUser;
+  const currentUser = useSelector(state => state.auth.currentUser);
+  const { data, isLoading, isFetching } = useShowUserQuery(currentUser.id);
   const {
-    data: user,
-    isLoading: isLoadingQuery,
-    isSuccess: isSuccessQuery,
-  } = useGetUserByIdQuery(id);
-  const [
-    updateUser,
-    { isLoading: isLoadingMutation, isSuccess: isSuccessMutation },
-  ] = useUpdateUserMutation();
-  const [validationErrors, setValidationErrors] = useState({});
-  const [avatar, setAvatar] = useState('');
-
-  const formik = useFormik({
-    initialValues: {
-      username: user?.data?.username || '',
-      email: user?.data?.email || '',
-      avatar: null,
-    },
-    enableReinitialize: true,
-    onSubmit: async values => {
-      if (!values.avatar) delete values.avatar;
-
-      try {
-        const {
-          data: { username, email, avatar },
-        } = await updateUser({ data: values, id }).unwrap();
-
-        formik.setValues({
-          username,
-          email,
-          avatar: null,
-        });
-
-        if (avatar !== currentUser.avatar) {
-          setAvatar(avatar);
-          dispatch(
-            setCurrentUser(Object.assign(currentUser, { avatar, username, email}))
-          );
-        } else {
-          dispatch(
-            setCurrentUser(Object.assign(currentUser, { username, email}))
-          );
-        }
-
-        setValidationErrors({});
-      } catch (err) {
-        if (err.code === 400) {
-          setValidationErrors(transformErrors(err.errors));
-          return;
-        }
-
-        if (err.code === 409) {
-          setValidationErrors({ email: err.message });
-          return;
-        }
-
-        return;
-      }
+    form,
+    handleSubmit,
+    isLoading: isLoadingUpdate,
+  } = useFormHandler({
+    isProfileUpdate: true,
+    ids: { userId: data?.data?._id },
+    mutation: useUpdateProfileMutation,
+    defaultValues: {
+      avatar: '',
+      username: '',
+      email: '',
+      password: '',
     },
   });
 
-  const handleAvatarChange = e => {
-    formik.setFieldValue('avatar', e.target.files[0]);
-  };
-
   useEffect(() => {
-    if (isSuccessQuery) {
-      setAvatar(user.data.avatar);
+    if (data?.data) {
+      form.reset({
+        avatar: data.data.avatar,
+        username: data.data.username,
+        email: data.data.email,
+        password: '',
+      });
     }
-  }, [user, isSuccessQuery, setAvatar]);
+  }, [data]);
+
+  if (true) return <ProfileSkeleton />;
+  // if (isLoading || isFetching || !data?.data) return <ProfileSkeleton />;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-y-4">
-      {isSuccessMutation && (
-        <Alert variant="success" className="w-full md:w-4/5 lg:w-1/2">
-          <TbCircleCheck className=" text-green-500 size-5" />
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>Profile updated successfully</AlertDescription>
-        </Alert>
-      )}
-
-      <Card className="w-full md:w-4/5 lg:w-1/2">
+    <>
+      <BreadcrumbNav />
+      <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-green-500">
-            Profile
-          </CardTitle>
+          <CardTitle className="text-gray-600">Profile</CardTitle>
+          <CardDescription>Manage your profile</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoadingMutation || isLoadingQuery ? (
-            <div className="flex flex-col space-y-5">
-              <Skeleton className="h-56 w-96 rounded-xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-96" />
-                <Skeleton className="h-4 w-96" />
-                <Skeleton className="h-4 w-64" />
-              </div>
-            </div>
-          ) : isSuccessQuery || isSuccessMutation ? (
-            <form onSubmit={formik.handleSubmit}>
-              <div className="mb-4">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="size-40">
-                    <AvatarImage src={avatar} alt="User Avatar" />
-                    <AvatarFallback>
-                      {formik.values.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Input
-                    type="file"
-                    name="avatar"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
+          <Form {...form}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div className="flex justify-center">
+                <Avatar className="size-32">
+                  <AvatarImage
+                    src={data?.data?.avatar}
+                    fallback={
+                      <AvatarFallback>{data?.data?.username}</AvatarFallback>
+                    }
                   />
-                </div>
+                </Avatar>
               </div>
-
-              <div className="mb-4">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formik.values.username}
-                  onChange={formik.handleChange}
-                />
-
-                {validationErrors?.username && (
-                  <p className="text-red-500 text-sm">
-                    {validationErrors.username}
-                  </p>
+              <FormField
+                control={form.control}
+                name="avatar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Avatar</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => field.onChange(e.target.files[0])}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
+              />
 
-              <div className="mb-4">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formik.values.email}
-                  onChange={formik.handleChange}
-                />
-
-                {validationErrors?.email && (
-                  <p className="text-red-500 text-sm">
-                    {validationErrors.email}
-                  </p>
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  className="w-full sm:w-32"
+                  disabled={isLoadingUpdate}
+                >
+                  {isLoadingUpdate ? (
+                    <>
+                      <TbLoader className="animate-spin mr-2 size-5" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
               </div>
-
-              <Button type="submit" variant="primary" className="w-full">
-                Save Changes
-              </Button>
             </form>
-          ) : null}
+          </Form>
         </CardContent>
       </Card>
-    </div>
+    </>
+  );
+};
+
+const ProfileSkeleton = () => {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="w-1/3 h-6 mb-1" />
+        <Skeleton className="w-1/2 h-4" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <Skeleton className="size-32 rounded-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="flex justify-end">
+            <Skeleton className="h-10 w-full sm:w-28 rounded-md" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
