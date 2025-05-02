@@ -25,6 +25,7 @@ import Role from '@/pages/private/Role';
 import Category from '@/pages/private/Category';
 import NotFound from '@/pages/public/NotFound';
 import PrivateRoute from '@/routes/PrivateRoute';
+import DashboardEntry from '@/routes/DashboardEntry';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -34,10 +35,7 @@ const router = createBrowserRouter(
         <Route path="posts/:slug" element={<PostDetail />} />
         <Route path="signin" element={<Signin />} />
         <Route path="signup" element={<Signup />} />
-        <Route
-          path="resend-verification"
-          element={<ResendVerification />}
-        />
+        <Route path="resend-verification" element={<ResendVerification />} />
         <Route
           path="request-reset-password"
           element={<RequestResetPassword />}
@@ -47,16 +45,20 @@ const router = createBrowserRouter(
           path="verify-email/:verificationToken"
           element={<VerifyEmail />}
         />
-        <Route path="profile" element={<PrivateRoute requiredRoles={['admin', 'user']}><Profile /></PrivateRoute>} />
       </Route>
-      <Route element={<PrivateRoute requiredRoles={['admin']} />}>
+      <Route element={<PrivateRoute requiredRoles={['admin', 'user']} />}>
         <Route path="dashboard" element={<DashboardLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="users" element={<User />} />
-          <Route path="posts" element={<Post />} />
-          <Route path="comments" element={<Comment />} />
-          <Route path="categories" element={<Category />} />
-          <Route path="roles" element={<Role />} />
+          <Route index element={<DashboardEntry />} />
+          <Route element={<PrivateRoute requiredRoles={['user', 'admin']} />}>
+            <Route path="profile" element={<Profile />} />
+          </Route>
+          <Route element={<PrivateRoute requiredRoles={['admin']} />}>
+            <Route path="users" element={<User />} />
+            <Route path="posts" element={<Post />} />
+            <Route path="comments" element={<Comment />} />
+            <Route path="categories" element={<Category />} />
+            <Route path="roles" element={<Role />} />
+          </Route>
         </Route>
       </Route>
       <Route path="unauthorized" element={<Unauthorized />} />
