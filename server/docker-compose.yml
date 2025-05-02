@@ -3,7 +3,7 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-    image: blog-app
+    image: novadityap/blog-app:v1.0.0
     ports:
       - "3000:3000"
     env_file:
