@@ -61,8 +61,8 @@ const PostCard = ({ post }) => (
   <Card className="shadow-lg hover:shadow-xl transition-shadow">
     <CardHeader className="space-y-4">
       <CardTitle className="capitalize text-xl font-bold">
-        <Link 
-          to={`/posts/${post?.slug}`} 
+        <Link
+          to={`/posts/${post?.slug}`}
           state={{ postId: post?._id }}
           className="hover:underline"
         >
@@ -83,8 +83,8 @@ const PostCard = ({ post }) => (
       </CardDescription>
     </CardHeader>
     <CardContent>
-      <Link 
-        to={`/posts/${post?.slug}`} 
+      <Link
+        to={`/posts/${post?.slug}`}
         state={{ postId: post?._id }}
         className="block"
       >
@@ -100,11 +100,8 @@ const PostCard = ({ post }) => (
       />
     </CardContent>
     <CardFooter className="flex justify-end">
-      <Button asChild variant="primary">
-        <Link 
-          to={`/posts/${post?.slug}`}
-          state={{ postId: post?._id }}
-        >
+      <Button asChild>
+        <Link to={`/posts/${post?.slug}`} state={{ postId: post?._id }}>
           Read More
         </Link>
       </Button>
@@ -113,7 +110,7 @@ const PostCard = ({ post }) => (
 );
 
 const Sidebar = ({ categories, onOpen, onChange }) => (
-  <aside className="space-y-8 lg:sticky lg:top-10  self-start">
+  <aside className="space-y-8 mt-6">
     <div>
       <h2 className="text-lg font-semibold mb-4">Categories</h2>
       <Select onOpenChange={onOpen} onValueChange={onChange}>
@@ -149,10 +146,14 @@ const Home = () => {
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="grid w-full grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
         {isLoading ? (
           <SkeletonLoader count={3} />
+        ) : posts?.data?.length === 0 ? (
+          <p className="text-gray-500 font-semibold text-2xl mb-8 text-center">
+            No posts found.
+          </p>
         ) : (
           posts?.data?.map(post => <PostCard key={post?._id} post={post} />)
         )}
