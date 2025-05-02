@@ -55,7 +55,7 @@ postSchema.post('aggregate', function (docs, next) {
     posts.forEach(post => {
       post.postImage = postImageUrl + post.postImage;
       post.user.avatar =
-        `${process.env.SERVER_URL}/uploads/users/` + post.user.avatar;
+        `${process.env.SERVER_URL}/uploads/avatars/` + post.user.avatar;
     });
   }
 
