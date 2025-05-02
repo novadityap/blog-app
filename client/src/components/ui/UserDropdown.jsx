@@ -14,7 +14,6 @@ import {
 } from '@/components/shadcn-ui/dropdown-menu';
 import {
   TbHome,
-  TbUser,
   TbApps,
   TbLogout,
   TbEdit,
@@ -30,12 +29,9 @@ const UserDropdown = ({ className }) => {
 
   const menuItems = [
     { name: 'Home', icon: TbHome, link: '/' },
-    ...(currentUser?.role === 'admin'
-      ? [{ name: 'Dashboard', icon: TbApps, link: '/dashboard' }]
-      : []),
     ...(token
       ? [
-          { name: 'Profile', icon: TbUser, link: '/profile' },
+          { name: 'Dashboard', icon: TbApps, link: '/dashboard' },
           { name: 'Sign Out', icon: TbLogout, action: handleSignout },
         ]
       : [
