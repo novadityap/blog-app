@@ -8,9 +8,7 @@
     "start": "cross-env NODE_ENV=production node src/index.js",
     "dev": "cross-env NODE_ENV=development nodemon src/index.js",
     "test": "cross-env NODE_ENV=test jest --detectOpenHandles --runInBand",
-    "seed": "node src/seeders/seed.js",
-    "pretest:k6": "npm run seed && node benchmark/pretest.js",
-    "run-k6": "k6 run benchmark/k6.js"
+    "seed": "node src/seeders/seed.js"
   },
   "author": "Nova Aditya",
   "license": "ISC",
