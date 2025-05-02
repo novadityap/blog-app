@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setToken, setCurrentUser } from '@/features/authSlice';
 import { toast } from 'react-hot-toast';
 
@@ -11,8 +11,10 @@ const useFormHandler = ({
   isDatatableForm,
   onComplete,
   defaultValues,
+  isProfileUpdate = false,
 }) => {
   const dispatch = useDispatch();
+  const { currentUser } = useSelector(state => state.auth);
   const [message, setMessage] = useState('');
   const [mutate, { isLoading, isError, error, isSuccess }] = mutation();
   const { handleSubmit, ...form } = useForm({ defaultValues });
@@ -38,13 +40,25 @@ const useFormHandler = ({
         );
       }
 
+      if (isProfileUpdate && currentUser.id === result.data._id) {
+        const { _id, ...user } = result.data;
+        dispatch(
+          setCurrentUser({
+            id: _id,
+            role: currentUser.role,
+            ...user,
+          })
+        );
+      }
+
       if (isDatatableForm && onComplete) {
         onComplete(result);
       } else {
+        toast.success(result.message);
         setMessage(result.message);
       }
 
-      form.reset();
+      form.reset(result.data);
     } catch (e) {
       if (e.errors) {
         Object.keys(e.errors).forEach(key => {
