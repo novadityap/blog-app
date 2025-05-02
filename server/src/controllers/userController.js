@@ -3,6 +3,7 @@ import {
   updateUserSchema,
   getUserSchema,
   searchUserSchema,
+  updateProfileSchema
 } from '../validations/userValidation.js';
 import User from '../models/userModel.js';
 import Role from '../models/roleModel.js';
@@ -18,9 +19,7 @@ import checkOwnership from '../utils/checkOwnership.js';
 const show = async (req, res, next) => {
   try {
     const userId = validate(getUserSchema, req.params.userId);
-    const currentUser = req.user;
-
-    await checkOwnership(User, userId, currentUser);
+    await checkOwnership(User, userId, req.user);
 
     const user = await User.findById(userId).populate('role');
     if (!user) {
@@ -38,6 +37,82 @@ const show = async (req, res, next) => {
     next(e);
   }
 };
+
+const updateProfile = async (req, res, next) => {
+  try {
+    const userId = validate(getUserSchema, req.params.userId);
+    await checkOwnership(User, userId, req.user);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      logger.warn('user not found');
+      throw new ResponseError('User not found', 404);
+    }
+
+    const { files, fields } = await uploadFile(req, {
+      fieldname: 'avatar',
+      formSchema: updateProfileSchema,
+    });
+
+    if (fields.username && fields.username !== user.username) {
+      const isUsernameTaken = await User.exists({
+        username: fields.username,
+        _id: { $ne: userId },
+      });
+
+      if (isUsernameTaken) {
+        logger.warn('resource already in use');
+        throw new ResponseError('Resource already in use', 409, {
+          username: 'Username already in use',
+        });
+      }
+    }
+
+    if (fields.email && fields.email !== user.email) {
+      const isEmailTaken = await User.exists({
+        email: fields.email,
+        _id: { $ne: userId },
+      });
+
+      if (isEmailTaken) {
+        logger.warn('resource already in use');
+        throw new ResponseError('Resource already in use', 409, {
+          email: 'Email already in use',
+        });
+      }
+    }
+
+    if (fields.password)
+      fields.password = await bcrypt.hash(fields.password, 10);
+
+    if (files?.length > 0) {
+      if (user.avatar !== 'default.jpg')
+        await unlink(path.resolve(process.env.AVATAR_DIR, user.avatar));
+
+      user.avatar = files[0].newFilename;
+      logger.info('avatar updated successfully');
+    }
+
+    Object.assign(user, fields);
+    await user.save();
+
+    const transformedUser = user.toObject();
+
+    logger.info('profile updated successfully');
+    res.json({
+      code: 200,
+      message: 'Profile updated successfully',
+      data: {
+        _id: transformedUser._id,
+        username: transformedUser.username,
+        email: transformedUser.email,
+        avatar: transformedUser.avatar,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+}
 
 const search = async (req, res, next) => {
   try {
@@ -263,4 +338,4 @@ const remove = async (req, res, next) => {
   }
 };
 
-export default { show, search, create, update, remove };
+export default { show, search, create, update, remove, updateProfile };
