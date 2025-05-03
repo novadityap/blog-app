@@ -7,5 +7,5 @@ import logger from './utils/logger.js';
   const port = process.env.PORT || 3000;
 
   await connectDB();
-  app.listen(port, () => logger.info(`Server running on port ${port}`));
+  app.listen(port, '0.0.0.0', () => logger.info(`Server running on port ${port}`));
 })();
