@@ -104,8 +104,6 @@ const search = async (req, res, next) => {
             }
           : {}
       )
-      .unwind('user')
-      .unwind('post')
       .facet({
         comments: [
           { $sort: { createdAt: -1 } },

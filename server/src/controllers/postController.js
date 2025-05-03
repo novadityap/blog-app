@@ -13,19 +13,20 @@ import {
   searchPostSchema,
 } from '../validations/postValidation.js';
 import mongoose from 'mongoose';
-import { unlink } from 'node:fs/promises';
-import path from 'node:path';
+import cloudinary from '../utils/cloudinary.js';
+import extractPublicId from '../utils/extractPublicId.js';
 
 const create = async (req, res, next) => {
   try {
-    const { files, fields } = await uploadFile(req, {
+    const { file, fields } = await uploadFile(req, {
+      isRequired: true,
       fieldname: 'postImage',
       formSchema: createPostSchema,
     });
 
     fields.slug = slugify(fields.title, { lower: true });
 
-    if (files) fields.postImage = files[0].newFilename;
+    if (file) fields.postImage = file.secure_url;
 
     if (fields.category) {
       const category = await Category.exists({ _id: fields.category });
@@ -172,7 +173,7 @@ const update = async (req, res, next) => {
       throw new ResponseError('Post not found', 404);
     }
 
-    const { files, fields } = await uploadFile(req, {
+    const { file, fields } = await uploadFile(req, {
       fieldname: 'postImage',
       formSchema: updatePostSchema,
     });
@@ -187,12 +188,13 @@ const update = async (req, res, next) => {
       }
     }
 
-    if (files?.length > 0) {
-      if (post.postImage !== 'default.jpg')
-        await unlink(path.resolve(process.env.POST_DIR, post.postImage));
+    if (file) {
+      if (file.secure_url !== post.postImage) {
+        await cloudinary.uploader.destroy(extractPublicId(post.postImage));
 
-      post.postImage = files[0].newFilename;
-      logger.info('post image updated successfully');
+        post.postImage = file.secure_url;
+        logger.info('post image updated successfully');
+      }
     }
 
     Object.assign(post, fields);
@@ -219,10 +221,8 @@ const remove = async (req, res, next) => {
       throw new ResponseError('Post not found', 404);
     }
 
-    if (post.postImage !== 'default.jpg') {
-      await unlink(path.resolve(process.env.POST_DIR, post.postImage));
-      logger.info('post image deleted successfully');
-    }
+    await cloudinary.uploader.destroy(extractPublicId(post.postImage));
+    logger.info('post image deleted successfully');
 
     logger.info('post deleted successfully');
     res.json({

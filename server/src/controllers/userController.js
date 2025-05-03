@@ -12,9 +12,9 @@ import uploadFile from '../utils/uploadFile.js';
 import ResponseError from '../utils/responseError.js';
 import logger from '../utils/logger.js';
 import bcrypt from 'bcrypt';
-import path from 'path';
-import { unlink } from 'node:fs/promises';
 import checkOwnership from '../utils/checkOwnership.js';
+import cloudinary from '../utils/cloudinary.js';
+import extractPublicId from '../utils/extractPublicId.js';
 
 const show = async (req, res, next) => {
   try {
@@ -49,7 +49,7 @@ const updateProfile = async (req, res, next) => {
       throw new ResponseError('User not found', 404);
     }
 
-    const { files, fields } = await uploadFile(req, {
+    const { file, fields } = await uploadFile(req, {
       fieldname: 'avatar',
       formSchema: updateProfileSchema,
     });
@@ -85,28 +85,27 @@ const updateProfile = async (req, res, next) => {
     if (fields.password)
       fields.password = await bcrypt.hash(fields.password, 10);
 
-    if (files?.length > 0) {
-      if (user.avatar !== 'default.jpg')
-        await unlink(path.resolve(process.env.AVATAR_DIR, user.avatar));
+    if (file) {
+      if (user.avatar !== process.env.DEFAULT_AVATAR_URL) await cloudinary.uploader.destroy(extractPublicId(user.avatar));
 
-      user.avatar = files[0].newFilename;
+      user.avatar = file.secure_url;
       logger.info('avatar updated successfully');
     }
 
     Object.assign(user, fields);
     await user.save();
 
-    const transformedUser = user.toObject();
+    // const transformedUser = user.toObject();
 
     logger.info('profile updated successfully');
     res.json({
       code: 200,
       message: 'Profile updated successfully',
       data: {
-        _id: transformedUser._id,
-        username: transformedUser.username,
-        email: transformedUser.email,
-        avatar: transformedUser.avatar,
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
       },
     });
   } catch (e) {
@@ -244,7 +243,7 @@ const update = async (req, res, next) => {
       throw new ResponseError('User not found', 404);
     }
 
-    const { files, fields } = await uploadFile(req, {
+    const { file, fields } = await uploadFile(req, {
       fieldname: 'avatar',
       formSchema: updateUserSchema,
     });
@@ -290,11 +289,10 @@ const update = async (req, res, next) => {
     if (fields.password)
       fields.password = await bcrypt.hash(fields.password, 10);
 
-    if (files?.length > 0) {
-      if (user.avatar !== 'default.jpg')
-        await unlink(path.resolve(process.env.AVATAR_DIR, user.avatar));
+    if (file) {
+      if (user.avatar !== process.env.DEFAULT_AVATAR_URL) await cloudinary.uploader.destroy(extractPublicId(user.avatar));
 
-      user.avatar = files[0].newFilename;
+      user.avatar = file.secure_url;
       logger.info('avatar updated successfully');
     }
 
@@ -323,8 +321,8 @@ const remove = async (req, res, next) => {
       throw new ResponseError('User not found', 404);
     }
 
-    if (user.avatar !== 'default.jpg') {
-      await unlink(path.resolve(process.env.AVATAR_DIR, user.avatar));
+    if (user.avatar !== process.env.DEFAULT_AVATAR_URL) {
+      await cloudinary.uploader.destroy(extractPublicId(user.avatar));
       logger.info('avatar deleted successfully');
     }
 
