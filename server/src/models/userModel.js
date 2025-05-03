@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import crypto from 'crypto';
+import cloudinary from '../utils/cloudinary.js';
+import extractPublicId from '../utils/extractPublicId.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -12,7 +14,7 @@ const userSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: 'default.jpg',
+      default: process.env.DEFAULT_AVATAR_URL,
     },
     isVerified: {
       type: Boolean,
@@ -35,11 +37,8 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-const avatarUrl = `${process.env.SERVER_URL}/uploads/avatars/`;
-
 userSchema.set('toObject', {
   transform: (doc, ret) => {
-    if (!ret.avatar.startsWith(avatarUrl)) ret.avatar = avatarUrl + ret.avatar;
     delete ret.password;
     return ret;
   },
@@ -47,20 +46,9 @@ userSchema.set('toObject', {
 
 userSchema.set('toJSON', {
   transform: (doc, ret) => {
-    if (!ret.avatar.startsWith(avatarUrl)) ret.avatar = avatarUrl + ret.avatar;
     delete ret.password;
     return ret;
   },
-});
-
-userSchema.post('aggregate', function (docs, next) {
-  const [{ users }] = docs;
-  users.forEach(user => {
-    user.avatar = avatarUrl + user.avatar;
-    delete user.password;
-  });
-
-  next();
 });
 
 userSchema.pre(
@@ -68,6 +56,16 @@ userSchema.pre(
   { document: false, query: true },
   async function (next) {
     const userId = this.getQuery()._id;
+
+    const posts = await mongoose.model('Post').find({ user: userId });
+
+    const postPublicIds = posts
+      .map(post => extractPublicId(post.postImage))
+      .filter(publicId => publicId !== null);
+
+    if (postPublicIds.length > 0)
+      await cloudinary.api.delete_resources(postPublicIds);
+
     await mongoose.model('Post').deleteMany({ user: userId });
     await mongoose.model('Comment').deleteMany({ user: userId });
     next();

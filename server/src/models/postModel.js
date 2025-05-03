@@ -10,7 +10,6 @@ const postSchema = new mongoose.Schema(
     content: String,
     postImage: {
       type: String,
-      default: 'default.jpg',
     },
     category: {
       type: mongoose.Schema.Types.ObjectId,
@@ -32,35 +31,6 @@ const postSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-const postImageUrl = `${process.env.SERVER_URL}/uploads/posts/`;
-
-postSchema.set('toObject', {
-  transform: (doc, ret) => {
-    ret.postImage = postImageUrl + ret.postImage;
-    return ret;
-  },
-});
-
-postSchema.set('toJSON', {
-  transform: (doc, ret) => {
-    ret.postImage = postImageUrl + ret.postImage;
-    return ret;
-  },
-});
-
-postSchema.post('aggregate', function (docs, next) {
-  const [{ posts }] = docs;
-  if (posts) {
-    posts.forEach(post => {
-      post.postImage = postImageUrl + post.postImage;
-      post.user.avatar =
-        `${process.env.SERVER_URL}/uploads/avatars/` + post.user.avatar;
-    });
-  }
-
-  next();
-});
 
 postSchema.pre(
   'findByIdAndDelete',
