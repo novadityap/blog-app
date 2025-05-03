@@ -2,10 +2,8 @@ node_modules
 npm-debug.log
 .env
 
-.vscode
-.idea
-
 tests
+jest.setup.js
 logs
 *.log
 npm-debug.log*
