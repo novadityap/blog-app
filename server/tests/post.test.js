@@ -10,10 +10,11 @@ import {
   createTestCategory,
   removeTestCategory,
   removeTestFile,
+  checkFileExists,
   createToken,
 } from './testUtil.js';
-import { access, copyFile } from 'node:fs/promises';
 import Post from '../src/models/postModel.js';
+import cloudinary from '../src/utils/cloudinary.js';
 
 const testPostImagePath = path.resolve(
   process.env.POST_DIR_TEST,
@@ -165,7 +166,8 @@ describe('POST /api/posts', () => {
       .set('Content-Type', 'multipart/form-data')
       .field('content', 'test')
       .field('title', 'test')
-      .field('category', category._id.toString());
+      .field('category', category._id.toString())
+      .attach('postImage', testPostImagePath);
 
     expect(result.status).toBe(201);
     expect(result.body.message).toBe('Post created successfully');
@@ -177,10 +179,16 @@ describe('POST /api/posts', () => {
 describe('PUT /api/posts/:postId', () => {
   let post;
   let category;
+  let uploadResult;
 
   beforeEach(async () => {
+    uploadResult = await cloudinary.uploader.upload(testPostImagePath, {
+      folder: 'postImages',
+    });
     category = await createTestCategory();
-    post = await createTestPost();
+    post = await createTestPost({
+      postImage: uploadResult.secure_url,
+    });
   });
 
   afterEach(async () => {
@@ -263,11 +271,7 @@ describe('PUT /api/posts/:postId', () => {
       .attach('postImage', testPostImagePath);
 
     const updatedPost = await Post.findById(post._id);
-    const postImageExists = await access(
-      path.resolve(process.env.POST_DIR, updatedPost.postImage)
-    )
-      .then(() => true)
-      .catch(() => false);
+    const postImageExists = await checkFileExists(updatedPost.postImage);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Post updated successfully');
@@ -275,7 +279,7 @@ describe('PUT /api/posts/:postId', () => {
     expect(result.body.data.content).toBe('test1');
     expect(postImageExists).toBe(true);
 
-    await removeTestFile('postImage');
+    await removeTestFile(updatedPost.postImage);
   });
 });
 
@@ -309,36 +313,19 @@ describe('DELETE /api/posts/:postId', () => {
     expect(result.body.message).toBe('Post not found');
   });
 
-  it('should delete post without removing default post image', async () => {
-    const result = await request(app)
-      .delete(`/api/posts/${post._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+  it('should delete post with removing post image', async () => {
+    const uploadResult = await cloudinary.uploader.upload(testPostImagePath, {
+      folder: 'posts',
+    });
 
-    const postImageExists = await access(
-      path.resolve(process.env.POST_DIR, 'default.jpg')
-    )
-      .then(() => true)
-      .catch(() => false);
-
-    expect(result.status).toBe(200);
-    expect(result.body.message).toBe('Post deleted successfully');
-    expect(postImageExists).toBe(true);
-  });
-
-  it('should delete post with removing non-default post image', async () => {
-    const avatarPath = path.resolve(process.env.POST_DIR, 'test-post.jpg');
-    post.postImage = 'test-post.jpg';
-
+    post.postImage = uploadResult.secure_url;
     await post.save();
-    await copyFile(testPostImagePath, avatarPath);
 
     const result = await request(app)
       .delete(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    const postImageExists = await access(avatarPath)
-      .then(() => true)
-      .catch(() => false);
+    const postImageExists = await checkFileExists(post.postImage);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Post deleted successfully');

@@ -7,6 +7,7 @@ import {
   createTestPost,
   removeTestPost,
 } from './testUtil.js';
+import Comment from '../src/models/commentModel.js';
 
 describe('GET /api/posts/:postId/comments', () => {
   let post;

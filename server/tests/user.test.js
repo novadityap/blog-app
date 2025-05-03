@@ -2,14 +2,15 @@ import request from 'supertest';
 import app from '../src/app.js';
 import path from 'node:path';
 import User from '../src/models/userModel.js';
-import { access, copyFile } from 'node:fs/promises';
 import Role from '../src/models/roleModel.js';
 import {
   createTestUser,
   createManyTestUsers,
   removeTestUser,
   removeTestFile,
+  checkFileExists,
 } from './testUtil.js';
+import cloudinary from '../src/utils/cloudinary.js';
 
 const testAvatarPath = path.resolve(
   process.env.AVATAR_DIR_TEST,
@@ -299,8 +300,7 @@ describe('PATCH /api/users/:userId/profile', () => {
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
-      .field('username', 'test1')
-      .field('role', adminRole._id.toString());
+      .field('username', 'test1');
 
     expect(result.status).toBe(409);
     expect(result.body.message).toBe('Resource already in use');
@@ -315,8 +315,7 @@ describe('PATCH /api/users/:userId/profile', () => {
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
-      .field('username', 'test1')
-      .field('role', adminRole._id.toString());
+      .field('username', 'test1');
 
     expect(result.status).toBe(409);
     expect(result.body.message).toBe('Resource already in use');
@@ -329,17 +328,15 @@ describe('PATCH /api/users/:userId/profile', () => {
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
-      .field('username', 'test1')
-      .field('role', adminRole._id.toString());
+      .field('username', 'test1');
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Profile updated successfully');
     expect(result.body.data.email).toBe('test1@me.com');
     expect(result.body.data.username).toBe('test1');
-    expect(result.body.data.role).toBe(adminRole._id.toString());
   });
 
-  it.only('should update profile with changing avatar', async () => {
+  it('should update profile with changing avatar', async () => {
     const result = await request(app)
       .patch(`/api/users/${user._id}/profile`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -349,11 +346,7 @@ describe('PATCH /api/users/:userId/profile', () => {
       .attach('avatar', testAvatarPath);
 
     const updatedUser = await User.findById(user._id);
-    const avatarExists = await access(
-      path.resolve(process.env.AVATAR_DIR, updatedUser.avatar)
-    )
-      .then(() => true)
-      .catch(() => false);
+    const avatarExists = await checkFileExists(updatedUser.avatar);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Profile updated successfully');
@@ -361,9 +354,9 @@ describe('PATCH /api/users/:userId/profile', () => {
     expect(result.body.data.username).toBe('test1');
     expect(avatarExists).toBe(true);
 
-    await removeTestFile('avatar');
+    await removeTestFile(updatedUser.avatar);
   });
-})
+});
 
 describe('PATCH /api/users/:userId', () => {
   let user;
@@ -492,11 +485,7 @@ describe('PATCH /api/users/:userId', () => {
       .attach('avatar', testAvatarPath);
 
     const updatedUser = await User.findById(user._id);
-    const avatarExists = await access(
-      path.resolve(process.env.AVATAR_DIR, updatedUser.avatar)
-    )
-      .then(() => true)
-      .catch(() => false);
+    const avatarExists = await checkFileExists(updatedUser.avatar);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('User updated successfully');
@@ -504,7 +493,7 @@ describe('PATCH /api/users/:userId', () => {
     expect(result.body.data.username).toBe('test1');
     expect(avatarExists).toBe(true);
 
-    await removeTestFile('avatar');
+    await removeTestFile(updatedUser.avatar);
   });
 });
 
@@ -552,11 +541,7 @@ describe('DELETE /api/users/:userId', () => {
       .delete(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    const avatarExists = await access(
-      path.resolve(process.env.AVATAR_DIR, 'default.jpg')
-    )
-      .then(() => true)
-      .catch(() => false);
+    const avatarExists = await checkFileExists(process.env.DEFAULT_AVATAR_URL);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('User deleted successfully');
@@ -564,19 +549,22 @@ describe('DELETE /api/users/:userId', () => {
   });
 
   it('should delete user with removing non-default avatar', async () => {
-    const avatarPath = path.resolve(process.env.AVATAR_DIR, 'test-avatar.jpg');
-    user.avatar = 'test-avatar.jpg';
+    const testAvatarPath = path.resolve(
+      process.env.AVATAR_DIR_TEST,
+      'test-avatar.jpg'
+    );
+    const uploadResult = await cloudinary.uploader.upload(testAvatarPath, {
+      folder: 'avatars',
+    });
 
+    user.avatar = uploadResult.secure_url;
     await user.save();
-    await copyFile(testAvatarPath, avatarPath);
 
     const result = await request(app)
       .delete(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    const avatarExists = await access(avatarPath)
-      .then(() => true)
-      .catch(() => false);
+    const avatarExists = await checkFileExists(user.avatar);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('User deleted successfully');
