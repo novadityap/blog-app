@@ -8,6 +8,8 @@ import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import path from 'node:path';
+import cloudinary from '../src/utils/cloudinary.js';
+import extractPublicId from '../src/utils/extractPublicId.js';
 
 export const createTestUser = async (fields = {}) => {
   const role = await createTestRole({ name: 'admin' });
@@ -170,7 +172,10 @@ export const createToken = (type, role, userId) => {
 };
 
 const readLog = async () => {
-  const path = `${process.cwd()}/src/logs/app-${
+  // const path = `${process.cwd()}/src/logs/app-${
+  //   new Date().toISOString().split('T')[0]
+  // }.log`;
+  const path = `${process.cwd()}/logs/app-${
     new Date().toISOString().split('T')[0]
   }.log`;
   const logs = await readFile(path, 'utf-8');
@@ -188,22 +193,15 @@ export const findLog = async (message, startTime) => {
   });
 };
 
-export const removeTestFile = async type => {
-  const exceptionFilename = 'default.jpg';
-  const folder =
-    type === 'avatar'
-      ? path.resolve(process.env.AVATAR_DIR)
-      : path.resolve(process.env.POST_DIR);
-  const files = await readdir(folder);
+export const checkFileExists = async url => {
+  try {
+    await cloudinary.api.resource(extractPublicId(url));
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
 
-  const deletionPromises = files
-    .filter(file => file !== exceptionFilename)
-    .map(async file => {
-      const filePath = path.join(folder, file);
-
-      const stats = await stat(filePath);
-      if (stats.isFile()) await unlink(filePath);
-    });
-
-  await Promise.all(deletionPromises);
+export const removeTestFile = async url => {
+  await cloudinary.uploader.destroy(extractPublicId(url));
 };
