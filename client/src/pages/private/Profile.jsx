@@ -58,8 +58,7 @@ const Profile = () => {
     }
   }, [data]);
 
-  if (true) return <ProfileSkeleton />;
-  // if (isLoading || isFetching || !data?.data) return <ProfileSkeleton />;
+  if (isLoading || isFetching || !data?.data) return <ProfileSkeleton />;
 
   return (
     <>
