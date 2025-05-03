@@ -1,27 +1,8 @@
 import formidable from 'formidable';
-import * as fs from 'node:fs/promises';
-import path from 'node:path';
 import formatError from './formatError.js';
 import ResponseError from './responseError.js';
 import logger from './logger.js';
-
-const ensureUploadDirExists = async directoryType => {
-  const uploadDirectories = {
-    avatar: path.join(process.cwd(), process.env.AVATAR_DIR),
-    postImage: path.join(process.cwd(), process.env.POST_DIR),
-  };
-
-  const directoryPath = uploadDirectories[directoryType];
-  if (!directoryPath) return null;
-
-  try {
-    await fs.access(directoryPath);
-  } catch {
-    await fs.mkdir(directoryPath, { recursive: true });
-  }
-
-  return directoryPath;
-};
+import cloudinary from './cloudinary.js';
 
 const normalizeField = fields => {
   const normalized = {};
@@ -45,19 +26,6 @@ const normalizeField = fields => {
   return normalized;
 };
 
-const removeFile = async uploadedFiles => {
-  for (const file of uploadedFiles) {
-    await fs.unlink(file.filepath);
-  }
-};
-
-const moveFile = async (uploadedFiles, uploadDir) => {
-  for (const file of uploadedFiles) {
-    await fs.copyFile(file.filepath, path.join(uploadDir, file.newFilename));
-    await fs.unlink(file.filepath);
-  }
-};
-
 const uploadFile = (
   req,
   { fieldname, isRequired = false, formSchema = null }
@@ -72,7 +40,6 @@ const uploadFile = (
 
     form.parse(req, async (err, fields, files) => {
       let uploadedFiles = files?.[fieldname];
-      const uploadDir = await ensureUploadDirExists(fieldname);
 
       if (isRequired && !uploadedFiles)
         uploadErrors[fieldname] = `${fieldname} is required`;
@@ -109,8 +76,6 @@ const uploadFile = (
         if (error) {
           logger.warn('validation errors');
 
-          if (uploadedFiles) await removeFile(uploadedFiles);
-
           Object.assign(uploadErrors, formatError(error.details));
           return reject(
             new ResponseError('Validation errors', 400, uploadErrors)
@@ -122,7 +87,6 @@ const uploadFile = (
         if (uploadErrors && uploadedFiles) {
           logger.warn('validation errors');
           
-          await removeFile(uploadedFiles);
           return reject(
             new ResponseError('Validation errors', 400, uploadErrors)
           );
@@ -130,11 +94,13 @@ const uploadFile = (
       }
 
       if (uploadedFiles) {
-        await moveFile(uploadedFiles, uploadDir);
-        return resolve({ files: uploadedFiles, fields });
+        const result = await cloudinary.uploader.upload(uploadedFiles[0].filepath, {
+          folder: `${fieldname}s`
+        });
+        return resolve({ file: result, fields });
       }
 
-      resolve({ files: null, fields });
+      resolve({ file: null, fields });
     });
   });
 };
