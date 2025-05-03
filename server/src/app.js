@@ -16,22 +16,11 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
-app.use(helmet({
-  crossOriginResourcePolicy: false,
-}));
+app.use(helmet());
 app.use(requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use('/uploads/avatars', (req, res, next) => {
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  next();
-}, express.static(process.env.AVATAR_DIR));
-app.use('/uploads/posts', (req, res, next) => {
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  next();
-}, express.static(process.env.POST_DIR));
-
 
 app.use('/api', apiRouter);
 
