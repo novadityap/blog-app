@@ -8,6 +8,10 @@ import apiRouter from './routes/api.js';
 
 const app = express();
 
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false, 
+}));
 app.use(
   cors({
     origin: process.env.CLIENT_URL,
@@ -16,7 +20,6 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
-app.use(helmet());
 app.use(requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
