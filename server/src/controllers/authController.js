@@ -149,7 +149,7 @@ const signin = async (req, res, next) => {
 
     const payload = { id: user._id, role: user.role.name };
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: parseInt(process.env.JWT_EXPIRES),
+      expiresIn: process.env.JWT_EXPIRES,
     });
     const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
       expiresIn: process.env.JWT_REFRESH_EXPIRES,
@@ -246,7 +246,7 @@ const refreshToken = async (req, res, next) => {
     const newToken = jwt.sign(
       { id: user._id, role: user.role.name },
       process.env.JWT_SECRET,
-      { expiresIn: parseInt(process.env.JWT_EXPIRES) }
+      { expiresIn: process.env.JWT_EXPIRES }
     );
 
     logger.info('token refreshed successfully');
