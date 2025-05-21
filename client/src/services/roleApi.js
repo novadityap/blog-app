@@ -52,7 +52,7 @@ const roleApi = createApi({
     updateRole: builder.mutation({
       query: ({ roleId, data }) => ({
         url: `/roles/${roleId}`,
-        method: 'PUT',
+        method: 'PATCH',
         data: sanitizeData(data),
       }),
       invalidatesTags: (result, error, { roleId }) => [

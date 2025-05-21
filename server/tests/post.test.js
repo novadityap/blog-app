@@ -176,7 +176,7 @@ describe('POST /api/posts', () => {
   });
 });
 
-describe('PUT /api/posts/:postId', () => {
+describe('PATCH /api/posts/:postId', () => {
   let post;
   let category;
   let uploadResult;
@@ -198,7 +198,7 @@ describe('PUT /api/posts/:postId', () => {
 
   it('should return an error if post id is invalid', async () => {
     const result = await request(app)
-      .put('/api/posts/invalid-id')
+      .patch('/api/posts/invalid-id')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(400);
@@ -208,7 +208,7 @@ describe('PUT /api/posts/:postId', () => {
 
   it('should return an error if post is not found', async () => {
     const result = await request(app)
-      .put(`/api/posts/${global.validObjectId}`)
+      .patch(`/api/posts/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(404);
@@ -217,7 +217,7 @@ describe('PUT /api/posts/:postId', () => {
 
   it('should return an error if input data is invalid', async () => {
     const result = await request(app)
-      .put(`/api/posts/${post._id}`)
+      .patch(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('content', '')
@@ -233,7 +233,7 @@ describe('PUT /api/posts/:postId', () => {
 
   it('should return an error if category is invalid', async () => {
     const result = await request(app)
-      .put(`/api/posts/${post._id}`)
+      .patch(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('content', 'test1')
@@ -247,7 +247,7 @@ describe('PUT /api/posts/:postId', () => {
 
   it('should update post without changing post image', async () => {
     const result = await request(app)
-      .put(`/api/posts/${post._id}`)
+      .patch(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('content', 'test1')
@@ -263,7 +263,7 @@ describe('PUT /api/posts/:postId', () => {
 
   it('should update post with changing post image', async () => {
     const result = await request(app)
-      .put(`/api/posts/${post._id}`)
+      .patch(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('title', 'test1')

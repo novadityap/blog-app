@@ -53,7 +53,7 @@ const postApi = createApi({
     updatePost: builder.mutation({
       query: ({ data, postId }) => ({
         url: `/posts/${postId}`,
-        method: 'PUT',
+        method: 'PATCH',
         data: sanitizeData(data),
         headers: { 'Content-Type': 'multipart/form-data' },
       }),

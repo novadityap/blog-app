@@ -196,7 +196,7 @@ describe('POST /api/roles', () => {
   });
 });
 
-describe('PUT /api/roles/:roleId', () => {
+describe('PATCH /api/roles/:roleId', () => {
   let role;
 
   beforeEach(async () => {
@@ -209,7 +209,7 @@ describe('PUT /api/roles/:roleId', () => {
 
   it('should return an error if user does not have permission', async () => {
     const result = await request(app)
-      .put(`/api/roles/${global.validObjectId}`)
+      .patch(`/api/roles/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
@@ -218,7 +218,7 @@ describe('PUT /api/roles/:roleId', () => {
 
   it('should return an error if role id is invalid', async () => {
     const result = await request(app)
-      .put('/api/roles/invalid-id')
+      .patch('/api/roles/invalid-id')
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(400);
@@ -230,7 +230,7 @@ describe('PUT /api/roles/:roleId', () => {
     await createTestRole({ name: 'test1' });
 
     const result = await request(app)
-      .put(`/api/roles/${role._id}`)
+      .patch(`/api/roles/${role._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         name: 'test1',
@@ -243,7 +243,7 @@ describe('PUT /api/roles/:roleId', () => {
 
   it('should return an error if role is not found', async () => {
     const result = await request(app)
-      .put(`/api/roles/${global.validObjectId}`)
+      .patch(`/api/roles/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(404);
@@ -252,7 +252,7 @@ describe('PUT /api/roles/:roleId', () => {
 
   it('should update role if input data is valid', async () => {
     const result = await request(app)
-      .put(`/api/roles/${role._id}`)
+      .patch(`/api/roles/${role._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         name: 'test1',

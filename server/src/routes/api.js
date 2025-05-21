@@ -46,7 +46,7 @@ apiRouter.delete('/posts/:postId/comments/:commentId', authorize(['admin', 'user
 
 // Post API
 apiRouter.post('/posts', authorize(['admin']), postController.create);
-apiRouter.put('/posts/:postId', authorize(['admin']), postController.update);
+apiRouter.patch('/posts/:postId', authorize(['admin']), postController.update);
 apiRouter.patch('/posts/:postId/like', authorize(['admin', 'user']), postController.like);
 apiRouter.delete('/posts/:postId', authorize(['admin']), postController.remove);
 
@@ -58,7 +58,7 @@ apiRouter.post('/roles', authorize(['admin']), roleController.create);
 apiRouter.get('/roles/search', authorize(['admin']), roleController.search);
 apiRouter.get('/roles', authorize(['admin']), roleController.list);
 apiRouter.get('/roles/:roleId', authorize(['admin']), roleController.show);
-apiRouter.put('/roles/:roleId', authorize(['admin']), roleController.update);
+apiRouter.patch('/roles/:roleId', authorize(['admin']), roleController.update);
 apiRouter.delete('/roles/:roleId', authorize(['admin']), roleController.remove);
 
 // User API
