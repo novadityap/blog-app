@@ -36,9 +36,9 @@ const PostForm = ({
     onComplete,
     defaultValues: {
       postImage: '',
-      title: initialValues.title || '',
-      content: initialValues.content || '',
-      category: initialValues.category?._id || '',
+      title: initialValues.title ?? '',
+      content: initialValues.content ?? '',
+      category: initialValues.category._id ?? '',
     },
   });
 

@@ -23,7 +23,7 @@ const RoleForm = ({
     mutation,
     onComplete,
     defaultValues: {
-      name: initialValues.name || '',
+      name: initialValues.name ?? '',
     },
   });
 

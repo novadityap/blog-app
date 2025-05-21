@@ -39,10 +39,10 @@ const UserForm = ({
     onComplete,
     defaultValues: {
       avatar: '',
-      username: initialValues.username || '',
-      email: initialValues.email || '',
+      username: initialValues.username ?? '',
+      email: initialValues.email ?? '',
       password: '',
-      role: initialValues.role?._id || '',
+      role: initialValues.role._id ?? '',
     },
   });
 
