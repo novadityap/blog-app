@@ -1,10 +1,13 @@
 pipeline {
 
-  agent {
-    docker {
-      image 'node:22.15-alpine'
-      args '-v /var/jenkins_home:/var/jenkins_home'
-    }
+  agent any
+
+  tools {
+    nodejs 'node:22'
+  }
+
+  environment {
+    DOCKER_IMAGE = 'novadityap/blog-app-server'
   }
 
   stages {
@@ -14,20 +17,11 @@ pipeline {
       }
     }
 
-    stage('Prepare environment files') {
-      steps {
-        script {
-          def clientEnv = readProperties file: '/var/jenkins_home/env/.env.client.blogapp'
-          writeFile file: '.env.client', text: clientEnv.collect { k, v -> "${k}=${v}" }.join('\n')
-        }
-      }
-    }
-
     stage('Install client dependencies and build') {
       steps {
          dir('client') {
           sh '''
-            cp ../.env .env
+            cp /var/jenkins_home/env/.env.client.blogapp .env
             npm install
             npm run build
           '''
@@ -48,10 +42,26 @@ pipeline {
         dir('server') {
           sh '''
             cp /var/jenkins_home/env/.env.server.blogapp .env
-            set -a
-            source .env
-            set +a
             npm run test
+          '''
+        }
+      }
+    }
+
+    stage('Build server docker image') {
+      steps {
+        dir('server') {
+          sh 'docker build -t $DOCKER_IMAGE .'
+        }
+      }
+    }
+
+    stage('Push server docker image') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker push $DOCKER_IMAGE
           '''
         }
       }
