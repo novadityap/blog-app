@@ -43,7 +43,9 @@ const updateProfile = async (req, res, next) => {
     const userId = validate(getUserSchema, req.params.userId);
     await checkOwnership(User, userId, req.user);
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId)
+      .populate('role', 'name');
+      
     if (!user) {
       logger.warn('user not found');
       throw new ResponseError('User not found', 404);
@@ -95,8 +97,6 @@ const updateProfile = async (req, res, next) => {
     Object.assign(user, fields);
     await user.save();
 
-    // const transformedUser = user.toObject();
-
     logger.info('profile updated successfully');
     res.json({
       code: 200,
@@ -106,6 +106,7 @@ const updateProfile = async (req, res, next) => {
         username: user.username,
         email: user.email,
         avatar: user.avatar,
+        role: user.role.name,
       },
     });
   } catch (e) {

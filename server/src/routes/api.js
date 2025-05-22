@@ -33,7 +33,7 @@ apiRouter.post('/auth/signout', authController.signout);
 apiRouter.post('/categories', authorize(['admin']), categoryController.create);
 apiRouter.get('/categories/search', authorize(['admin']), categoryController.search);
 apiRouter.get('/categories/:categoryId', authorize(['admin']), categoryController.show);
-apiRouter.put('/categories/:categoryId', authorize(['admin']), categoryController.update);
+apiRouter.patch('/categories/:categoryId', authorize(['admin']), categoryController.update);
 apiRouter.delete('/categories/:categoryId', authorize(['admin']), categoryController.remove
 );
 
