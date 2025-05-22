@@ -250,7 +250,7 @@ const LikeButton = ({ likes, onLike, currentUser, totalLikes, navigate }) => {
   const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
-    setIsLiked(likes.includes(currentUser.id));
+    setIsLiked(likes.includes(currentUser._id));
   }, [likes, currentUser]);
 
   return (
