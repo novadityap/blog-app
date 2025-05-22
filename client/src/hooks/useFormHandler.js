@@ -1,57 +1,80 @@
 import { useForm } from 'react-hook-form';
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { setToken, setCurrentUser } from '@/features/authSlice';
+import { useDispatch } from 'react-redux';
+import { setToken, setCurrentUser, updateCurrentUser } from '@/features/authSlice';
 import { toast } from 'react-hot-toast';
 
 const useFormHandler = ({
   mutation,
-  tokens,
-  ids,
-  isDatatableForm,
+  params = [],
+  formType,
   onComplete,
   defaultValues,
-  isProfileUpdate = false,
+  isCreate = true
 }) => {
   const dispatch = useDispatch();
-  const { currentUser } = useSelector(state => state.auth);
   const [message, setMessage] = useState('');
   const [mutate, { isLoading, isError, error, isSuccess }] = mutation();
-  const { handleSubmit, ...form } = useForm({ defaultValues });
+  const { 
+    handleSubmit, 
+    formState: { dirtyFields },
+    ...form 
+  } = useForm({ defaultValues });
+
+  const buildPayload = ({ data, changedData = {}, params = [] }) => {
+    let payload = {};
+
+    if (params.length > 0) {
+      const paramPayload = params.reduce((acc, { name, value }) => {
+        if (name && value !== undefined) acc[name] = value;
+        return acc;
+      }, {});
+
+      payload = {
+        data: Object.keys(changedData).length > 0 ? changedData : data,
+        ...paramPayload,
+      };
+
+      return payload;
+    } else {
+      payload = Object.keys(changedData).length > 0 ? changedData : data;
+      return payload;
+    }
+  };
 
   const onSubmit = async data => {
     try {
-      const payload = tokens
-        ? { data, ...tokens }
-        : ids
-        ? { data, ...ids }
-        : data;
+       const changedData = !isCreate ? Object.keys(dirtyFields).reduce((acc, key) => {
+        acc[key] = form.getValues(key);
+        return acc;
+      }, {}) : {};
 
+      const filteredData = Object.fromEntries(
+        Object.entries(data).filter(
+          ([_, v]) =>
+            v !== '' &&
+          v !== null &&
+          v !== undefined &&
+          !(Array.isArray(v) && v.length === 0)
+        )
+      );
+      const payload = buildPayload({
+        data: filteredData,
+        changedData,
+        params,
+      });
       const result = await mutate(payload).unwrap();
 
-      if (result.data?.token) {
-        const { token, _id, ...user } = result.data;
-        dispatch(setToken(token));
-        dispatch(
-          setCurrentUser({
-            id: _id,
-            ...user,
-          })
-        );
+      if (formType === 'signin') {
+        dispatch(setToken(result.data.token));
+        dispatch(setCurrentUser(result.data));
       }
 
-      if (isProfileUpdate && currentUser.id === result.data._id) {
-        const { _id, ...user } = result.data;
-        dispatch(
-          setCurrentUser({
-            id: _id,
-            role: currentUser.role,
-            ...user,
-          })
-        );
+      if (formType === 'profile') {
+        dispatch(updateCurrentUser(result.data));
       }
 
-      if (isDatatableForm && onComplete) {
+      if (formType === 'datatable' && onComplete) {
         onComplete(result);
       } else {
         toast.success(result.message);
@@ -67,7 +90,7 @@ const useFormHandler = ({
         });
       }
 
-      if (isDatatableForm && e.code !== 400 && e.code !== 409) {
+      if (formType === 'datatable' && e.code !== 400 && e.code !== 409) {
         toast.error(e.message);
       } else {
         setMessage(e.message);
