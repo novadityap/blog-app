@@ -30,8 +30,9 @@ const PostForm = ({
 }) => {
   const [fetchCategories, { data: categories }] = useLazyListCategoriesQuery();
   const { form, handleSubmit } = useFormHandler({
-    isDatatableForm: true,
-    ...(!isCreate && { ids: { postId: initialValues._id } }),
+    formTipe: 'datatable',
+    ...(!isCreate && { params: [{ name: 'postId', value: initialValues._id }] }),
+    formType: 'post',
     mutation,
     onComplete,
     defaultValues: {

@@ -18,8 +18,8 @@ const RoleForm = ({
   isCreate,
 }) => {
   const { form, handleSubmit } = useFormHandler({
-    isDatatableForm: true,
-    ...(!isCreate && { ids: { roleId: initialValues._id } }),
+    formType: 'datatable',
+    ...(!isCreate && { params: [{ name: 'roleId', value: initialValues._id }] }),
     mutation,
     onComplete,
     defaultValues: {

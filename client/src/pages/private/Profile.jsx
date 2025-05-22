@@ -30,14 +30,16 @@ import { TbLoader } from 'react-icons/tb';
 
 const Profile = () => {
   const currentUser = useSelector(state => state.auth.currentUser);
-  const { data, isLoading, isFetching } = useShowUserQuery(currentUser.id);
+  const { data, isLoading, isFetching } = useShowUserQuery(currentUser._id);
   const {
     form,
     handleSubmit,
     isLoading: isLoadingUpdate,
   } = useFormHandler({
-    isProfileUpdate: true,
-    ids: { userId: data?.data?._id },
+    formType: 'profile',
+    params: [
+      { name: 'userId', value: data?.data?._id },
+    ],
     mutation: useUpdateProfileMutation,
     defaultValues: {
       avatar: '',
