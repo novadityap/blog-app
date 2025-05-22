@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import axiosBaseQuery from '@/app/baseQuery.js';
-import sanitizeData from '@/utils/sanitizeData.js';
+import buildFormData from '@/utils/buildFormData.js';
 
 const postApi = createApi({
   reducerPath: 'postApi',
@@ -54,7 +54,10 @@ const postApi = createApi({
       query: ({ data, postId }) => ({
         url: `/posts/${postId}`,
         method: 'PATCH',
-        data: sanitizeData(data),
+        data: buildFormData(data, {
+          fileFields: 'avatar',
+          isMultiple: false,
+        }),
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
       invalidatesTags: (result, error, { postId }) => [

@@ -1,6 +1,5 @@
 import axiosBaseQuery from '@/app/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import sanitizeData from '@/utils/sanitizeData';
 
 const categoryApi = createApi({
   reducerPath: 'categoryApi',
@@ -55,8 +54,8 @@ const categoryApi = createApi({
     updateCategory: builder.mutation({
       query: ({ categoryId, data }) => ({
         url: `/categories/${categoryId}`,
-        method: 'PUT',
-        data: sanitizeData(data),
+        method: 'PATCH',
+        data,
       }),
       invalidatesTags: (result, error, { categoryId }) => [
         { type: 'Category', id: categoryId },

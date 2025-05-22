@@ -1,6 +1,5 @@
 import axiosBaseQuery from '@/app/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
-import sanitizeData from '@/utils/sanitizeData';
 
 const roleApi = createApi({
   reducerPath: 'roleApi',
@@ -53,7 +52,7 @@ const roleApi = createApi({
       query: ({ roleId, data }) => ({
         url: `/roles/${roleId}`,
         method: 'PATCH',
-        data: sanitizeData(data),
+        data,
       }),
       invalidatesTags: (result, error, { roleId }) => [
         { type: 'Role', id: roleId },
