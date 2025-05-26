@@ -23,6 +23,9 @@ const Role = () => {
     columnHelper.accessor('name', {
       header: 'Name',
       size: 100,
+      cell: info => (
+        <div className="whitespace-normal break-words">{info.getValue()}</div>
+      ),
     }),
   ];
 

@@ -20,14 +20,23 @@ const Comment = () => {
     columnsHelper.accessor('user.username', {
       header: 'Username',
       size: 100,
+      cell: info => (
+        <div className="whitespace-normal break-words">{info.getValue()}</div>
+      ),
     }),
     columnsHelper.accessor('post.title', {
       header: 'Post Title',
       size: 100,
+      cell: info => (
+        <div className="whitespace-normal break-words">{info.getValue()}</div>
+      ),
     }),
     columnsHelper.accessor('text', {
       header: 'Text',
       size: 150,
+      cell: info => (
+        <div className="whitespace-normal break-words">{info.getValue()}</div>
+      ),
     }),
   ];
 

@@ -23,14 +23,23 @@ const Post = () => {
     columnsHelper.accessor('title', {
       header: 'Title',
       size: 200,
+      cell: info => (
+        <div className="whitespace-normal break-words">{info.getValue()}</div>
+      ),
     }),
     columnsHelper.accessor('user.username', {
       header: 'Author',
       size: 100,
+      cell: info => (
+        <div className="whitespace-normal break-words">{info.getValue()}</div>
+      ),
     }),
     columnsHelper.accessor('category.name', {
       header: 'Category',
       size: 100,
+      cell: info => (
+        <div className="whitespace-normal break-words">{info.getValue()}</div>
+      ),
     }),
     columnsHelper.accessor('totalLikes', {
       header: 'Total Likes',
