@@ -47,7 +47,10 @@ const CreateComment = ({
   className,
 }) => {
   const { form, handleSubmit, isLoading, isSuccess } = useFormHandler({
-    ids: { postId, parentCommentId },
+    params: [
+      { name: 'postId', value: postId },
+      { name: 'parentCommentId', value: parentCommentId }
+    ],
     mutation: useCreateCommentMutation,
     defaultValues: {
       post: postId,
@@ -64,7 +67,6 @@ const CreateComment = ({
     <div className={cn('flex w-full gap-x-4', className)}>
       <Avatar className={isReply ? 'size-8' : 'size-10'}>
         <AvatarImage src={avatarUrl} alt="avatar" />
-        <AvatarFallback>{avatarUrl?.slice(0, 2).toUpperCase()}</AvatarFallback>
       </Avatar>
       <Form {...form}>
         <form onSubmit={handleSubmit} className="space-y-4 w-full">

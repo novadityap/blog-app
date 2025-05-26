@@ -31,7 +31,7 @@ const ResetPassword = () => {
   const { form, handleSubmit, isLoading, error, isSuccess, message } =
     useFormHandler({
       mutation: useResetPasswordMutation,
-      tokens: { resetToken },
+      params: [{name: 'resetToken', value: resetToken}],
       defaultValues: {
         newPassword: '',
       },

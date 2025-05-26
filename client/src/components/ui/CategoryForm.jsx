@@ -18,8 +18,8 @@ const CategoryForm = ({
   isCreate,
 }) => {
   const { form, handleSubmit } = useFormHandler({
-    isDatatableForm: true,
-    ...(!isCreate && { ids: { categoryId: initialValues._id } }),
+    formType: 'datatable',
+    ...(!isCreate && { params: [{ name: 'categoryId', value: initialValues._id }] }),
     mutation,
     onComplete,
     defaultValues: {
