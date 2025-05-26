@@ -33,7 +33,7 @@ const User = () => {
         <Avatar>
           <AvatarImage src={info.getValue()} />
           <AvatarFallback>
-            {info.getValue()?.slice(0, 2).toUpperCase()}
+            {info.getValue().charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
       ),
@@ -41,6 +41,9 @@ const User = () => {
     columnsHelper.accessor('username', {
       header: 'Username',
       size: 100,
+      cell: info => (
+        <div className="whitespace-normal break-words">{info.getValue()}</div>
+      ),
     }),
     columnsHelper.accessor('role', {
       header: 'Role',

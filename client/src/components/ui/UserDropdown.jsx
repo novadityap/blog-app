@@ -46,7 +46,7 @@ const UserDropdown = ({ className }) => {
         <Avatar>
           <AvatarImage src={currentUser.avatar} alt="User Avatar" />
           <AvatarFallback>
-            {currentUser.username?.slice(0, 2).toUpperCase()}
+            {currentUser.username.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>

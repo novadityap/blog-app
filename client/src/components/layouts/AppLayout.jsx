@@ -100,7 +100,7 @@ const UserProfile = ({ currentUser }) => (
     <Avatar className="size-14">
       <AvatarImage src={currentUser.avatar} alt={currentUser.username} />
       <AvatarFallback>
-        {currentUser.username?.slice(0, 2).toUpperCase()}
+        {currentUser.username.charAt(0).toUpperCase()}
       </AvatarFallback>
     </Avatar>
     <div className="flex flex-col text-gray-200">
