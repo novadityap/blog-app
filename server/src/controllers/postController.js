@@ -116,7 +116,6 @@ const search = async (req, res, next) => {
           totalItems: 0,
           currentPage: page,
           totalPages: 0,
-          hasMore: false,
         },
       });
     }
@@ -131,7 +130,6 @@ const search = async (req, res, next) => {
         totalItems: totalPosts,
         currentPage: page,
         totalPages: Math.ceil(totalPosts / limit),
-        hasMore: page * limit < totalPosts,
       },
     });
   } catch (e) {
