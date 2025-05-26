@@ -25,7 +25,9 @@ import {
 } from '@/components/shadcn-ui/select';
 import { useLazyListCategoriesQuery } from '@/services/categoryApi';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import InfiniteScroll from 'react-infinite-scroll-component';
+import { TbLoader } from 'react-icons/tb';
 
 const SkeletonLoader = ({ count }) => (
   <div className="flex flex-col items-center space-y-6 w-[400px] sm:w-[500px] md:w-[600px]">
@@ -109,8 +111,8 @@ const PostCard = ({ post }) => (
   </Card>
 );
 
-const Sidebar = ({ categories, onOpen, onChange }) => (
-  <aside className="space-y-8 mt-6">
+const CategoryFilter = ({ categories, onOpen, onChange }) => (
+  <div className="space-y-8 mt-6">
     <div>
       <h2 className="text-lg font-semibold mb-4">Categories</h2>
       <Select onOpenChange={onOpen} onValueChange={onChange}>
@@ -131,34 +133,82 @@ const Sidebar = ({ categories, onOpen, onChange }) => (
       <h3 className="text-lg font-semibold mb-4">Trending Posts</h3>
       <p className="text-gray-500">Coming soon...</p>
     </div>
-  </aside>
+  </div>
 );
 
 const Home = () => {
   const [fetchCategories, { data: categories }] = useLazyListCategoriesQuery();
-  const { searchTerm } = useSelector(state => state.query);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({});
-  const { data: posts, isLoading } = useSearchPostsQuery({
+  const [posts, setPosts] = useState([]);
+  const [hasMore, setHasMore] = useState(true);
+  const { searchTerm } = useSelector(state => state.query);
+  const { data, isLoading, isError } = useSearchPostsQuery({
     limit: 10,
-    page: 1,
-    q: searchTerm,
-    category: filters.category,
+    page: currentPage,
+    ...filters,
   });
+
+  useEffect(() => {
+    setFilters(prev => ({ ...prev, q: searchTerm }));
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setPosts([]);
+    setHasMore(true);
+  }, [filters]);
+
+  useEffect(() => {
+    if (data?.data) {
+      setPosts(prev =>
+        currentPage === 1 ? data.data : [...prev, ...data.data]
+      );
+      setHasMore(data.data.length >= 10);
+    }
+  }, [data, currentPage]);
+
+  useEffect(() => {
+    if (isError) setHasMore(false);
+  }, [isError]);
+
+  const fetchMoreData = () => {
+    if (!isLoading && hasMore) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
 
   return (
     <div className="grid w-full grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2 space-y-6">
-        {isLoading ? (
-          <SkeletonLoader count={3} />
-        ) : posts?.data?.length === 0 ? (
-          <p className="text-gray-500 font-semibold text-2xl mb-8 text-center">
-            No posts found.
+      <div className="lg:col-span-2">
+        <InfiniteScroll
+        dataLength={posts.length}
+        next={fetchMoreData}
+        hasMore={hasMore}
+        loader={
+          <TbLoader className="animate-spin text-gray-500 mx-auto mt-4" />
+        }
+        endMessage={
+          <p className="text-center text-gray-500 mt-4">
+            You&apos;ve seen all posts
           </p>
-        ) : (
-          posts?.data?.map(post => <PostCard key={post?._id} post={post} />)
-        )}
+        }
+      >
+        <div className="space-y-6">
+          {isLoading ? (
+            <SkeletonLoader count={3} />
+          ) : posts.length === 0 && !isLoading ? (
+            <p className="text-gray-500 font-semibold text-2xl mb-8 text-center">
+              No posts found.
+            </p>
+          ) : (
+            posts.map(post => <PostCard key={post?._id} post={post} />)
+          )}
+        </div>
+      </InfiniteScroll>
+
       </div>
-      <Sidebar
+      <CategoryFilter
         categories={categories}
         onOpen={open => open && !categories && fetchCategories()}
         onChange={value => setFilters(prev => ({ ...prev, category: value }))}
