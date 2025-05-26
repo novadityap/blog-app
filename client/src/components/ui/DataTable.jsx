@@ -137,11 +137,10 @@ const TableWrapper = ({ table }) => {
     <Table>
       <TableHeader>
         {getHeaderGroups().map(headerGroup => (
-          <TableRow key={headerGroup.id} className="bg-gray-600/80 ">
+          <TableRow key={headerGroup.id}>
             {headerGroup.headers.map(header => (
               <TableHead
                 key={header.id}
-                className="text-gray-50 font-bold border-x-2 border-gray-100/30"
                 style={{
                   width: header.column.columnDef.size,
                   minWidth: header.column.columnDef.size,
@@ -160,38 +159,41 @@ const TableWrapper = ({ table }) => {
         ))}
       </TableHeader>
       <TableBody>
-        {getRowModel().rows.length === 0 && (
+        {getRowModel().rows.length === 0 ? (
           <TableRow>
             <TableCell
               colSpan={getVisibleFlatColumns().length}
-              className="h-24 text-center"
+              className="h-64 text-center border-0"
             >
               No results.
             </TableCell>
           </TableRow>
-        )}
-        {getRowModel().rows.map(row => (
-          <TableRow key={row.id} className="hover:bg-gray-200/80">
-            {row.getVisibleCells().map(cell => (
-              <TableCell
-                key={cell.id}
-                style={{
-                  width: cell.column.columnDef.size,
-                  minWidth: cell.column.columnDef.size,
-                  maxWidth: cell.column.columnDef.size,
-                }}
-              >
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
+        ) : (
+          <>
+            {getRowModel().rows.map(row => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map(cell => (
+                  <TableCell
+                    key={cell.id}
+                    style={{
+                      width: cell.column.columnDef.size,
+                      minWidth: cell.column.columnDef.size,
+                      maxWidth: cell.column.columnDef.size,
+                    }}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
             ))}
-          </TableRow>
-        ))}
 
-        {Array.from({ length: emptyRows }).map((_, index) => (
-          <TableRow key={`empty-${index}`} className="border-b-0">
-            <TableCell colSpan={getVisibleFlatColumns().length}></TableCell>
-          </TableRow>
-        ))}
+            {Array.from({ length: emptyRows }).map((_, index) => (
+              <TableRow key={`empty-${index}`} className="border-b-0">
+                <TableCell colSpan={getVisibleFlatColumns().length} />
+              </TableRow>
+            ))}
+          </>
+        )}
       </TableBody>
     </Table>
   );
