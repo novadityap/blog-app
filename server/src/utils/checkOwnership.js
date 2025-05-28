@@ -1,4 +1,3 @@
-import logger from './logger.js';
 import ResponseError from './responseError.js';
 
 const checkOwnership = async (model, paramsId, currentUser) => {

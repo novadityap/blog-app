@@ -21,192 +21,168 @@ const validatePostId = async id => {
   return postId;
 };
 
-const create = async (req, res, next) => {
-  try {
-    const postId = await validatePostId(req.params.postId);
-    const fields = validate(createCommentSchema, req.body);
+const create = async (req, res) => {
+  const postId = await validatePostId(req.params.postId);
+  const fields = validate(createCommentSchema, req.body);
 
-    await Comment.create({
-      ...fields,
-      post: postId,
-      user: req.user.id,
-    });
+  await Comment.create({
+    ...fields,
+    post: postId,
+    user: req.user.id,
+  });
 
-    logger.info('comment created successfully');
-    res.status(201).json({
-      code: 201,
-      message: 'Comment created successfully',
-    });
-  } catch (e) {
-    next(e);
-  }
+  logger.info('comment created successfully');
+  res.status(201).json({
+    code: 201,
+    message: 'Comment created successfully',
+  });
 };
 
-const listByPost = async (req, res, next) => {
-  try {
-    const postId = await validatePostId(req.params.postId);
-    const comments = await Comment.find({ post: postId }).populate({
-      path: 'user',
-      select: 'username email avatar',
-    });
+const listByPost = async (req, res) => {
+  const postId = await validatePostId(req.params.postId);
+  const comments = await Comment.find({ post: postId }).populate({
+    path: 'user',
+    select: 'username email avatar',
+  });
 
-    if (comments.length === 0) {
-      logger.info('no comments found');
-      return res.json({
-        code: 200,
-        message: 'No comments found',
-        data: [],
-      });
-    }
-
-    logger.info('comments retrieved successfully');
-    res.json({
+  if (comments.length === 0) {
+    logger.info('no comments found');
+    return res.status(200).json({
       code: 200,
-      message: 'Comments retrieved successfully',
-      data: comments,
+      message: 'No comments found',
+      data: [],
     });
-  } catch (e) {
-    next(e);
   }
+
+  logger.info('comments retrieved successfully');
+  res.status(200).json({
+    code: 200,
+    message: 'Comments retrieved successfully',
+    data: comments,
+  });
 };
 
-const search = async (req, res, next) => {
-  try {
-    const query = validate(searchCommentSchema, req.query);
-    const { page, limit, q } = query;
+const search = async (req, res) => {
+  const query = validate(searchCommentSchema, req.query);
+  const { page, limit, q } = query;
 
-    const [{ comments, totalComments }] = await Comment.aggregate()
-      .lookup({
-        from: 'users',
-        localField: 'user',
-        foreignField: '_id',
-        as: 'user',
-        pipeline: [{ $project: { username: 1 } }],
-      })
-      .lookup({
-        from: 'posts',
-        localField: 'post',
-        foreignField: '_id',
-        as: 'post',
-        pipeline: [{ $project: { title: 1 } }],
-      })
-      .match(
-        q
-          ? {
-              $or: [
-                { text: { $regex: q, $options: 'i' } },
-                { 'user.username': { $regex: q, $options: 'i' } },
-                { 'post.title': { $regex: q, $options: 'i' } },
-              ],
-            }
-          : {}
-      )
-      .facet({
-        comments: [
-          { $sort: { createdAt: -1 } },
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
-        ],
-        totalComments: [{ $count: 'count' }],
-      })
-      .project({
-        comments: 1,
-        totalComments: {
-          $ifNull: [{ $arrayElemAt: ['$totalComments.count', 0] }, 0],
-        },
-      });
-
-    if (comments.length === 0) {
-      logger.info('no comments found');
-      return res.json({
-        code: 200,
-        message: 'No comments found',
-        data: [],
-        meta: {
-          pageSize: limit,
-          totalItems: 0,
-          currentPage: page,
-          totalPages: 1,
-        },
-      });
-    }
-
-    res.json({
-      code: 200,
-      message: 'Comments retrieved successfully',
-      data: comments,
-      meta: {
-        pageSize: limit,
-        totalItems: totalComments,
-        currentPage: page,
-        totalPages: Math.ceil(totalComments / limit),
+  const [{ comments, totalComments }] = await Comment.aggregate()
+    .lookup({
+      from: 'users',
+      localField: 'user',
+      foreignField: '_id',
+      as: 'user',
+      pipeline: [{ $project: { username: 1 } }],
+    })
+    .lookup({
+      from: 'posts',
+      localField: 'post',
+      foreignField: '_id',
+      as: 'post',
+      pipeline: [{ $project: { title: 1 } }],
+    })
+    .match(
+      q
+        ? {
+            $or: [
+              { text: { $regex: q, $options: 'i' } },
+              { 'user.username': { $regex: q, $options: 'i' } },
+              { 'post.title': { $regex: q, $options: 'i' } },
+            ],
+          }
+        : {}
+    )
+    .facet({
+      comments: [
+        { $sort: { createdAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+      ],
+      totalComments: [{ $count: 'count' }],
+    })
+    .project({
+      comments: 1,
+      totalComments: {
+        $ifNull: [{ $arrayElemAt: ['$totalComments.count', 0] }, 0],
       },
     });
-  } catch (e) {
-    next(e);
+
+  if (comments.length === 0) {
+    logger.info('no comments found');
+    return res.status(200).json({
+      code: 200,
+      message: 'No comments found',
+      data: [],
+      meta: {
+        pageSize: limit,
+        totalItems: 0,
+        currentPage: page,
+        totalPages: 1,
+      },
+    });
   }
+
+  res.status(200).json({
+    code: 200,
+    message: 'Comments retrieved successfully',
+    data: comments,
+    meta: {
+      pageSize: limit,
+      totalItems: totalComments,
+      currentPage: page,
+      totalPages: Math.ceil(totalComments / limit),
+    },
+  });
 };
 
-const show = async (req, res, next) => {
-  try {
-    await validatePostId(req.params.postId);
-    const commentId = validate(getCommentSchema, req.params.commentId);
+const show = async (req, res) => {
+  await validatePostId(req.params.postId);
+  const commentId = validate(getCommentSchema, req.params.commentId);
 
-    const comment = await Comment.findById(commentId);
-    if (!comment) throw new ResponseError('Comment not found', 404);
+  const comment = await Comment.findById(commentId);
+  if (!comment) throw new ResponseError('Comment not found', 404);
 
-    logger.info('comment retrieved successfully');
-    res.json({
-      code: 200,
-      message: 'Comment retrieved successfully',
-      data: comment,
-    });
-  } catch (e) {
-    next(e);
-  }
+  logger.info('comment retrieved successfully');
+  res.status(200).json({
+    code: 200,
+    message: 'Comment retrieved successfully',
+    data: comment,
+  });
 };
 
-const update = async (req, res, next) => {
-  try {
-    await validatePostId(req.params.postId);
-    const commentId = validate(getCommentSchema, req.params.commentId);
-    const fields = validate(updateCommentSchema, req.body);
+const update = async (req, res) => {
+  await validatePostId(req.params.postId);
+  const commentId = validate(getCommentSchema, req.params.commentId);
+  const fields = validate(updateCommentSchema, req.body);
 
-    const comment = await Comment.findByIdAndUpdate(commentId, fields, {
-      new: true,
-    });
-    if (!comment) throw new ResponseError('Comment not found', 404);
+  const comment = await Comment.findByIdAndUpdate(commentId, fields, {
+    new: true,
+  });
+  if (!comment) throw new ResponseError('Comment not found', 404);
 
-    logger.info('comment updated successfully');
-    res.json({
-      code: 200,
-      message: 'Comment updated successfully',
-      data: comment,
-    });
-  } catch (e) {
-    next(e);
-  }
+  logger.info('comment updated successfully');
+  res.status(200).json({
+    code: 200,
+    message: 'Comment updated successfully',
+    data: comment,
+  });
 };
 
-const remove = async (req, res, next) => {
-  try {
-    await validatePostId(req.params.postId);
-    const commentId = validate(getCommentSchema, req.params.commentId);
+const remove = async (req, res) => {
+  await validatePostId(req.params.postId);
+  const commentId = validate(getCommentSchema, req.params.commentId);
 
-    await checkOwnership(Comment, commentId, req.user);
+  await checkOwnership(Comment, commentId, req.user);
 
-    const comment = await Comment.findByIdAndDelete(commentId);
-    if (!comment) throw new ResponseError('Comment not found', 404);
+  const comment = await Comment.findByIdAndDelete(commentId);
+  if (!comment) throw new ResponseError('Comment not found', 404);
 
-    logger.info('comment deleted successfully');
-    res.json({
-      code: 200,
-      message: 'Comment deleted successfully',
-      data: comment,
-    });
-  } catch (e) {
-    next(e);
-  }
+  logger.info('comment deleted successfully');
+  res.status(200).json({
+    code: 200,
+    message: 'Comment deleted successfully',
+    data: comment,
+  });
 };
 
 export default { create, show, update, remove, search, listByPost };

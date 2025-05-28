@@ -1,18 +1,14 @@
 import logger from '../utils/logger.js';
 import ResponseError from '../utils/responseError.js';
 
-const authorize = (requiredRoles) => {
+const authorize = requiredRoles => {
   return async (req, res, next) => {
-    try {
-      if (requiredRoles.includes(req.user.role)) {
-        logger.info('permission granted');
-        return next();
-      };
-
-      throw new ResponseError('Permission denied', 403);
-    } catch (e) {
-      next(e);
+    if (requiredRoles.includes(req.user.role)) {
+      logger.info('permission granted');
+      return next();
     }
+
+    throw new ResponseError('Permission denied', 403);
   };
 };
 
