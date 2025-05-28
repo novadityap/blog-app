@@ -74,8 +74,6 @@ const uploadFile = (
         });
 
         if (error) {
-          logger.warn('validation errors');
-
           Object.assign(uploadErrors, formatError(error.details));
           return reject(
             new ResponseError('Validation errors', 400, uploadErrors)
@@ -85,8 +83,6 @@ const uploadFile = (
         fields = value;
       } else {
         if (uploadErrors && uploadedFiles) {
-          logger.warn('validation errors');
-          
           return reject(
             new ResponseError('Validation errors', 400, uploadErrors)
           );

@@ -9,7 +9,6 @@ const authorize = (requiredRoles) => {
         return next();
       };
 
-      logger.warn('permission denied');
       throw new ResponseError('Permission denied', 403);
     } catch (e) {
       next(e);

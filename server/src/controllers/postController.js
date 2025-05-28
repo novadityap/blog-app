@@ -31,7 +31,6 @@ const create = async (req, res, next) => {
     if (fields.category) {
       const category = await Category.exists({ _id: fields.category });
       if (!category) {
-        logger.warn('validation errors');
         throw new ResponseError('Validation errors', 400, {
           category: 'Invalid category id',
         });
@@ -145,10 +144,7 @@ const show = async (req, res, next) => {
       .populate('user', 'username avatar')
       .populate('category', 'name');
 
-    if (!post) {
-      logger.warn('post not found');
-      throw new ResponseError('Post not found', 404);
-    }
+    if (!post) throw new ResponseError('Post not found', 404);
 
     logger.info('post retrieved successfully');
     res.json({
@@ -166,10 +162,7 @@ const update = async (req, res, next) => {
     const postId = validate(getPostSchema, req.params.postId);
 
     const post = await Post.findById(postId);
-    if (!post) {
-      logger.warn('post not found');
-      throw new ResponseError('Post not found', 404);
-    }
+    if (!post) throw new ResponseError('Post not found', 404);
 
     const { file, fields } = await uploadFile(req, {
       fieldname: 'postImage',
@@ -179,7 +172,6 @@ const update = async (req, res, next) => {
     if (fields.category && fields.category !== post.category) {
       const category = await Category.exists({ _id: fields.category });
       if (!category) {
-        logger.warn('validation errors');
         throw new ResponseError('Validation errors', 400, {
           category: 'Invalid category id',
         });
@@ -214,10 +206,7 @@ const remove = async (req, res, next) => {
     const postId = validate(getPostSchema, req.params.postId);
 
     const post = await Post.findByIdAndDelete(postId);
-    if (!post) {
-      logger.warn('post not found');
-      throw new ResponseError('Post not found', 404);
-    }
+    if (!post) throw new ResponseError('Post not found', 404);
 
     await cloudinary.uploader.destroy(extractPublicId(post.postImage));
     logger.info('post image deleted successfully');
@@ -237,10 +226,7 @@ const like = async (req, res, next) => {
     const postId = validate(getPostSchema, req.params.postId);
 
     const post = await Post.findById(postId);
-    if (!post) {
-      logger.warn('post not found');
-      throw new ResponseError('Post not found', 404);
-    }
+    if (!post) throw new ResponseError('Post not found', 404);
 
     const hasLiked = post.likes.includes(req.user.id);
     if (hasLiked) {

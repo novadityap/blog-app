@@ -73,7 +73,6 @@ const verifyEmail = async (req, res, next) => {
     );
 
     if (!user) {
-      logger.warn('verification token is invalid or has expired');
       throw new ResponseError(
         'Verification token is invalid or has expired',
         401
@@ -136,14 +135,10 @@ const signin = async (req, res, next) => {
     const fields = validate(signinSchema, req.body);
 
     const user = await User.findOne({ email: fields.email }).populate('role');
-    if (!user) {
-      logger.warn('user is not registered');
-      throw new ResponseError('Email or password is invalid', 401);
-    }
+    if (!user) throw new ResponseError('Email or password is invalid', 401);
 
     const isMatch = await bcrypt.compare(fields.password, user.password);
     if (!isMatch) {
-      logger.warn('email or password is invalid');
       throw new ResponseError('Email or password is invalid', 401);
     }
 
@@ -187,7 +182,6 @@ const signout = async (req, res, next) => {
   try {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
-      logger.warn('refresh token is not provided');
       throw new ResponseError('Refresh token is not provided', 401);
     }
 
@@ -196,10 +190,7 @@ const signout = async (req, res, next) => {
       { refreshToken: null }
     );
 
-    if (!user) {
-      logger.warn('refresh token not found in the database');
-      throw new ResponseError('Refresh token is invalid', 401);
-    }
+    if (!user) throw new ResponseError('Refresh token is invalid', 401);
 
     await Blacklist.create({ token: refreshToken });
 
@@ -214,31 +205,18 @@ const signout = async (req, res, next) => {
 const refreshToken = async (req, res, next) => {
   try {
     const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) {
-      logger.warn('refresh token is not provided');
-      throw new ResponseError('Refresh token is not provided', 401);
-    }
+    if (!refreshToken) throw new ResponseError('Refresh token is not provided', 401);
 
     const blacklistedToken = await Blacklist.exists({ token: refreshToken });
-    if (blacklistedToken) {
-      logger.warn('refresh token has blacklisted');
-      throw new ResponseError('Refresh token is invalid', 401);
-    }
+    if (blacklistedToken) throw new ResponseError('Refresh token is invalid', 401);
 
     const user = await User.findOne({ refreshToken }).populate('role');
-    if (!user) {
-      logger.warn('refresh token not found in the database');
-      throw new ResponseError('Refresh token is invalid', 401);
-    }
+    if (!user) throw new ResponseError('Refresh token is invalid', 401);
 
     jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (err, decoded) => {
       if (err) {
-        if (err.name === 'TokenExpiredError') {
-          logger.warn('refresh token has expired');
-          throw new ResponseError('Refresh token has expired', 401);
-        }
+        if (err.name === 'TokenExpiredError') throw new ResponseError('Refresh token has expired', 401);
 
-        logger.warn('refresh token is invalid');
         throw new ResponseError('Refresh token is invalid', 401);
       }
     });
@@ -317,10 +295,7 @@ const resetPassword = async (req, res, next) => {
       }
     );
 
-    if (!user) {
-      logger.warn('reset token is invalid or has expired');
-      throw new ResponseError('Reset token is invalid or has expired', 401);
-    }
+    if (!user) throw new ResponseError('Reset token is invalid or has expired', 401);
 
     logger.info('password reset successfully');
     res.json({

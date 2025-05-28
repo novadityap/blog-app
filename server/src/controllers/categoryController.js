@@ -15,7 +15,6 @@ const create = async (req, res, next) => {
 
     const isNameTaken = await Category.exists({ name: fields.name });
     if (isNameTaken) {
-      logger.warn('resource already in use');
       throw new ResponseError('Resource already in use', 409, {
         name: 'Name already in use',
       });
@@ -39,16 +38,12 @@ const update = async (req, res, next) => {
     const fields = validate(updateCategorySchema, req.body);
 
     const category = await Category.findById(categoryId);
-    if (!category) {
-      logger.warn('category not found');
-      throw new ResponseError('Category not found', 404);
-    }
+    if (!category) throw new ResponseError('Category not found', 404);
 
     if (fields.name && fields.name !== category.name) {
       const isNameTaken = await Category.exists({ name: fields.name });
 
       if (isNameTaken) {
-        logger.warn('resource already in use');
         throw new ResponseError('Resource already in use', 409, {
           name: 'Name already in use',
         });
@@ -74,10 +69,7 @@ const remove = async (req, res, next) => {
     const categoryId = validate(getCategorySchema, req.params.categoryId);
 
     const category = await Category.findByIdAndDelete(categoryId);
-    if (!category) {
-      logger.warn('category not found');
-      throw new ResponseError('Category not found', 404);
-    }
+    if (!category) throw new ResponseError('Category not found', 404);
 
     logger.info('category deleted successfully');
     res.json({
@@ -94,10 +86,7 @@ const show = async (req, res, next) => {
     const categoryId = validate(getCategorySchema, req.params.categoryId);
 
     const category = await Category.findById(categoryId);
-    if (!category) {
-      logger.warn('category not found');
-      throw new ResponseError('Category not found', 404);
-    }
+    if (!category) throw new ResponseError('Category not found', 404);
 
     logger.info('category retrieved successfully');
     res.json({

@@ -15,7 +15,6 @@ const create = async (req, res, next) => {
 
     const isNameTaken = await Role.exists({ name: fields.name });
     if (isNameTaken) {
-      logger.warn('resource already in use');
       throw new ResponseError('Resource already in use', 409, {
         name: 'Name already in use',
       });
@@ -115,10 +114,7 @@ const show = async (req, res, next) => {
     const roleId = validate(getRoleSchema, req.params.roleId);
 
     const role = await Role.findById(roleId);
-    if (!role) {
-      logger.warn('role not found');
-      throw new ResponseError('Role not found', 404);
-    }
+    if (!role) throw new ResponseError('Role not found', 404);
 
     logger.info('role retrieved successfully');
     res.json({
@@ -137,10 +133,7 @@ const update = async (req, res, next) => {
     const fields = validate(updateRoleSchema, req.body);
 
     const role = await Role.findById(roleId);
-    if (!role) {
-      logger.warn('role not found');
-      throw new ResponseError('Role not found', 404);
-    }
+    if (!role) throw new ResponseError('Role not found', 404);
 
     if (fields.name && fields.name !== role.name) {
       const isNameTaken = await Role.exists({
@@ -149,7 +142,6 @@ const update = async (req, res, next) => {
       });
 
       if (isNameTaken) {
-        logger.warn('resource already in use');
         throw new ResponseError('Resource already in use', 409, {
           name: 'Name already in use',
         });
@@ -175,10 +167,7 @@ const remove = async (req, res, next) => {
     const roleId = validate(getRoleSchema, req.params.roleId);
 
     const role = await Role.findByIdAndDelete(roleId);
-    if (!role) {
-      logger.warn('role not found');
-      throw new ResponseError('Role not found', 404);
-    }
+    if (!role) throw new ResponseError('Role not found', 404);
 
     logger.info('role deleted successfully');
     res.json({

@@ -23,7 +23,6 @@ const show = async (req, res, next) => {
 
     const user = await User.findById(userId).populate('role');
     if (!user) {
-      logger.warn('user not found');
       throw new ResponseError('User not found', 404);
     }
 
@@ -47,7 +46,6 @@ const updateProfile = async (req, res, next) => {
       .populate('role', 'name');
       
     if (!user) {
-      logger.warn('user not found');
       throw new ResponseError('User not found', 404);
     }
 
@@ -63,7 +61,6 @@ const updateProfile = async (req, res, next) => {
       });
 
       if (isUsernameTaken) {
-        logger.warn('resource already in use');
         throw new ResponseError('Resource already in use', 409, {
           username: 'Username already in use',
         });
@@ -77,7 +74,6 @@ const updateProfile = async (req, res, next) => {
       });
 
       if (isEmailTaken) {
-        logger.warn('resource already in use');
         throw new ResponseError('Resource already in use', 409, {
           email: 'Email already in use',
         });
@@ -200,7 +196,6 @@ const create = async (req, res, next) => {
         field.charAt(0).toUpperCase() + field.slice(1)
       }`;
 
-      logger.warn('resource already in use');
       throw new ResponseError('Resource already in use', 409, {
         [field]: `${capitalizedField} already in use`,
       });
@@ -208,7 +203,6 @@ const create = async (req, res, next) => {
 
     const role = await Role.exists({ _id: fields.role });
     if (!role) {
-      logger.warn('validation errors');
       throw new ResponseError('Validation errors', 400, {
         roles: 'Invalid role id',
       });
@@ -240,7 +234,6 @@ const update = async (req, res, next) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      logger.warn('user not found');
       throw new ResponseError('User not found', 404);
     }
 
@@ -256,7 +249,6 @@ const update = async (req, res, next) => {
       });
 
       if (isUsernameTaken) {
-        logger.warn('resource already in use');
         throw new ResponseError('Resource already in use', 409, {
           username: 'Username already in use',
         });
@@ -270,7 +262,6 @@ const update = async (req, res, next) => {
       });
 
       if (isEmailTaken) {
-        logger.warn('resource already in use');
         throw new ResponseError('Resource already in use', 409, {
           email: 'Email already in use',
         });
@@ -280,7 +271,6 @@ const update = async (req, res, next) => {
     if (fields.role) {
       const role = await Role.exists({ _id: fields.role });
       if (!role) {
-        logger.warn('validation errors');
         throw new ResponseError('Validation errors', 400, {
           roles: 'Invalid role id',
         });
@@ -318,7 +308,6 @@ const remove = async (req, res, next) => {
 
     const user = await User.findByIdAndDelete(userId);
     if (!user) {
-      logger.warn('user not found');
       throw new ResponseError('User not found', 404);
     }
 

@@ -16,10 +16,7 @@ const validatePostId = async id => {
   const postId = validate(getPostSchema, id);
 
   const post = await Post.findById(postId);
-  if (!post) {
-    logger.warn('post not found');
-    throw new ResponseError('Post not found', 404);
-  }
+  if (!post) throw new ResponseError('Post not found', 404);
 
   return postId;
 };
@@ -156,10 +153,7 @@ const show = async (req, res, next) => {
     const commentId = validate(getCommentSchema, req.params.commentId);
 
     const comment = await Comment.findById(commentId);
-    if (!comment) {
-      logger.warn('comment not found');
-      throw new ResponseError('Comment not found', 404);
-    }
+    if (!comment) throw new ResponseError('Comment not found', 404);
 
     logger.info('comment retrieved successfully');
     res.json({
@@ -181,10 +175,7 @@ const update = async (req, res, next) => {
     const comment = await Comment.findByIdAndUpdate(commentId, fields, {
       new: true,
     });
-    if (!comment) {
-      logger.warn('comment not found');
-      throw new ResponseError('Comment not found', 404);
-    }
+    if (!comment) throw new ResponseError('Comment not found', 404);
 
     logger.info('comment updated successfully');
     res.json({
@@ -205,10 +196,7 @@ const remove = async (req, res, next) => {
     await checkOwnership(Comment, commentId, req.user);
 
     const comment = await Comment.findByIdAndDelete(commentId);
-    if (!comment) {
-      logger.warn('comment not found');
-      throw new ResponseError('Comment not found', 404);
-    }
+    if (!comment) throw new ResponseError('Comment not found', 404);
 
     logger.info('comment deleted successfully');
     res.json({
