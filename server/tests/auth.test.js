@@ -1,17 +1,18 @@
+jest.mock('../src/utils/sendMail.js', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+
 import request from 'supertest';
 import app from '../src/app.js';
-import { findLog, createTestUser, removeTestUser } from './testUtil.js';
+import { createTestUser, removeTestUser } from './testUtil.js';
 import Blacklist from '../src/models/blacklistModel.js';
 import jwt from 'jsonwebtoken';
+import sendMail from '../src/utils/sendMail.js';
 
 describe('POST /api/auth/signup', () => {
-  let startTime;
-
-  beforeEach(async () => {
-    startTime = new Date();
-  });
-
   afterEach(async () => {
+    sendMail.mockClear();
     await removeTestUser();
   });
 
@@ -38,11 +39,8 @@ describe('POST /api/auth/signup', () => {
       password: 'test123',
     });
 
-    const logMessage = 'user already exists';
-    const relevantLog = await findLog(logMessage, startTime);
-
     expect(result.status).toBe(200);
-    expect(relevantLog).toBeDefined();
+    expect(sendMail).not.toHaveBeenCalled();
   });
 
   it('should create a new user and send verification email', async () => {
@@ -52,11 +50,8 @@ describe('POST /api/auth/signup', () => {
       password: 'test123',
     });
 
-    const logMessage = 'verification email sent successfully';
-    const relevantLog = await findLog(logMessage, startTime);
-
     expect(result.status).toBe(200);
-    expect(relevantLog).toBeDefined();
+    expect(sendMail).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -97,13 +92,8 @@ describe('POST /api/auth/verify-email/:token', () => {
 });
 
 describe('POST /api/auth/resend-verification', () => {
-  let startTime;
-
-  beforeEach(async () => {
-    startTime = new Date();
-  });
-
   afterEach(async () => {
+    sendMail.mockClear();
     await removeTestUser();
   });
 
@@ -125,11 +115,8 @@ describe('POST /api/auth/resend-verification', () => {
         email: 'test@me.com',
       });
 
-    const logMessage = 'user is not registered';
-    const relevantLog = await findLog(logMessage, startTime);
-
     expect(result.status).toBe(200);
-    expect(relevantLog).toBeDefined();
+    expect(sendMail).not.toHaveBeenCalled();
   });
 
   it('should send verification email if user is registered', async () => {
@@ -141,14 +128,11 @@ describe('POST /api/auth/resend-verification', () => {
         email: 'test@me.com',
       });
 
-    const logMessage = 'verification email sent successfully';
-    const relevantLog = await findLog(logMessage, startTime);
-
     expect(result.status).toBe(200);
     expect(result.body.message).toBe(
       'Please check your email to verify your account'
     );
-    expect(relevantLog).toBeDefined();
+    expect(sendMail).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -1,4 +1,3 @@
-import { readFile, unlink, readdir, stat } from 'node:fs/promises';
 import User from '../src/models/userModel.js';
 import Category from '../src/models/categoryModel.js';
 import Post from '../src/models/postModel.js';
@@ -169,28 +168,6 @@ export const createToken = (type, role, userId) => {
           : process.env.JWT_REFRESH_EXPIRES,
     }
   );
-};
-
-const readLog = async () => {
-  // const path = `${process.cwd()}/src/logs/app-${
-  //   new Date().toISOString().split('T')[0]
-  // }.log`;
-  const path = `${process.cwd()}/logs/app-${
-    new Date().toISOString().split('T')[0]
-  }.log`;
-  const logs = await readFile(path, 'utf-8');
-
-  return logs
-    .trim()
-    .split('\n')
-    .map(line => JSON.parse(line));
-};
-
-export const findLog = async (message, startTime) => {
-  const logs = await readLog();
-  return logs.find(log => {
-    return new Date(log.timestamp) > startTime && log.message === message;
-  });
 };
 
 export const checkFileExists = async url => {
