@@ -3,7 +3,8 @@ import app from '../src/app.js';
 import {
   createTestCategory,
   createManyTestCategories,
-  removeTestCategory,
+  getTestCategory,
+  removeAllTestCategories,
 } from './testUtil.js';
 
 describe('GET /api/categories', () => {
@@ -17,7 +18,7 @@ describe('GET /api/categories', () => {
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Categories retrieved successfully');
 
-    await removeTestCategory();
+    await removeAllTestCategories();
   });
 });
 
@@ -27,7 +28,7 @@ describe('GET /api/categories/search', () => {
   });
 
   afterEach(async () => {
-    await removeTestCategory();
+    await removeAllTestCategories();
   });
 
   it('should return a list of categories with default pagination', async () => {
@@ -80,6 +81,10 @@ describe('GET /api/categories/search', () => {
 });
 
 describe('GET /api/categories/:categoryId', () => {
+  afterEach(async () => {
+    await removeAllTestCategories();
+  });
+
   it('should return an error if category id is invalid', async () => {
     const result = await request(app)
       .get('/api/categories/invalid-id')
@@ -100,7 +105,9 @@ describe('GET /api/categories/:categoryId', () => {
   });
 
   it('should return a category if category id is valid', async () => {
-    const category = await createTestCategory();
+    await createTestCategory();
+
+    const category = await getTestCategory();
     const result = await request(app)
       .get(`/api/categories/${category._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -108,14 +115,12 @@ describe('GET /api/categories/:categoryId', () => {
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Category retrieved successfully');
     expect(result.body.data).toBeDefined();
-
-    await removeTestCategory();
   });
 });
 
 describe('POST /api/categories', () => {
   afterEach(async () => {
-    await removeTestCategory();
+    await removeAllTestCategories();
   });
 
   it('should return an error if user does not have permission', async () => {
@@ -167,17 +172,16 @@ describe('POST /api/categories', () => {
 });
 
 describe('PATCH /api/categories/:categoryId', () => {
-  let category;
-
   beforeEach(async () => {
-    category = await createTestCategory();
+    await createTestCategory();
   });
 
   afterEach(async () => {
-    await removeTestCategory();
+    await removeAllTestCategories();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const category = await getTestCategory();
     const result = await request(app)
       .patch(`/api/categories/${category._id}`)
       .set('Authorization', `Bearer ${global.userToken}`);
@@ -199,6 +203,7 @@ describe('PATCH /api/categories/:categoryId', () => {
   it('should return an error if name already in use', async () => {
     await createTestCategory({ name: 'test1' });
 
+    const category = await getTestCategory();
     const result = await request(app)
       .patch(`/api/categories/${category._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -221,6 +226,7 @@ describe('PATCH /api/categories/:categoryId', () => {
   });
 
   it('should update category if input data is valid', async () => {
+    const category = await getTestCategory();
     const result = await request(app)
       .patch(`/api/categories/${category._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -235,17 +241,16 @@ describe('PATCH /api/categories/:categoryId', () => {
 });
 
 describe('DELETE /api/categories/:categoryId', () => {
-  let category;
-
   beforeEach(async () => {
-    category = await createTestCategory();
+    await createTestCategory();
   });
 
   afterEach(async () => {
-    await removeTestCategory();
+    await removeAllTestCategories();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const category = await getTestCategory();
     const result = await request(app)
       .delete(`/api/categories/${category._id}`)
       .set('Authorization', `Bearer ${global.userToken}`);
@@ -274,6 +279,7 @@ describe('DELETE /api/categories/:categoryId', () => {
   });
 
   it('should delete category if category id is valid', async () => {
+    const category = await getTestCategory();
     const result = await request(app)
       .delete(`/api/categories/${category._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);

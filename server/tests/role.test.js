@@ -2,11 +2,16 @@ import request from 'supertest';
 import app from '../src/app.js';
 import {
   createTestRole,
+  getTestRole,
   createManyTestRoles,
-  removeTestRole,
+  removeAllTestRoles,
 } from './testUtil.js';
 
 describe('GET /api/roles', () => {
+  afterEach(async () => {
+    await removeAllTestRoles();
+  });
+
   it('should return an error if user does not have permission', async () => {
     const result = await request(app)
       .get('/api/roles')
@@ -26,8 +31,6 @@ describe('GET /api/roles', () => {
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Roles retrieved successfully');
     expect(result.body.data).toBeDefined();
-
-    await removeTestRole();
   });
 });
 
@@ -37,7 +40,7 @@ describe('GET /api/roles/search', () => {
   });
 
   afterEach(async () => {
-    await removeTestRole();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
@@ -99,6 +102,10 @@ describe('GET /api/roles/search', () => {
 });
 
 describe('GET /api/roles/:roleId', () => {
+  afterEach(async () => {
+    await removeAllTestRoles();
+  });
+
   it('should return an error if user does not have permission', async () => {
     const result = await request(app)
       .get(`/api/roles/${global.validObjectId}`)
@@ -128,7 +135,9 @@ describe('GET /api/roles/:roleId', () => {
   });
 
   it('should return a role if role id is valid', async () => {
-    const role = await createTestRole();
+    await createTestRole();
+
+    const role = await getTestRole();
     const result = await request(app)
       .get(`/api/roles/${role._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -136,14 +145,12 @@ describe('GET /api/roles/:roleId', () => {
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Role retrieved successfully');
     expect(result.body.data).toBeDefined();
-
-    await removeTestRole();
   });
 });
 
 describe('POST /api/roles', () => {
   afterEach(async () => {
-    await removeTestRole();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
@@ -197,14 +204,12 @@ describe('POST /api/roles', () => {
 });
 
 describe('PATCH /api/roles/:roleId', () => {
-  let role;
-
   beforeEach(async () => {
-    role = await createTestRole();
+    await createTestRole();
   });
 
   afterEach(async () => {
-    await removeTestRole();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
@@ -229,6 +234,7 @@ describe('PATCH /api/roles/:roleId', () => {
   it('should return an error if name already in use', async () => {
     await createTestRole({ name: 'test1' });
 
+    const role = await getTestRole();
     const result = await request(app)
       .patch(`/api/roles/${role._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -251,6 +257,7 @@ describe('PATCH /api/roles/:roleId', () => {
   });
 
   it('should update role if input data is valid', async () => {
+    const role = await getTestRole();
     const result = await request(app)
       .patch(`/api/roles/${role._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -265,17 +272,16 @@ describe('PATCH /api/roles/:roleId', () => {
 });
 
 describe('DELETE /api/roles/:roleId', () => {
-  let role;
-
   beforeEach(async () => {
-    role = await createTestRole();
+    await createTestRole();
   });
 
   afterEach(async () => {
-    await removeTestRole();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole();
     const result = await request(app)
       .delete(`/api/roles/${role._id}`)
       .set('Authorization', `Bearer ${global.userToken}`);
@@ -304,6 +310,7 @@ describe('DELETE /api/roles/:roleId', () => {
   });
 
   it('should delete role if role id is valid', async () => {
+    const role = await getTestRole();
     const result = await request(app)
       .delete(`/api/roles/${role._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
