@@ -20,7 +20,6 @@ export const getTestRefreshToken = async (fields = {}) => {
 };
 
 export const createTestRefreshToken = async (fields = {}) => {
-  await createTestUser();
   const user = await getTestUser();
   const token = createToken('refresh', 'admin', user._id);
 
@@ -32,7 +31,7 @@ export const createTestRefreshToken = async (fields = {}) => {
   });
 };
 
-export const removeTestRefreshToken = async () => {
+export const removeAllRefreshTokens = async () => {
   await RefreshToken.deleteMany();
 };
 
@@ -44,9 +43,9 @@ export const getTestUser = async (fields = {}) => {
 };
 
 export const createTestUser = async (fields = {}) => {
-  const role = await createTestRole({ name: 'admin' });
+  const role = await getTestRole();
 
-  return await User.create({
+  await User.create({
     username: 'test',
     email: 'test@me.com',
     password: await bcrypt.hash('test123', 10),
@@ -56,7 +55,7 @@ export const createTestUser = async (fields = {}) => {
 };
 
 export const createManyTestUsers = async () => {
-  const role = await createTestRole({ name: 'admin' });
+  const role = await getTestRole();
   const users = [];
 
   for (let i = 0; i < 15; i++) {
@@ -69,10 +68,18 @@ export const createManyTestUsers = async () => {
     );
   }
 
-  return await Promise.all(users);
+  await Promise.all(users);
 };
 
-export const removeTestUser = async () => {
+export const updateTestUser = async (fields = {}) => {
+  await User.findOneAndUpdate(
+    { username: 'test' }, 
+    { ...fields },
+    { new: true }
+  );
+}
+
+export const removeAllTestUsers = async () => {
   await User.deleteMany({ username: { $regex: /^test\d*/ } });
 };
 
@@ -80,14 +87,17 @@ export const getTestComment = async (fields = {}) => {
   return await Comment.findOne({
     text: 'test',
     ...fields,
-  });
+  }).populate('post');
 };
 
 export const createTestComment = async (fields = {}) => {
-  const user = await createTestUser();
-  return await Comment.create({
+  const user = await getTestUser();
+  const post = await getTestPost();
+  
+  await Comment.create({
     text: 'test',
     user: user._id,
+    post: post._id,
     ...fields,
   });
 };
@@ -103,22 +113,22 @@ export const createManyTestComments = async () => {
     );
   }
 
-  return await Promise.all(comments);
+  await Promise.all(comments);
 };
 
-export const removeTestComment = async () => {
+export const removeAllTestComments = async () => {
   await Comment.deleteMany({ text: { $regex: /^test\d*/ } });
 };
 
 export const getTestRole = async (fields = {}) => {
   return await Role.findOne({
-    title: 'test',
+    name: 'test',
     ...fields,
   });
 };
 
 export const createTestRole = async (fields = {}) => {
-  return await Role.create({
+  await Role.create({
     name: 'test',
     ...fields,
   });
@@ -135,10 +145,10 @@ export const createManyTestRoles = async () => {
     );
   }
 
-  return await Promise.all(roles);
+  await Promise.all(roles);
 };
 
-export const removeTestRole = async () => {
+export const removeAllTestRoles = async () => {
   await Role.deleteMany({ name: { $regex: /^test\d*/ } });
 };
 
@@ -150,7 +160,7 @@ export const getTestCategory = async (fields = {}) => {
 };
 
 export const createTestCategory = async (fields = {}) => {
-  return await Category.create({
+  await Category.create({
     name: 'test',
     ...fields,
   });
@@ -163,10 +173,10 @@ export const createManyTestCategories = async () => {
     categories.push(createTestCategory({ name: `test${i}` }));
   }
 
-  return await Promise.all(categories);
+  await Promise.all(categories);
 };
 
-export const removeTestCategory = async () => {
+export const removeAllTestCategories = async () => {
   await Category.deleteMany({ name: { $regex: /^test\d*/ } });
 };
 
@@ -178,10 +188,10 @@ export const getTestPost = async (fields = {}) => {
 };
 
 export const createTestPost = async (fields = {}) => {
-  const user = await createTestUser();
-  const category = await createTestCategory();
+  const user = await getTestUser();
+  const category = await getTestCategory();
 
-  return await Post.create({
+  await Post.create({
     title: 'test',
     slug: 'test',
     content: 'test',
@@ -192,8 +202,8 @@ export const createTestPost = async (fields = {}) => {
 };
 
 export const createManyTestPosts = async () => {
-  const users = await createManyTestUsers();
-  const categories = await createManyTestCategories();
+  const user = await getTestUser();
+  const category = await getTestCategory();
   const posts = [];
 
   for (let i = 0; i < 15; i++) {
@@ -202,8 +212,8 @@ export const createManyTestPosts = async () => {
         title: `test${i}`,
         slug: `test${i}`,
         content: `test${i}`,
-        user: users[i]._id,
-        category: categories[i]._id,
+        user: user._id,
+        category: category._id,
       })
     );
   }
@@ -211,7 +221,15 @@ export const createManyTestPosts = async () => {
   return await Promise.all(posts);
 };
 
-export const removeTestPost = async () => {
+export const updateTestPost = async (fields = {}) => {
+  await Post.findOneAndUpdate(
+    { title: 'test' }, 
+    { ...fields },
+    { new: true }
+  );
+}
+
+export const removeAllTestPosts = async () => {
   await Post.deleteMany({ title: { $regex: /^test\d*/ } });
 };
 
