@@ -2,18 +2,23 @@ import request from 'supertest';
 import app from '../src/app.js';
 import path from 'node:path';
 import {
+  createTestRole,
+  removeAllTestRoles,
   createTestUser,
-  removeTestUser,
+  getTestUser,
+  removeAllTestUsers,
   createTestPost,
+  getTestPost,
+  updateTestPost,
   createManyTestPosts,
-  removeTestPost,
+  removeAllTestPosts,
   createTestCategory,
-  removeTestCategory,
+  getTestCategory,
+  removeAllTestCategories,
   removeTestFile,
   checkFileExists,
   createToken,
 } from './testUtil.js';
-import Post from '../src/models/postModel.js';
 import cloudinary from '../src/utils/cloudinary.js';
 
 const testPostImagePath = path.resolve(
@@ -23,11 +28,17 @@ const testPostImagePath = path.resolve(
 
 describe('GET /api/posts/search', () => {
   beforeEach(async () => {
+    await createTestRole();
+    await createTestUser();
+    await createTestCategory();
     await createManyTestPosts();
   });
 
   afterEach(async () => {
-    await removeTestPost();
+    await removeAllTestPosts();
+    await removeAllTestCategories();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return a list of posts with default pagination', async () => {
@@ -80,6 +91,13 @@ describe('GET /api/posts/search', () => {
 });
 
 describe('GET /api/posts/:postId', () => {
+  afterEach(async () => {
+    await removeAllTestPosts();
+    await removeAllTestCategories();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
+  });
+
   it('should return an error if post id is invalid', async () => {
     const result = await request(app)
       .get('/api/posts/invalid-id')
@@ -100,7 +118,12 @@ describe('GET /api/posts/:postId', () => {
   });
 
   it('should return a post for post id is valid', async () => {
-    const post = await createTestPost();
+    await createTestRole();
+    await createTestUser();
+    await createTestCategory();
+    await createTestPost();
+
+    const post = await getTestPost();
     const result = await request(app)
       .get(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -108,14 +131,12 @@ describe('GET /api/posts/:postId', () => {
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Post retrieved successfully');
     expect(result.body.data).toBeDefined();
-
-    await removeTestPost();
   });
 });
 
 describe('POST /api/posts', () => {
   afterEach(async () => {
-    await removeTestPost();
+    await removeAllTestPosts();
   });
 
   it('should return an error if user does not have permission', async () => {
@@ -158,8 +179,9 @@ describe('POST /api/posts', () => {
   });
 
   it('should create a post if input data is valid', async () => {
-    const category = await createTestCategory();
+    await createTestCategory();
 
+    const category = await getTestCategory();
     const result = await request(app)
       .post('/api/posts')
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -172,28 +194,23 @@ describe('POST /api/posts', () => {
     expect(result.status).toBe(201);
     expect(result.body.message).toBe('Post created successfully');
 
-    await removeTestCategory();
+    await removeAllTestCategories();
   });
 });
 
 describe('PATCH /api/posts/:postId', () => {
-  let post;
-  let category;
-  let uploadResult;
-
   beforeEach(async () => {
-    uploadResult = await cloudinary.uploader.upload(testPostImagePath, {
-      folder: 'postImages',
-    });
-    category = await createTestCategory();
-    post = await createTestPost({
-      postImage: uploadResult.secure_url,
-    });
+    await createTestRole();
+    await createTestUser();
+    await createTestCategory();
+    await createTestPost();
   });
 
   afterEach(async () => {
-    await removeTestPost();
-    await removeTestCategory();
+    await removeAllTestPosts();
+    await removeAllTestCategories();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if post id is invalid', async () => {
@@ -216,6 +233,7 @@ describe('PATCH /api/posts/:postId', () => {
   });
 
   it('should return an error if input data is invalid', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .patch(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -232,6 +250,7 @@ describe('PATCH /api/posts/:postId', () => {
   });
 
   it('should return an error if category is invalid', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .patch(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -246,6 +265,8 @@ describe('PATCH /api/posts/:postId', () => {
   });
 
   it('should update post without changing post image', async () => {
+    const category = await getTestCategory();
+    const post = await getTestPost();
     const result = await request(app)
       .patch(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -262,6 +283,12 @@ describe('PATCH /api/posts/:postId', () => {
   });
 
   it('should update post with changing post image', async () => {
+    const uploadResult = await cloudinary.uploader.upload(testPostImagePath, {
+      folder: 'postImages',
+    });
+    await updateTestPost({ postImage: uploadResult.secure_url });
+
+    const post = await getTestPost();
     const result = await request(app)
       .patch(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -270,7 +297,7 @@ describe('PATCH /api/posts/:postId', () => {
       .field('content', 'test1')
       .attach('postImage', testPostImagePath);
 
-    const updatedPost = await Post.findById(post._id);
+    const updatedPost = await getTestPost({ title: 'test1' });
     const postImageExists = await checkFileExists(updatedPost.postImage);
 
     expect(result.status).toBe(200);
@@ -284,14 +311,18 @@ describe('PATCH /api/posts/:postId', () => {
 });
 
 describe('DELETE /api/posts/:postId', () => {
-  let post;
-
   beforeEach(async () => {
-    post = await createTestPost();
+    await createTestRole();
+    await createTestUser();
+    await createTestCategory();
+    await createTestPost();
   });
 
   afterEach(async () => {
-    await removeTestPost();
+    await removeAllTestPosts();
+    await removeAllTestCategories();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if post id is invalid', async () => {
@@ -314,12 +345,12 @@ describe('DELETE /api/posts/:postId', () => {
   });
 
   it('should delete post with removing post image', async () => {
+    const post = await getTestPost();
     const uploadResult = await cloudinary.uploader.upload(testPostImagePath, {
       folder: 'posts',
     });
 
-    post.postImage = uploadResult.secure_url;
-    await post.save();
+    await updateTestPost({ postImage: uploadResult.secure_url });
 
     const result = await request(app)
       .delete(`/api/posts/${post._id}`)
@@ -334,18 +365,24 @@ describe('DELETE /api/posts/:postId', () => {
 });
 
 describe('PATCH /api/posts/:postId/like', () => {
-  let post;
-
   beforeEach(async () => {
-    post = await createTestPost();
+    await createTestRole();
+    await createTestUser();
+    await createTestCategory();
+    await createTestPost();
   });
 
   afterEach(async () => {
-    await removeTestPost();
+    await removeAllTestPosts();
+    await removeAllTestCategories();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not authenticate', async () => {
-    const result = await request(app).patch(`/api/posts/${post._id}/like`);
+    const result = await request(app).patch(
+      `/api/posts/${global.validObjectId}/like`
+    );
 
     expect(result.status).toBe(401);
     expect(result.body.message).toBe('Token is not provided');
@@ -371,6 +408,7 @@ describe('PATCH /api/posts/:postId/like', () => {
   });
 
   it('should user like a post', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .patch(`/api/posts/${post._id}/like`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -380,10 +418,14 @@ describe('PATCH /api/posts/:postId/like', () => {
   });
 
   it('should user unlike a post', async () => {
-    const user = await createTestUser();
+    await createTestRole();
+    await createTestUser();
+
+    const post = await getTestPost();
+    const user = await getTestUser();
     const adminToken = createToken('auth', 'admin', user._id);
-    post.likes.push(user._id);
-    await post.save();
+
+    await updateTestPost({ likes: [user._id] });
 
     const result = await request(app)
       .patch(`/api/posts/${post._id}/like`)
@@ -391,7 +433,5 @@ describe('PATCH /api/posts/:postId/like', () => {
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Post unliked successfully');
-
-    await removeTestUser();
   });
 });

@@ -1,26 +1,42 @@
 import request from 'supertest';
 import app from '../src/app.js';
 import {
+  createTestCategory,
+  removeAllTestCategories,
+  createTestRole,
+  removeAllTestRoles,
+  createTestUser,
+  removeAllTestUsers,
   createTestComment,
   createManyTestComments,
-  removeTestComment,
+  removeAllTestComments,
+  getTestComment,
+  getTestPost,
   createTestPost,
-  removeTestPost,
+  removeAllTestPosts,
 } from './testUtil.js';
-import Comment from '../src/models/commentModel.js';
 
 describe('GET /api/posts/:postId/comments', () => {
-  let post;
-
   beforeEach(async () => {
-    post = await createTestPost();
+    await createTestCategory();
+    await createTestRole();
+    await createTestUser();
+    await createTestPost();
+    await createTestComment();
   });
 
   afterEach(async () => {
-    await removeTestPost();
+    await removeAllTestComments();
+    await removeAllTestPosts();
+    await removeAllTestCategories();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an empty list if post has no comments', async () => {
+    await removeAllTestComments();
+
+    const post = await getTestPost();
     const result = await request(app)
       .get(`/api/posts/${post._id}/comments`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -31,38 +47,40 @@ describe('GET /api/posts/:postId/comments', () => {
   });
 
   it('should return comments if post id is valid', async () => {
-    const comment = await createTestComment({ post: post._id });
-
+    const comment = await getTestComment();
     const result = await request(app)
-      .get(`/api/posts/${post._id}/comments`)
+      .get(`/api/posts/${comment.post._id}/comments`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Comments retrieved successfully');
     expect(result.body.data).toHaveLength(1);
     expect(result.body.data[0]._id).toEqual(comment._id.toString());
-
-    await removeTestComment();
   });
 });
 
 describe('GET /api/posts/:postId/comments/:commentId', () => {
-  let comment;
-  let post;
-
   beforeEach(async () => {
-    post = await createTestPost();
-    comment = await createTestComment();
+    await createTestCategory();
+    await createTestRole();
+    await createTestUser();
+    await createTestPost();
+    await createTestComment();
   });
 
   afterEach(async () => {
-    await removeTestPost();
-    await removeTestComment();
+    await removeAllTestComments();
+    await removeAllTestPosts();
+    await removeAllTestCategories();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
     const result = await request(app)
-      .get(`/api/posts/${post._id}/comments/${comment._id}`)
+      .get(
+        `/api/posts/${global.validObjectId}/comments/${global.validObjectId}`
+      )
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
@@ -71,7 +89,7 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
 
   it('should return an error if post id is invalid', async () => {
     const result = await request(app)
-      .delete(`/api/posts/invalid-id/comments/${comment._id}`)
+      .delete(`/api/posts/invalid-id/comments/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(400);
@@ -81,7 +99,9 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
 
   it('should return an error if post is not found', async () => {
     const result = await request(app)
-      .delete(`/api/posts/${global.validObjectId}/comments/${comment._id}`)
+      .delete(
+        `/api/posts/${global.validObjectId}/comments/${global.validObjectId}`
+      )
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(404);
@@ -89,6 +109,7 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should return an error if comment id is invalid', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/invalid-id`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -99,6 +120,7 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should return an error if comment is not found', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -108,8 +130,9 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should return a comment if comment id is valid', async () => {
+    const comment = await getTestComment();
     const result = await request(app)
-      .get(`/api/posts/${post._id}/comments/${comment._id}`)
+      .get(`/api/posts/${comment.post._id}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
@@ -119,11 +142,19 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
 
 describe('GET /api/comments/search', () => {
   beforeEach(async () => {
+    await createTestRole();
+    await createTestCategory();
+    await createTestUser();
+    await createTestPost();
     await createManyTestComments();
   });
 
   afterEach(async () => {
-    await removeTestComment();
+    await removeAllTestComments();
+    await removeAllTestPosts();
+    await removeAllTestCategories();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
@@ -185,18 +216,24 @@ describe('GET /api/comments/search', () => {
 });
 
 describe('POST /api/posts/:postId/comments', () => {
-  let post;
-
   beforeEach(async () => {
-    post = await createTestPost();
+    await createTestRole();
+    await createTestCategory();
+    await createTestUser();
+    await createTestPost();
   });
 
   afterEach(async () => {
-    await removeTestPost();
+    await removeAllTestCategories();
+    await removeAllTestPosts();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not authenticate', async () => {
-    const result = await request(app).post(`/api/posts/${post._id}/comments`);
+    const result = await request(app).post(
+      `/api/posts/${global.validObjectId}/comments`
+    );
 
     expect(result.status).toBe(401);
     expect(result.body.message).toBe('Token is not provided');
@@ -222,6 +259,7 @@ describe('POST /api/posts/:postId/comments', () => {
   });
 
   it('should return an error if input data is invalid', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .post(`/api/posts/${post._id}/comments`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -235,6 +273,7 @@ describe('POST /api/posts/:postId/comments', () => {
   });
 
   it('should create a comment if input data is valid', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .post(`/api/posts/${post._id}/comments`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -246,22 +285,27 @@ describe('POST /api/posts/:postId/comments', () => {
 });
 
 describe('PATCH /api/posts/:postId/comments/:commentId', () => {
-  let comment;
-  let post;
-
   beforeEach(async () => {
-    comment = await createTestComment();
-    post = await createTestPost();
+    await createTestCategory();
+    await createTestRole();
+    await createTestUser();
+    await createTestPost();
+    await createTestComment();
   });
 
   afterEach(async () => {
-    await removeTestComment();
-    await removeTestPost();
+    await removeAllTestComments();
+    await removeAllTestPosts();
+    await removeAllTestCategories();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
     const result = await request(app)
-      .patch(`/api/posts/${post._id}/comments/${comment._id}`)
+      .patch(
+        `/api/posts/${global.validObjectId}/comments/${global.validObjectId}`
+      )
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
@@ -270,7 +314,7 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
 
   it('should return an error if post id is invalid', async () => {
     const result = await request(app)
-      .patch(`/api/posts/invalid-id/comments/${comment._id}`)
+      .patch(`/api/posts/invalid-id/comments/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(400);
@@ -280,7 +324,9 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
 
   it('should return an error if post is not found', async () => {
     const result = await request(app)
-      .patch(`/api/posts/${global.validObjectId}/comments/${comment._id}`)
+      .patch(
+        `/api/posts/${global.validObjectId}/comments/${global.validObjectId}`
+      )
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(404);
@@ -288,6 +334,7 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should return an error if comment id is invalid', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .patch(`/api/posts/${post._id}/comments/invalid-id`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -298,6 +345,7 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should return an error if comment is not found', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .patch(`/api/posts/${post._id}/comments/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -307,8 +355,9 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should update comment if input data is valid', async () => {
+    const comment = await getTestComment();
     const result = await request(app)
-      .patch(`/api/posts/${post._id}/comments/${comment._id}`)
+      .patch(`/api/posts/${comment.post._id}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .send({
         text: 'test1',
@@ -321,22 +370,26 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
 });
 
 describe('DELETE /api/posts/:postId/comments/:commentId', () => {
-  let comment;
-  let post;
-
   beforeEach(async () => {
-    post = await createTestPost();
-    comment = await createTestComment();
+    await createTestCategory();
+    await createTestRole();
+    await createTestUser();
+    await createTestPost();
+    await createTestComment();
   });
 
   afterEach(async () => {
-    await removeTestComment();
-    await removeTestPost();
+    await removeAllTestComments();
+    await removeAllTestPosts();
+    await removeAllTestCategories();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
-  it('should return an error if user is not owned by current user', async () => {
+  it('should return an error if comment is not owned by current user', async () => {
+    const comment = await getTestComment();
     const result = await request(app)
-      .delete(`/api/posts/${post._id}/comments/${comment._id}`)
+      .delete(`/api/posts/${comment.post._id}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
@@ -345,7 +398,7 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
 
   it('should return an error if post id is invalid', async () => {
     const result = await request(app)
-      .delete(`/api/posts/invalid-id/comments/${comment._id}`)
+      .delete(`/api/posts/invalid-id/comments/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(400);
@@ -355,7 +408,9 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
 
   it('should return an error if post is not found', async () => {
     const result = await request(app)
-      .delete(`/api/posts/${global.validObjectId}/comments/${comment._id}`)
+      .delete(
+        `/api/posts/${global.validObjectId}/comments/${global.validObjectId}`
+      )
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(404);
@@ -363,6 +418,7 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should return an error if comment id is invalid', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/invalid-id`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -373,6 +429,7 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should return an error if comment is not found', async () => {
+    const post = await getTestPost();
     const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/${global.validObjectId}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -382,8 +439,9 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
   });
 
   it('should delete comment if comment id is valid', async () => {
+    const comment = await getTestComment();
     const result = await request(app)
-      .delete(`/api/posts/${post._id}/comments/${comment._id}`)
+      .delete(`/api/posts/${comment.post._id}/comments/${comment._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
     expect(result.status).toBe(200);
