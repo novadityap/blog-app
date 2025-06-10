@@ -20,17 +20,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    verificationToken: {
-      type: String,
-      default: () => crypto.randomBytes(32).toString('hex'),
-    },
-    verificationTokenExpires: {
-      type: Date,
-      default: () => Date.now() + 24 * 60 * 60 * 1000,
-    },
+    verificationToken: String,
+    verificationTokenExpires: Date,
     resetToken: String,
     resetTokenExpires: Date,
-    refreshToken: String,
   },
   {
     timestamps: true,

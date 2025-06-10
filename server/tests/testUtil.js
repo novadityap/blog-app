@@ -3,12 +3,45 @@ import Category from '../src/models/categoryModel.js';
 import Post from '../src/models/postModel.js';
 import Role from '../src/models/roleModel.js';
 import Comment from '../src/models/commentModel.js';
+import RefreshToken from '../src/models/refreshTokenModel.js';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import path from 'node:path';
 import cloudinary from '../src/utils/cloudinary.js';
 import extractPublicId from '../src/utils/extractPublicId.js';
+
+export const getTestRefreshToken = async (fields = {}) => {
+  const user = await getTestUser();
+
+  return await RefreshToken.findOne({
+    user: user._id,
+    ...fields,
+  });
+};
+
+export const createTestRefreshToken = async (fields = {}) => {
+  await createTestUser();
+  const user = await getTestUser();
+  const token = createToken('refresh', 'admin', user._id);
+
+  await RefreshToken.create({
+    token,
+    user: user._id,
+    expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    ...fields,
+  });
+};
+
+export const removeTestRefreshToken = async () => {
+  await RefreshToken.deleteMany();
+};
+
+export const getTestUser = async (fields = {}) => {
+  return await User.findOne({
+    username: 'test',
+    ...fields,
+  });
+};
 
 export const createTestUser = async (fields = {}) => {
   const role = await createTestRole({ name: 'admin' });
@@ -43,6 +76,13 @@ export const removeTestUser = async () => {
   await User.deleteMany({ username: { $regex: /^test\d*/ } });
 };
 
+export const getTestComment = async (fields = {}) => {
+  return await Comment.findOne({
+    text: 'test',
+    ...fields,
+  });
+};
+
 export const createTestComment = async (fields = {}) => {
   const user = await createTestUser();
   return await Comment.create({
@@ -70,6 +110,13 @@ export const removeTestComment = async () => {
   await Comment.deleteMany({ text: { $regex: /^test\d*/ } });
 };
 
+export const getTestRole = async (fields = {}) => {
+  return await Role.findOne({
+    title: 'test',
+    ...fields,
+  });
+};
+
 export const createTestRole = async (fields = {}) => {
   return await Role.create({
     name: 'test',
@@ -95,6 +142,13 @@ export const removeTestRole = async () => {
   await Role.deleteMany({ name: { $regex: /^test\d*/ } });
 };
 
+export const getTestCategory = async (fields = {}) => {
+  return await Category.findOne({
+    name: 'test',
+    ...fields,
+  });
+};
+
 export const createTestCategory = async (fields = {}) => {
   return await Category.create({
     name: 'test',
@@ -114,6 +168,13 @@ export const createManyTestCategories = async () => {
 
 export const removeTestCategory = async () => {
   await Category.deleteMany({ name: { $regex: /^test\d*/ } });
+};
+
+export const getTestPost = async (fields = {}) => {
+  return await Post.findOne({
+    title: 'test',
+    ...fields,
+  });
 };
 
 export const createTestPost = async (fields = {}) => {
@@ -157,7 +218,7 @@ export const removeTestPost = async () => {
 export const createToken = (type, role, userId) => {
   return jwt.sign(
     {
-      id: userId || new mongoose.Types.ObjectId(),
+      sub: userId || new mongoose.Types.ObjectId(),
       role: role,
     },
     type === 'auth' ? process.env.JWT_SECRET : process.env.JWT_REFRESH_SECRET,

@@ -1,6 +1,6 @@
 import User from '../models/userModel.js';
 import Role from '../models/roleModel.js';
-import Blacklist from '../models/blacklistModel.js';
+import RefreshToken from '../models/refreshTokenModel.js';
 import validate from '../utils/validate.js';
 import ResponseError from '../utils/responseError.js';
 import bcrypt from 'bcrypt';
@@ -19,15 +19,23 @@ import {
 const signup = async (req, res) => {
   const fields = validate(signupSchema, req.body);
 
-  const user = await User.findOne({
-    $or: [{ username: fields.username }, { email: fields.email }],
+  const isUsernameTaken = await User.exists({
+    username: fields.username,
   });
 
-  if (user) {
-    logger.warn('user already exists');
-    return res.status(200).json({
-      code: 200,
-      message: 'Please check your email to verify your account',
+  if (isUsernameTaken) {
+    throw new ResponseError('Resource already in use', 409, {
+      username: 'Username already in use',
+    });
+  }
+
+  const isEmailTaken = await User.exists({
+    email: fields.email,
+  });
+
+  if (isEmailTaken) {
+    throw new ResponseError('Resource already in use', 409, {
+      email: 'Email already in use',
     });
   }
 
@@ -36,6 +44,8 @@ const signup = async (req, res) => {
 
   const newUser = await User.create({
     ...fields,
+    verificationToken: crypto.randomBytes(32).toString('hex'),
+    verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
     role: userRole._id,
   });
 
@@ -91,16 +101,14 @@ const resendVerification = async (req, res) => {
     },
     {
       verificationToken: crypto.randomBytes(32).toString('hex'),
-      verificationTokenExpires: Date.now() + 24 * 60 * 60 * 1000,
+      verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
     },
     { new: true }
   );
 
   if (!user) {
-    logger.warn('user is not registered');
-    return res.status(200).json({
-      code: 200,
-      message: 'Please check your email to verify your account',
+    throw new ResponseError('Validation errors', 400, {
+      email: 'Email is not registered',
     });
   }
 
@@ -122,23 +130,23 @@ const signin = async (req, res) => {
   const fields = validate(signinSchema, req.body);
 
   const user = await User.findOne({ email: fields.email }).populate('role');
-  if (!user) throw new ResponseError('Email or password is invalid', 401);
-
-  const isMatch = await bcrypt.compare(fields.password, user.password);
-  if (!isMatch) {
+  if (!user || !(await bcrypt.compare(fields.password, user.password)))
     throw new ResponseError('Email or password is invalid', 401);
-  }
 
-  const payload = { id: user._id, role: user.role.name };
+  const payload = { sub: user._id, role: user.role.name };
   const token = jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES,
   });
   const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRES,
   });
+  const decodedRefreshToken = jwt.decode(refreshToken);
 
-  user.refreshToken = refreshToken;
-  await user.save();
+  await RefreshToken.create({
+    token: refreshToken,
+    user: user._id,
+    expiresAt: new Date(decodedRefreshToken.exp * 1000),
+  });
 
   const transformedUser = user.toObject();
 
@@ -168,14 +176,11 @@ const signout = async (req, res) => {
     throw new ResponseError('Refresh token is not provided', 401);
   }
 
-  const user = await User.findOneAndUpdate(
-    { refreshToken },
-    { refreshToken: null }
-  );
+  const deletedToken = await RefreshToken.findOneAndDelete({
+    token: refreshToken,
+  });
 
-  if (!user) throw new ResponseError('Refresh token is invalid', 401);
-
-  await Blacklist.create({ token: refreshToken });
+  if (!deletedToken) throw new ResponseError('Refresh token is invalid', 401);
 
   logger.info('signed out successfully');
   res.clearCookie('refreshToken');
@@ -187,12 +192,15 @@ const refreshToken = async (req, res) => {
   if (!refreshToken)
     throw new ResponseError('Refresh token is not provided', 401);
 
-  const blacklistedToken = await Blacklist.exists({ token: refreshToken });
-  if (blacklistedToken)
-    throw new ResponseError('Refresh token is invalid', 401);
+  const storedToken = await RefreshToken.findOne({
+    token: refreshToken,
+    expiresAt: { $gt: Date.now() },
+  }).populate({
+    path: 'user',
+    populate: { path: 'role' },
+  });
 
-  const user = await User.findOne({ refreshToken }).populate('role');
-  if (!user) throw new ResponseError('Refresh token is invalid', 401);
+  if (!storedToken) throw new ResponseError('Refresh token is invalid', 401);
 
   jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (err, decoded) => {
     if (err) {
@@ -204,7 +212,7 @@ const refreshToken = async (req, res) => {
   });
 
   const newToken = jwt.sign(
-    { id: user._id, role: user.role.name },
+    { sub: storedToken.user._id, role: storedToken.user.role.name },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES }
   );
@@ -227,16 +235,14 @@ const requestResetPassword = async (req, res) => {
     },
     {
       resetToken: crypto.randomBytes(32).toString('hex'),
-      resetTokenExpires: Date.now() + 1 * 60 * 60 * 1000,
+      resetTokenExpires: new Date(Date.now() + 1 * 60 * 60 * 1000),
     },
     { new: true }
   );
 
   if (!user) {
-    logger.warn('user is not registered');
-    return res.status(200).json({
-      code: 200,
-      message: 'Please check your email to reset your password',
+    throw new ResponseError('Validation errors', 400, {
+      email: 'Email is not registered',
     });
   }
 
