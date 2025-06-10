@@ -1,12 +1,15 @@
 import request from 'supertest';
 import app from '../src/app.js';
 import path from 'node:path';
-import User from '../src/models/userModel.js';
-import Role from '../src/models/roleModel.js';
 import {
   createTestUser,
+  getTestUser,
+  updateTestUser,
   createManyTestUsers,
-  removeTestUser,
+  removeAllTestUsers,
+  getTestRole,
+  createTestRole,
+  removeAllTestRoles,
   removeTestFile,
   checkFileExists,
 } from './testUtil.js';
@@ -19,11 +22,13 @@ const testAvatarPath = path.resolve(
 
 describe('GET /api/users/search', () => {
   beforeEach(async () => {
+    await createTestRole();
     await createManyTestUsers();
   });
 
   afterEach(async () => {
-    await removeTestUser();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
@@ -85,16 +90,22 @@ describe('GET /api/users/search', () => {
 });
 
 describe('GET /api/users/:userId', () => {
+  afterEach(async () => {
+    await removeAllTestUsers();
+    await removeAllTestRoles();
+  });
+
   it('should return an error if user is not owned by current user', async () => {
-    const user = await createTestUser();
+    await createTestRole();
+    await createTestUser();
+
+    const user = await getTestUser();
     const result = await request(app)
       .get(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.userToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
-
-    await removeTestUser();
   });
 
   it('should return an error if user id is invalid', async () => {
@@ -117,7 +128,10 @@ describe('GET /api/users/:userId', () => {
   });
 
   it('should return a user for user id is valid', async () => {
-    const user = await createTestUser();
+    await createTestRole();
+    await createTestUser();
+
+    const user = await getTestUser();
     const result = await request(app)
       .get(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -125,20 +139,13 @@ describe('GET /api/users/:userId', () => {
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('User retrieved successfully');
     expect(result.body.data).toBeDefined();
-
-    await removeTestUser();
   });
 });
 
 describe('POST /api/users', () => {
-  let adminRole;
-
-  beforeEach(async () => {
-    adminRole = await Role.findOne({ name: 'admin' });
-  });
-
   afterEach(async () => {
-    await removeTestUser();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
@@ -170,8 +177,10 @@ describe('POST /api/users', () => {
   });
 
   it('should return an error if email already in use', async () => {
+    await createTestRole();
     await createTestUser();
 
+    const role = await getTestRole();
     const result = await request(app)
       .post('/api/users')
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -179,7 +188,7 @@ describe('POST /api/users', () => {
         username: 'test1',
         email: 'test@me.com',
         password: 'test123',
-        role: adminRole._id,
+        role: role._id,
       });
 
     expect(result.status).toBe(409);
@@ -188,8 +197,10 @@ describe('POST /api/users', () => {
   });
 
   it('should return an error if username already in use', async () => {
+    await createTestRole();
     await createTestUser();
 
+    const role = await getTestRole();
     const result = await request(app)
       .post('/api/users')
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -197,7 +208,7 @@ describe('POST /api/users', () => {
         username: 'test',
         email: 'test1@me.com',
         password: 'test123',
-        role: adminRole._id,
+        role: role._id,
       });
 
     expect(result.status).toBe(409);
@@ -222,6 +233,9 @@ describe('POST /api/users', () => {
   });
 
   it('should create a user if input data is valid', async () => {
+    await createTestRole();
+
+    const role = await getTestRole();
     const result = await request(app)
       .post('/api/users')
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -229,7 +243,7 @@ describe('POST /api/users', () => {
         username: 'test',
         email: 'test@me.com',
         password: 'test123',
-        role: adminRole._id,
+        role: role._id,
       });
 
     expect(result.status).toBe(201);
@@ -238,19 +252,18 @@ describe('POST /api/users', () => {
 });
 
 describe('PATCH /api/users/:userId/profile', () => {
-  let user;
-  let adminRole;
-
   beforeEach(async () => {
-    adminRole = await Role.findOne({ name: 'admin' });
-    user = await createTestUser();
+    await createTestRole();
+    await createTestUser();
   });
 
   afterEach(async () => {
-    await removeTestUser();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user is not owned by current user', async () => {
+    const user = await getTestUser();
     const result = await request(app)
       .patch(`/api/users/${user._id}/profile`)
       .set('Authorization', `Bearer ${global.userToken}`);
@@ -279,6 +292,7 @@ describe('PATCH /api/users/:userId/profile', () => {
   });
 
   it('should return an error if input data is invalid', async () => {
+    const user = await getTestUser();
     const result = await request(app)
       .patch(`/api/users/${user._id}/profile`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -295,6 +309,7 @@ describe('PATCH /api/users/:userId/profile', () => {
   it('should return an error if email is already in use', async () => {
     await createTestUser({ email: 'test1@me.com' });
 
+    const user = await getTestUser();
     const result = await request(app)
       .patch(`/api/users/${user._id}/profile`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -310,6 +325,7 @@ describe('PATCH /api/users/:userId/profile', () => {
   it('should return an error if username is already in use', async () => {
     await createTestUser({ username: 'test1' });
 
+    const user = await getTestUser();
     const result = await request(app)
       .patch(`/api/users/${user._id}/profile`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -323,6 +339,7 @@ describe('PATCH /api/users/:userId/profile', () => {
   });
 
   it('should update profile without changing avatar', async () => {
+    const user = await getTestUser();
     const result = await request(app)
       .patch(`/api/users/${user._id}/profile`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -337,6 +354,7 @@ describe('PATCH /api/users/:userId/profile', () => {
   });
 
   it('should update profile with changing avatar', async () => {
+    const user = await getTestUser();
     const result = await request(app)
       .patch(`/api/users/${user._id}/profile`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -345,7 +363,9 @@ describe('PATCH /api/users/:userId/profile', () => {
       .field('username', 'test1')
       .attach('avatar', testAvatarPath);
 
-    const updatedUser = await User.findById(user._id);
+    const updatedUser = await getTestUser({
+      username: result.body.data.username,
+    });
     const avatarExists = await checkFileExists(updatedUser.avatar);
 
     expect(result.status).toBe(200);
@@ -359,19 +379,18 @@ describe('PATCH /api/users/:userId/profile', () => {
 });
 
 describe('PATCH /api/users/:userId', () => {
-  let user;
-  let adminRole;
-
   beforeEach(async () => {
-    adminRole = await Role.findOne({ name: 'admin' });
-    user = await createTestUser();
+    await createTestRole();
+    await createTestUser();
   });
 
   afterEach(async () => {
-    await removeTestUser();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user is not owned by current user', async () => {
+    const user = await getTestUser();
     const result = await request(app)
       .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.userToken}`);
@@ -400,6 +419,7 @@ describe('PATCH /api/users/:userId', () => {
   });
 
   it('should return an error if input data is invalid', async () => {
+    const user = await getTestUser();
     const result = await request(app)
       .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -414,6 +434,7 @@ describe('PATCH /api/users/:userId', () => {
   });
 
   it('should return an error if role is invalid', async () => {
+    const user = await getTestUser();
     const result = await request(app)
       .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -430,13 +451,15 @@ describe('PATCH /api/users/:userId', () => {
   it('should return an error if email is already in use', async () => {
     await createTestUser({ email: 'test1@me.com' });
 
+    const user = await getTestUser();
+    const role = await getTestRole();
     const result = await request(app)
       .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
       .field('username', 'test1')
-      .field('role', adminRole._id.toString());
+      .field('role', role._id.toString());
 
     expect(result.status).toBe(409);
     expect(result.body.message).toBe('Resource already in use');
@@ -446,13 +469,15 @@ describe('PATCH /api/users/:userId', () => {
   it('should return an error if username is already in use', async () => {
     await createTestUser({ username: 'test1' });
 
+    const user = await getTestUser();
+    const role = await getTestRole();
     const result = await request(app)
       .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
       .field('username', 'test1')
-      .field('role', adminRole._id.toString());
+      .field('role', role._id.toString());
 
     expect(result.status).toBe(409);
     expect(result.body.message).toBe('Resource already in use');
@@ -460,22 +485,25 @@ describe('PATCH /api/users/:userId', () => {
   });
 
   it('should update user without changing avatar', async () => {
+    const user = await getTestUser();
+    const role = await getTestRole();
     const result = await request(app)
       .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('email', 'test1@me.com')
       .field('username', 'test1')
-      .field('role', adminRole._id.toString());
+      .field('role', role._id.toString());
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('User updated successfully');
     expect(result.body.data.email).toBe('test1@me.com');
     expect(result.body.data.username).toBe('test1');
-    expect(result.body.data.role).toBe(adminRole._id.toString());
+    expect(result.body.data.role).toBe(role._id.toString());
   });
 
   it('should update user with changing avatar', async () => {
+    const user = await getTestUser();
     const result = await request(app)
       .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`)
@@ -484,7 +512,9 @@ describe('PATCH /api/users/:userId', () => {
       .field('username', 'test1')
       .attach('avatar', testAvatarPath);
 
-    const updatedUser = await User.findById(user._id);
+    const updatedUser = await getTestUser({
+      username: result.body.data.username,
+    });
     const avatarExists = await checkFileExists(updatedUser.avatar);
 
     expect(result.status).toBe(200);
@@ -498,17 +528,18 @@ describe('PATCH /api/users/:userId', () => {
 });
 
 describe('DELETE /api/users/:userId', () => {
-  let user;
-
   beforeEach(async () => {
-    user = await createTestUser();
+    await createTestRole();
+    await createTestUser();
   });
 
   afterEach(async () => {
-    await removeTestUser();
+    await removeAllTestUsers();
+    await removeAllTestRoles();
   });
 
   it('should return an error if user is not owned by current user', async () => {
+    const user = await getTestUser();
     const result = await request(app)
       .delete(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.userToken}`);
@@ -537,6 +568,7 @@ describe('DELETE /api/users/:userId', () => {
   });
 
   it('should delete user without removing default avatar', async () => {
+    const user = await getTestUser();
     const result = await request(app)
       .delete(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
@@ -557,8 +589,8 @@ describe('DELETE /api/users/:userId', () => {
       folder: 'avatars',
     });
 
-    user.avatar = uploadResult.secure_url;
-    await user.save();
+    await updateTestUser({ avatar: uploadResult.secure_url });
+    const user = await getTestUser();
 
     const result = await request(app)
       .delete(`/api/users/${user._id}`)
