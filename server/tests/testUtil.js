@@ -32,7 +32,12 @@ export const createTestRefreshToken = async (fields = {}) => {
 };
 
 export const removeAllTestRefreshTokens = async () => {
-  await RefreshToken.deleteMany();
+  const tokens = await RefreshToken.find()
+    .populate('user') 
+    .where('user.username').regex(/^test/); 
+  const tokenIds = tokens.map((t) => t._id);
+
+  await RefreshToken.deleteMany({ _id: { $in: tokenIds } });
 };
 
 export const getTestUser = async (fields = {}) => {
