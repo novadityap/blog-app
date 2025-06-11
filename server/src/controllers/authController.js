@@ -18,25 +18,22 @@ import {
 
 const signup = async (req, res) => {
   const fields = validate(signupSchema, req.body);
+  const errors = {};
 
   const isUsernameTaken = await User.exists({
     username: fields.username,
   });
 
-  if (isUsernameTaken) {
-    throw new ResponseError('Resource already in use', 409, {
-      username: 'Username already in use',
-    });
-  }
+  if (isUsernameTaken) errors.username = 'Username already in use';
 
   const isEmailTaken = await User.exists({
     email: fields.email,
   });
 
-  if (isEmailTaken) {
-    throw new ResponseError('Resource already in use', 409, {
-      email: 'Email already in use',
-    });
+  if (isEmailTaken) errors.email = 'Email already in use';
+
+  if (Object.keys(errors).length > 0) {
+    throw new ResponseError('Resource already in use', 409, errors);
   }
 
   const userRole = await Role.findOne({ name: 'user' });

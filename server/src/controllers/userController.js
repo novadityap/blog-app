@@ -48,17 +48,15 @@ const updateProfile = async (req, res) => {
     formSchema: updateProfileSchema,
   });
 
+  const errors = {};
+
   if (fields.username && fields.username !== user.username) {
     const isUsernameTaken = await User.exists({
       username: fields.username,
       _id: { $ne: userId },
     });
 
-    if (isUsernameTaken) {
-      throw new ResponseError('Resource already in use', 409, {
-        username: 'Username already in use',
-      });
-    }
+    if (isUsernameTaken) errors.username = 'Username already in use';
   }
 
   if (fields.email && fields.email !== user.email) {
@@ -67,11 +65,11 @@ const updateProfile = async (req, res) => {
       _id: { $ne: userId },
     });
 
-    if (isEmailTaken) {
-      throw new ResponseError('Resource already in use', 409, {
-        email: 'Email already in use',
-      });
-    }
+    if (isEmailTaken) errors.email = 'Email already in use';
+  }
+
+  if (Object.keys(errors).length > 0) {
+    throw new ResponseError('Resource already in use', 409, errors);
   }
 
   if (fields.password) fields.password = await bcrypt.hash(fields.password, 10);
