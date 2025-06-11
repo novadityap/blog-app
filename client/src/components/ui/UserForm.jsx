@@ -23,6 +23,7 @@ import {
   FormControl,
 } from '@/components/shadcn-ui/form';
 import { useEffect } from 'react';
+import { TbLoader } from 'react-icons/tb';
 
 const UserForm = ({
   initialValues,
@@ -32,9 +33,11 @@ const UserForm = ({
   isCreate,
 }) => {
   const [fetchRoles, { data: roles }] = useLazyListRolesQuery();
-  const { form, handleSubmit } = useFormHandler({
+  const { form, handleSubmit, isLoading } = useFormHandler({
     formType: 'datatable',
-    ...(!isCreate && { params: [{ name: 'userId', value: initialValues._id }] }),
+    ...(!isCreate && {
+      params: [{ name: 'userId', value: initialValues._id }],
+    }),
     mutation,
     onComplete,
     defaultValues: {
@@ -42,7 +45,7 @@ const UserForm = ({
       username: initialValues.username ?? '',
       email: initialValues.email ?? '',
       password: '',
-      role: initialValues.role._id ?? '',
+      role: initialValues.role?._id ?? '',
     },
   });
 
@@ -160,7 +163,18 @@ const UserForm = ({
           <Button variant="secondary" type="button" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit">{isCreate ? 'Create' : 'Save Changes'}</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <TbLoader className="animate-spin" />
+                {isCreate ? 'Creating..' : 'Updating..'}
+              </>
+            ) : isCreate ? (
+              'Create'
+            ) : (
+              'Update'
+            )}
+          </Button>
         </div>
       </form>
     </Form>

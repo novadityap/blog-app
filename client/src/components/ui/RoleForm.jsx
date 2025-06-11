@@ -9,6 +9,7 @@ import {
   FormItem,
   FormControl,
 } from '@/components/shadcn-ui/form';
+import { TbLoader } from 'react-icons/tb';
 
 const RoleForm = ({
   initialValues,
@@ -17,9 +18,11 @@ const RoleForm = ({
   onCancel,
   isCreate,
 }) => {
-  const { form, handleSubmit } = useFormHandler({
+  const { form, handleSubmit, isLoading } = useFormHandler({
     formType: 'datatable',
-    ...(!isCreate && { params: [{ name: 'roleId', value: initialValues._id }] }),
+    ...(!isCreate && {
+      params: [{ name: 'roleId', value: initialValues._id }],
+    }),
     mutation,
     onComplete,
     defaultValues: {
@@ -47,7 +50,18 @@ const RoleForm = ({
           <Button variant="secondary" type="button" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit">{isCreate ? 'Create' : 'Save Changes'}</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <TbLoader className="animate-spin" />
+                {isCreate ? 'Creating..' : 'Updating..'}
+              </>
+            ) : isCreate ? (
+              'Create'
+            ) : (
+              'Update'
+            )}
+          </Button>
         </div>
       </form>
     </Form>

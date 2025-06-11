@@ -2,6 +2,7 @@ import { useShowPostQuery } from '@/services/postApi';
 import {
   useCreateCommentMutation,
   useListCommentsByPostQuery,
+  useRemoveCommentMutation,
 } from '@/services/commentApi';
 import { useLikePostMutation } from '@/services/postApi';
 import {
@@ -33,7 +34,7 @@ import {
 } from '@/components/shadcn-ui/avatar';
 import { useState } from 'react';
 import dayjs from 'dayjs';
-import { TbLoader, TbInfoCircle, TbHeartFilled } from 'react-icons/tb';
+import { TbLoader, TbInfoCircle, TbHeartFilled, TbTrash } from 'react-icons/tb';
 import { cn } from '@/lib/utils';
 import { useSelector } from 'react-redux';
 
@@ -49,7 +50,7 @@ const CreateComment = ({
   const { form, handleSubmit, isLoading, isSuccess } = useFormHandler({
     params: [
       { name: 'postId', value: postId },
-      { name: 'parentCommentId', value: parentCommentId }
+      { name: 'parentCommentId', value: parentCommentId },
     ],
     mutation: useCreateCommentMutation,
     defaultValues: {
@@ -111,7 +112,7 @@ const CreateComment = ({
   );
 };
 
-const Comments = ({ comments, postId, token }) => {
+const Comments = ({ comments, postId, token, onRemove, currentUser }) => {
   const [replyToCommentId, setReplyToCommentId] = useState(null);
   const topLevelComments = comments.filter(c => !c.parentCommentId);
   const getReplies = parentId =>
@@ -131,10 +132,20 @@ const Comments = ({ comments, postId, token }) => {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <p className="font-semibold text-gray-800">
-              {comment.user.username}
-            </p>
-            <p className="text-gray-600 text-sm">{comment.text}</p>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="font-semibold text-gray-800">
+                  {comment.user.username}
+                </p>
+                <p className="text-gray-600 text-sm">{comment.text}</p>
+              </div>
+              {token && currentUser._id === comment.user._id && (
+                <TbTrash
+                  className="size-5 cursor-pointer text-red-600"
+                  onClick={() => onRemove(postId, comment._id)}
+                />
+              )}
+            </div>
             {token && (
               <Button
                 variant="ghost"
@@ -168,10 +179,20 @@ const Comments = ({ comments, postId, token }) => {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold text-gray-800">
-                        {reply.user.username}
-                      </p>
-                      <p className="text-gray-600 text-sm">{reply.text}</p>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-semibold text-gray-800">
+                            {reply.user.username}
+                          </p>
+                          <p className="text-gray-600 text-sm">{reply.text}</p>
+                        </div>
+                        {token && currentUser._id === comment.user._id && (
+                          <TbTrash
+                            className="size-5 cursor-pointer text-red-600"
+                            onClick={() => onRemove(postId, comment._id)}
+                          />
+                        )}
+                      </div>
                       {token && (
                         <Button
                           variant="ghost"
@@ -248,7 +269,7 @@ const CommentsSkeleton = () => {
   );
 };
 
-const LikeButton = ({ likes, onLike, currentUser, totalLikes, navigate }) => {
+const LikeButton = ({ likes, onLike, currentUser, totalLikes }) => {
   const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
@@ -275,6 +296,7 @@ const PostDetail = () => {
   const { token, currentUser } = useSelector(state => state.auth);
   const [postId, setPostId] = useState(null);
   const [likePost] = useLikePostMutation();
+  const [removeComment] = useRemoveCommentMutation();
   const { data: comments, isLoading: isLoadingComments } =
     useListCommentsByPostQuery(postId);
   const {
@@ -284,6 +306,10 @@ const PostDetail = () => {
   } = useShowPostQuery(postId, {
     refetchOnMountOrArgChange: true,
   });
+
+  const handleRemoveComment = async (postId, commentId) => {
+    await removeComment({ postId, commentId });
+  };
 
   const handleLike = () => {
     if (!token) {
@@ -317,7 +343,7 @@ const PostDetail = () => {
   }
 
   return (
-    <Card className="max-w-3xl">
+    <Card className="w-full max-w-3xl">
       <CardHeader>
         <div className="flex items-center gap-x-2 mb-6">
           <Avatar className="w-10 h-10">
@@ -396,6 +422,8 @@ const PostDetail = () => {
             token={token}
             comments={comments?.data}
             postId={post?.data?._id}
+            onRemove={handleRemoveComment}
+            currentUser={currentUser}
           />
         )}
       </CardFooter>

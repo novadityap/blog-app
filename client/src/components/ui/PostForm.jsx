@@ -20,6 +20,7 @@ import {
 import { useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
 import { AspectRatio } from '@/components/shadcn-ui/aspect-ratio';
+import { TbLoader } from 'react-icons/tb';
 
 const PostForm = ({
   initialValues,
@@ -29,9 +30,11 @@ const PostForm = ({
   isCreate,
 }) => {
   const [fetchCategories, { data: categories }] = useLazyListCategoriesQuery();
-  const { form, handleSubmit } = useFormHandler({
+  const { form, handleSubmit, isLoading } = useFormHandler({
     formTipe: 'datatable',
-    ...(!isCreate && { params: [{ name: 'postId', value: initialValues._id }] }),
+    ...(!isCreate && {
+      params: [{ name: 'postId', value: initialValues._id }],
+    }),
     formType: 'post',
     mutation,
     onComplete,
@@ -39,7 +42,7 @@ const PostForm = ({
       postImage: '',
       title: initialValues.title ?? '',
       content: initialValues.content ?? '',
-      category: initialValues.category._id ?? '',
+      category: initialValues.category?._id ?? '',
     },
   });
 
@@ -156,7 +159,18 @@ const PostForm = ({
           <Button variant="secondary" type="button" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit">{isCreate ? 'Create' : 'Save Changes'}</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <TbLoader className="animate-spin" />
+                {isCreate ? 'Creating..' : 'Updating..'}
+              </>
+            ) : isCreate ? (
+              'Create'
+            ) : (
+              'Update'
+            )}
+          </Button>
         </div>
       </form>
     </Form>
