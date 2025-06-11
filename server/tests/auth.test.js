@@ -14,7 +14,7 @@ import {
   removeAllTestRoles,
   createTestRefreshToken,
   getTestRefreshToken,
-  removeAllRefreshTokens,
+  removeAllTestRefreshTokens,
 } from './testUtil.js';
 import jwt from 'jsonwebtoken';
 import sendMail from '../src/utils/sendMail.js';
@@ -212,7 +212,7 @@ describe('POST /api/auth/signout', () => {
   afterEach(async () => {
     await removeAllTestUsers();
     await removeAllTestRoles();
-    await removeAllRefreshTokens();
+    await removeAllTestRefreshTokens();
   });
 
   it('should return an error if refresh token is not provided', async () => {
@@ -253,7 +253,7 @@ describe('POST /api/auth/refresh-token', () => {
   afterEach(async () => {
     await removeAllTestUsers();
     await removeAllTestRoles();
-    await removeAllRefreshTokens();
+    await removeAllTestRefreshTokens();
   });
 
   it('should return an error if refresh token is not provided', async () => {

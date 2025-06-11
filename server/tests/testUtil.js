@@ -31,7 +31,7 @@ export const createTestRefreshToken = async (fields = {}) => {
   });
 };
 
-export const removeAllRefreshTokens = async () => {
+export const removeAllTestRefreshTokens = async () => {
   await RefreshToken.deleteMany();
 };
 
