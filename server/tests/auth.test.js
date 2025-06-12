@@ -81,13 +81,12 @@ describe('POST /api/auth/verify-email/:token', () => {
   });
 
   it('should return an error if verification token has expired', async () => {
-    await updateTestUser({
+    const updatedUser = await updateTestUser({
       verificationTokenExpires: new Date(Date.now() - 5 * 60 * 1000),
     });
 
-    const user = await getTestUser();
     const result = await request(app).post(
-      `/api/auth/verify-email/${user.verificationToken}`
+      `/api/auth/verify-email/${updatedUser.verificationToken}`
     );
 
     expect(result.status).toBe(401);

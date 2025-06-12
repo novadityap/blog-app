@@ -77,7 +77,7 @@ export const createManyTestUsers = async () => {
 };
 
 export const updateTestUser = async (fields = {}) => {
-  await User.findOneAndUpdate(
+  return await User.findOneAndUpdate(
     { username: 'test' }, 
     { ...fields },
     { new: true }
@@ -227,7 +227,7 @@ export const createManyTestPosts = async () => {
 };
 
 export const updateTestPost = async (fields = {}) => {
-  await Post.findOneAndUpdate(
+  return await Post.findOneAndUpdate(
     { title: 'test' }, 
     { ...fields },
     { new: true }

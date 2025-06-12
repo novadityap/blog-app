@@ -589,14 +589,13 @@ describe('DELETE /api/users/:userId', () => {
       folder: 'avatars',
     });
 
-    await updateTestUser({ avatar: uploadResult.secure_url });
-    const user = await getTestUser();
+    const updatedUser = await updateTestUser({ avatar: uploadResult.secure_url });
 
     const result = await request(app)
-      .delete(`/api/users/${user._id}`)
+      .delete(`/api/users/${updatedUser._id}`)
       .set('Authorization', `Bearer ${global.adminToken}`);
 
-    const avatarExists = await checkFileExists(user.avatar);
+    const avatarExists = await checkFileExists(updatedUser.avatar);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('User deleted successfully');
