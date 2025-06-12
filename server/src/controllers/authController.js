@@ -126,7 +126,11 @@ const resendVerification = async (req, res) => {
 const signin = async (req, res) => {
   const fields = validate(signinSchema, req.body);
 
-  const user = await User.findOne({ email: fields.email }).populate('role');
+  const user = await User.findOne({ 
+    email: fields.email,
+    isVerified: true
+  }).populate('role');
+  
   if (!user || !(await bcrypt.compare(fields.password, user.password)))
     throw new ResponseError('Email or password is invalid', 401);
 

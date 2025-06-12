@@ -187,6 +187,10 @@ describe('POST /api/auth/signin', () => {
   });
 
   it('should sign in if credentials are valid', async () => {
+    await updateTestUser({
+      isVerified: true
+    });
+    
     const result = await request(app).post('/api/auth/signin').send({
       email: 'test@me.com',
       password: 'test123',
