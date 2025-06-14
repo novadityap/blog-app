@@ -4,53 +4,56 @@ import Post from '../src/models/postModel.js';
 import Role from '../src/models/roleModel.js';
 import Comment from '../src/models/commentModel.js';
 import RefreshToken from '../src/models/refreshTokenModel.js';
-import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import cloudinary from '../src/utils/cloudinary.js';
 import extractPublicId from '../src/utils/extractPublicId.js';
 
-export const getTestRefreshToken = async (fields = {}) => {
+export const getTestRefreshToken = async () => {
   const user = await getTestUser();
 
   return await RefreshToken.findOne({
     user: user._id,
-    ...fields,
   });
 };
 
-export const createTestRefreshToken = async (fields = {}) => {
+export const createTestRefreshToken = async () => {
   const user = await getTestUser();
-  const token = createToken('refresh', 'admin', user._id);
+  const token = jwt.sign(
+    {
+      sub: user._id,
+      role: user.role.name,
+    },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: process.env.JWT_REFRESH_EXPIRES }
+  );
 
-  await RefreshToken.create({
+  return await RefreshToken.create({
     token,
     user: user._id,
     expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-    ...fields,
   });
 };
 
 export const removeAllTestRefreshTokens = async () => {
-  const tokens = await RefreshToken.find()
-    .populate('user') 
-    .where('user.username').regex(/^test/); 
-  const tokenIds = tokens.map((t) => t._id);
+  const testUsers = await User.find({
+    username: { $regex: '^test' },
+  }).select('_id');
+  const testUserIds = testUsers.map(user => user._id);
 
-  await RefreshToken.deleteMany({ _id: { $in: tokenIds } });
-};
-
-export const getTestUser = async (fields = {}) => {
-  return await User.findOne({
-    username: 'test',
-    ...fields,
+  await RefreshToken.deleteMany({
+    userId: { $in: testUserIds },
   });
 };
 
-export const createTestUser = async (fields = {}) => {
-  const role = await getTestRole();
+export const getTestUser = async (username = 'test') => {
+  return await User.findOne({ username }).populate('role');
+};
 
-  await User.create({
+export const createTestUser = async (fields = {}) => {
+  const role = await getTestRole('admin');
+
+  return await User.create({
     username: 'test',
     email: 'test@me.com',
     password: await bcrypt.hash('test123', 10),
@@ -60,46 +63,40 @@ export const createTestUser = async (fields = {}) => {
 };
 
 export const createManyTestUsers = async () => {
-  const role = await getTestRole();
-  const users = [];
+  const role = await getTestRole('admin');
 
   for (let i = 0; i < 15; i++) {
-    users.push(
-      createTestUser({
-        username: `test${i}`,
-        email: `test${i}@me.com`,
-        role: role._id,
-      })
-    );
+    await User.create({
+      username: `test${i}`,
+      email: `test${i}@email.com`,
+      password: await bcrypt.hash('test123', 10),
+      role: role._id,
+      avatar: process.env.DEFAULT_AVATAR_URL,
+    });
   }
-
-  await Promise.all(users);
 };
 
 export const updateTestUser = async (fields = {}) => {
   return await User.findOneAndUpdate(
-    { username: 'test' }, 
+    { username: 'test' },
     { ...fields },
     { new: true }
   );
-}
+};
 
 export const removeAllTestUsers = async () => {
   await User.deleteMany({ username: { $regex: /^test\d*/ } });
 };
 
-export const getTestComment = async (fields = {}) => {
-  return await Comment.findOne({
-    text: 'test',
-    ...fields,
-  }).populate('post');
+export const getTestComment = async (text = 'test') => {
+  return await Comment.findOne({ text }).populate('post');
 };
 
 export const createTestComment = async (fields = {}) => {
   const user = await getTestUser();
   const post = await getTestPost();
-  
-  await Comment.create({
+
+  return await Comment.create({
     text: 'test',
     user: user._id,
     post: post._id,
@@ -108,95 +105,77 @@ export const createTestComment = async (fields = {}) => {
 };
 
 export const createManyTestComments = async () => {
-  const comments = [];
+  const user = await getTestUser();
+  const post = await getTestPost();
 
   for (let i = 0; i < 15; i++) {
-    comments.push(
-      createTestComment({
-        text: `test${i}`,
-      })
-    );
+    await Comment.create({
+      text: `test${i}`,
+      user: user._id,
+      post: post._id,
+    });
   }
-
-  await Promise.all(comments);
 };
 
 export const removeAllTestComments = async () => {
   await Comment.deleteMany({ text: { $regex: /^test\d*/ } });
 };
 
-export const getTestRole = async (fields = {}) => {
-  return await Role.findOne({
-    name: 'test',
-    ...fields,
-  });
+export const getTestRole = async (name = 'test') => {
+  return await Role.findOne({ name });
 };
 
 export const createTestRole = async (fields = {}) => {
-  await Role.create({
+  return await Role.create({
     name: 'test',
     ...fields,
   });
 };
 
 export const createManyTestRoles = async () => {
-  const roles = [];
-
   for (let i = 0; i < 15; i++) {
-    roles.push(
-      createTestRole({
-        name: `test${i}`,
-      })
-    );
+    await Role.create({
+      name: `test${i}`,
+    });
   }
-
-  await Promise.all(roles);
 };
 
 export const removeAllTestRoles = async () => {
   await Role.deleteMany({ name: { $regex: /^test\d*/ } });
 };
 
-export const getTestCategory = async (fields = {}) => {
-  return await Category.findOne({
-    name: 'test',
-    ...fields,
-  });
+export const getTestCategory = async (name = 'test') => {
+  return await Category.findOne({ name });
 };
 
 export const createTestCategory = async (fields = {}) => {
-  await Category.create({
+  return await Category.create({
     name: 'test',
     ...fields,
   });
 };
 
 export const createManyTestCategories = async () => {
-  const categories = [];
-
   for (let i = 0; i < 15; i++) {
-    categories.push(createTestCategory({ name: `test${i}` }));
+    await Category.create({
+      name: `test${i}`,
+    });
   }
-
-  await Promise.all(categories);
 };
 
 export const removeAllTestCategories = async () => {
   await Category.deleteMany({ name: { $regex: /^test\d*/ } });
 };
 
-export const getTestPost = async (fields = {}) => {
-  return await Post.findOne({
-    title: 'test',
-    ...fields,
-  });
+export const getTestPost = async (title = 'test') => {
+  return await Post.findOne({ title });
 };
 
 export const createTestPost = async (fields = {}) => {
   const user = await getTestUser();
   const category = await getTestCategory();
 
-  await Post.create({
+  return await Post.create({
     title: 'test',
     slug: 'test',
     content: 'test',
@@ -209,48 +188,39 @@ export const createTestPost = async (fields = {}) => {
 export const createManyTestPosts = async () => {
   const user = await getTestUser();
   const category = await getTestCategory();
-  const posts = [];
 
   for (let i = 0; i < 15; i++) {
-    posts.push(
-      createTestPost({
-        title: `test${i}`,
-        slug: `test${i}`,
-        content: `test${i}`,
-        user: user._id,
-        category: category._id,
-      })
-    );
+    await Post.create({
+      title: `test${i}`,
+      slug: `test${i}`,
+      content: `test${i}`,
+      user: user._id,
+      category: category._id,
+    });
   }
-
-  return await Promise.all(posts);
 };
 
 export const updateTestPost = async (fields = {}) => {
   return await Post.findOneAndUpdate(
-    { title: 'test' }, 
+    { title: 'test' },
     { ...fields },
     { new: true }
   );
-}
+};
 
 export const removeAllTestPosts = async () => {
   await Post.deleteMany({ title: { $regex: /^test\d*/ } });
 };
 
-export const createToken = (type, role, userId) => {
-  return jwt.sign(
+export const createAccessToken = async () => {
+  const user = await getTestUser();
+  global.accessToken = jwt.sign(
     {
-      sub: userId || new mongoose.Types.ObjectId(),
-      role: role,
+      sub: user._id,
+      role: user.role.name,
     },
-    type === 'auth' ? process.env.JWT_SECRET : process.env.JWT_REFRESH_SECRET,
-    {
-      expiresIn:
-        type === 'auth'
-          ? process.env.JWT_EXPIRES
-          : process.env.JWT_REFRESH_EXPIRES,
-    }
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES }
   );
 };
 

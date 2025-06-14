@@ -2,16 +2,21 @@ import 'dotenv/config';
 import connectDB from './src/config/connection.js';
 import mongoose from 'mongoose';
 import seedRole from './src/seeders/roleSeeder.js';
-import { createToken } from './tests/testUtil.js';
+import path from 'node:path';
 
 beforeAll(async () => {
   await connectDB();
   await mongoose.connection.db.dropDatabase();
   await seedRole();
 
-  global.userToken = createToken('auth', 'user');
-  global.adminToken = createToken('auth', 'admin');
-  global.adminRefreshToken = createToken('refresh', 'admin');
+  global.testAvatarPath = path.resolve(
+    process.env.AVATAR_DIR_TEST,
+    'test-avatar.jpg'
+  );
+  global.testPostImagePath = path.resolve(
+    process.env.POST_DIR_TEST,
+    'test-post.jpg'
+  );
   global.validObjectId = new mongoose.Types.ObjectId();
 });
 
