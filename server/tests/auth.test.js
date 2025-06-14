@@ -6,12 +6,10 @@ jest.mock('../src/utils/sendMail.js', () => ({
 import request from 'supertest';
 import app from '../src/app.js';
 import {
+  createAccessToken,
   createTestUser,
   removeAllTestUsers,
   updateTestUser,
-  getTestUser,
-  createTestRole,
-  removeAllTestRoles,
   createTestRefreshToken,
   getTestRefreshToken,
   removeAllTestRefreshTokens,
@@ -23,7 +21,6 @@ describe('POST /api/auth/signup', () => {
   afterEach(async () => {
     sendMail.mockClear();
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if invalid input data', async () => {
@@ -41,7 +38,6 @@ describe('POST /api/auth/signup', () => {
   });
 
   it('should not create a new user if email already in use', async () => {
-    await createTestRole();
     await createTestUser();
 
     const result = await request(app).post('/api/auth/signup').send({
@@ -68,16 +64,11 @@ describe('POST /api/auth/signup', () => {
 
 describe('POST /api/auth/verify-email/:token', () => {
   beforeEach(async () => {
-    await createTestRole();
-    await createTestUser({
-      verificationToken: '123',
-      verificationTokenExpires: new Date(Date.now() + 5 * 60 * 1000),
-    });
+    await createTestUser();
   });
 
   afterEach(async () => {
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if verification token has expired', async () => {
@@ -96,9 +87,12 @@ describe('POST /api/auth/verify-email/:token', () => {
   });
 
   it('should verify email if verification token is valid', async () => {
-    const user = await getTestUser();
+    const updatedUser = await updateTestUser({
+      verificationToken: '123',
+      verificationTokenExpires: new Date(Date.now() + 5 * 60 * 1000),
+    });
     const result = await request(app).post(
-      `/api/auth/verify-email/${user.verificationToken}`
+      `/api/auth/verify-email/${updatedUser.verificationToken}`
     );
 
     expect(result.status).toBe(200);
@@ -110,7 +104,6 @@ describe('POST /api/auth/resend-verification', () => {
   afterEach(async () => {
     sendMail.mockClear();
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if input data is invalid', async () => {
@@ -137,7 +130,6 @@ describe('POST /api/auth/resend-verification', () => {
   });
 
   it('should send verification email if user is registered', async () => {
-    await createTestRole();
     await createTestUser();
 
     const result = await request(app)
@@ -156,13 +148,11 @@ describe('POST /api/auth/resend-verification', () => {
 
 describe('POST /api/auth/signin', () => {
   beforeEach(async () => {
-    await createTestRole();
     await createTestUser();
   });
 
   afterEach(async () => {
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if input data is invalid', async () => {
@@ -188,9 +178,9 @@ describe('POST /api/auth/signin', () => {
 
   it('should sign in if credentials are valid', async () => {
     await updateTestUser({
-      isVerified: true
+      isVerified: true,
     });
-    
+
     const result = await request(app).post('/api/auth/signin').send({
       email: 'test@me.com',
       password: 'test123',
@@ -212,16 +202,20 @@ describe('POST /api/auth/signin', () => {
 });
 
 describe('POST /api/auth/signout', () => {
+  beforeEach(async () => {
+    await createTestUser();
+    await createAccessToken();
+  });
+
   afterEach(async () => {
-    await removeAllTestUsers();
-    await removeAllTestRoles();
     await removeAllTestRefreshTokens();
+    await removeAllTestUsers();
   });
 
   it('should return an error if refresh token is not provided', async () => {
     const result = await request(app)
       .post('/api/auth/signout')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(401);
     expect(result.body.message).toBe('Refresh token is not provided');
@@ -230,22 +224,21 @@ describe('POST /api/auth/signout', () => {
   it('should return an error if refresh token is not found in the database', async () => {
     const result = await request(app)
       .post('/api/auth/signout')
-      .set('Authorization', `Bearer ${global.adminToken}`)
-      .set('Cookie', `refreshToken=${global.adminRefreshToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`)
+      .set('Cookie', `refreshToken=${global.validObjectId}`);
 
     expect(result.status).toBe(401);
     expect(result.body.message).toBe('Refresh token is invalid');
   });
 
   it('should sign out if refresh token is valid', async () => {
-    await createTestRole();
     await createTestUser();
     await createTestRefreshToken();
 
     const refreshToken = await getTestRefreshToken();
     const result = await request(app)
       .post('/api/auth/signout')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .set('Cookie', `refreshToken=${refreshToken.token}`);
 
     expect(result.status).toBe(204);
@@ -255,14 +248,13 @@ describe('POST /api/auth/signout', () => {
 describe('POST /api/auth/refresh-token', () => {
   afterEach(async () => {
     await removeAllTestUsers();
-    await removeAllTestRoles();
     await removeAllTestRefreshTokens();
   });
 
   it('should return an error if refresh token is not provided', async () => {
     const result = await request(app)
       .post('/api/auth/refresh-token')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(401);
     expect(result.body.message).toBe('Refresh token is not provided');
@@ -271,7 +263,7 @@ describe('POST /api/auth/refresh-token', () => {
   it('should return an error if refresh token is not found in the database', async () => {
     const result = await request(app)
       .post('/api/auth/refresh-token')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .set('Cookie', `refreshToken=${global.adminRefreshToken}`);
 
     expect(result.status).toBe(401);
@@ -279,14 +271,13 @@ describe('POST /api/auth/refresh-token', () => {
   });
 
   it('should refresh token if refresh token is valid', async () => {
-    await createTestRole();
     await createTestUser();
     await createTestRefreshToken();
 
     const refreshToken = await getTestRefreshToken();
     const result = await request(app)
       .post('/api/auth/refresh-token')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .set('Cookie', `refreshToken=${refreshToken.token}`);
 
     expect(result.status).toBe(200);
@@ -301,7 +292,6 @@ describe('POST /api/auth/refresh-token', () => {
 describe('POST /api/auth/request-reset-password', () => {
   afterEach(async () => {
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if input data is invalid', async () => {
@@ -327,7 +317,6 @@ describe('POST /api/auth/request-reset-password', () => {
   });
 
   it('should send reset password email if user is registered', async () => {
-    await createTestRole();
     await createTestUser({ isVerified: true });
 
     const result = await request(app)
@@ -345,16 +334,11 @@ describe('POST /api/auth/request-reset-password', () => {
 
 describe('POST /api/auth/reset-password/:token', () => {
   beforeEach(async () => {
-    await createTestRole();
-    await createTestUser({
-      resetToken: '123',
-      resetTokenExpires: new Date(Date.now() + 5 * 60 * 1000),
-    });
+    await createTestUser();
   });
 
   afterEach(async () => {
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if input data is invalid', async () => {
@@ -384,6 +368,11 @@ describe('POST /api/auth/reset-password/:token', () => {
   });
 
   it('should reset password if reset token is valid', async () => {
+    await updateTestUser({
+      resetToken: '123',
+      resetTokenExpires: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
     const result = await request(app)
       .post(`/api/auth/reset-password/123`)
       .send({
