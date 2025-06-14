@@ -1,11 +1,13 @@
 import request from 'supertest';
 import app from '../src/app.js';
 import {
+  createAccessToken,
+  getTestRole,
+  getTestCategory,
   createTestCategory,
   removeAllTestCategories,
-  createTestRole,
-  removeAllTestRoles,
   createTestUser,
+  updateTestUser,
   removeAllTestUsers,
   createTestComment,
   createManyTestComments,
@@ -19,10 +21,10 @@ import {
 describe('GET /api/posts/:postId/comments', () => {
   beforeEach(async () => {
     await createTestCategory();
-    await createTestRole();
     await createTestUser();
     await createTestPost();
     await createTestComment();
+    await createAccessToken();
   });
 
   afterEach(async () => {
@@ -30,7 +32,6 @@ describe('GET /api/posts/:postId/comments', () => {
     await removeAllTestPosts();
     await removeAllTestCategories();
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an empty list if post has no comments', async () => {
@@ -39,7 +40,7 @@ describe('GET /api/posts/:postId/comments', () => {
     const post = await getTestPost();
     const result = await request(app)
       .get(`/api/posts/${post._id}/comments`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('No comments found');
@@ -50,7 +51,7 @@ describe('GET /api/posts/:postId/comments', () => {
     const comment = await getTestComment();
     const result = await request(app)
       .get(`/api/posts/${comment.post._id}/comments`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Comments retrieved successfully');
@@ -62,10 +63,10 @@ describe('GET /api/posts/:postId/comments', () => {
 describe('GET /api/posts/:postId/comments/:commentId', () => {
   beforeEach(async () => {
     await createTestCategory();
-    await createTestRole();
     await createTestUser();
     await createTestPost();
     await createTestComment();
+    await createAccessToken();
   });
 
   afterEach(async () => {
@@ -73,15 +74,20 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
     await removeAllTestPosts();
     await removeAllTestCategories();
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({
+      role: role._id,
+    });
+    await createAccessToken();
+
     const result = await request(app)
       .get(
         `/api/posts/${global.validObjectId}/comments/${global.validObjectId}`
       )
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -90,7 +96,7 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
   it('should return an error if post id is invalid', async () => {
     const result = await request(app)
       .delete(`/api/posts/invalid-id/comments/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -102,7 +108,7 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
       .delete(
         `/api/posts/${global.validObjectId}/comments/${global.validObjectId}`
       )
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Post not found');
@@ -112,7 +118,7 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
     const post = await getTestPost();
     const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/invalid-id`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -123,7 +129,7 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
     const post = await getTestPost();
     const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Comment not found');
@@ -133,7 +139,7 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
     const comment = await getTestComment();
     const result = await request(app)
       .get(`/api/posts/${comment.post._id}/comments/${comment._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Comment retrieved successfully');
@@ -142,11 +148,11 @@ describe('GET /api/posts/:postId/comments/:commentId', () => {
 
 describe('GET /api/comments/search', () => {
   beforeEach(async () => {
-    await createTestRole();
     await createTestCategory();
     await createTestUser();
     await createTestPost();
     await createManyTestComments();
+    await createAccessToken();
   });
 
   afterEach(async () => {
@@ -154,13 +160,18 @@ describe('GET /api/comments/search', () => {
     await removeAllTestPosts();
     await removeAllTestCategories();
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({
+      role: role._id,
+    });
+    await createAccessToken();
+
     const result = await request(app)
       .get('/api/comments/search')
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -169,7 +180,7 @@ describe('GET /api/comments/search', () => {
   it('should return a list of comments with default pagination', async () => {
     const result = await request(app)
       .get('/api/comments/search')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Comments retrieved successfully');
@@ -183,7 +194,7 @@ describe('GET /api/comments/search', () => {
   it('should return a list of comments with custom pagination', async () => {
     const result = await request(app)
       .get('/api/comments/search')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .query({
         page: 2,
       });
@@ -200,7 +211,7 @@ describe('GET /api/comments/search', () => {
   it('should return a list of comments with custom search', async () => {
     const result = await request(app)
       .get('/api/comments/search')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .query({
         q: 'test10',
       });
@@ -217,17 +228,16 @@ describe('GET /api/comments/search', () => {
 
 describe('POST /api/posts/:postId/comments', () => {
   beforeEach(async () => {
-    await createTestRole();
     await createTestCategory();
     await createTestUser();
     await createTestPost();
+    await createAccessToken();
   });
 
   afterEach(async () => {
     await removeAllTestCategories();
     await removeAllTestPosts();
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if user does not authenticate', async () => {
@@ -242,7 +252,7 @@ describe('POST /api/posts/:postId/comments', () => {
   it('should return an error if post is not found', async () => {
     const result = await request(app)
       .post(`/api/posts/${global.validObjectId}/comments`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Post not found');
@@ -251,7 +261,7 @@ describe('POST /api/posts/:postId/comments', () => {
   it('should return an error if post id is invalid', async () => {
     const result = await request(app)
       .post('/api/posts/invalid-id/comments')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -262,7 +272,7 @@ describe('POST /api/posts/:postId/comments', () => {
     const post = await getTestPost();
     const result = await request(app)
       .post(`/api/posts/${post._id}/comments`)
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         text: '',
       });
@@ -276,7 +286,7 @@ describe('POST /api/posts/:postId/comments', () => {
     const post = await getTestPost();
     const result = await request(app)
       .post(`/api/posts/${post._id}/comments`)
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({ text: 'test' });
 
     expect(result.status).toBe(201);
@@ -287,10 +297,10 @@ describe('POST /api/posts/:postId/comments', () => {
 describe('PATCH /api/posts/:postId/comments/:commentId', () => {
   beforeEach(async () => {
     await createTestCategory();
-    await createTestRole();
     await createTestUser();
     await createTestPost();
     await createTestComment();
+    await createAccessToken();
   });
 
   afterEach(async () => {
@@ -298,15 +308,20 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
     await removeAllTestPosts();
     await removeAllTestCategories();
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({
+      role: role._id,
+    });
+    await createAccessToken();
+
     const result = await request(app)
       .patch(
         `/api/posts/${global.validObjectId}/comments/${global.validObjectId}`
       )
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -315,7 +330,7 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
   it('should return an error if post id is invalid', async () => {
     const result = await request(app)
       .patch(`/api/posts/invalid-id/comments/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -327,7 +342,7 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
       .patch(
         `/api/posts/${global.validObjectId}/comments/${global.validObjectId}`
       )
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Post not found');
@@ -337,7 +352,7 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
     const post = await getTestPost();
     const result = await request(app)
       .patch(`/api/posts/${post._id}/comments/invalid-id`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -348,7 +363,7 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
     const post = await getTestPost();
     const result = await request(app)
       .patch(`/api/posts/${post._id}/comments/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Comment not found');
@@ -358,7 +373,7 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
     const comment = await getTestComment();
     const result = await request(app)
       .patch(`/api/posts/${comment.post._id}/comments/${comment._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         text: 'test1',
       });
@@ -372,10 +387,10 @@ describe('PATCH /api/posts/:postId/comments/:commentId', () => {
 describe('DELETE /api/posts/:postId/comments/:commentId', () => {
   beforeEach(async () => {
     await createTestCategory();
-    await createTestRole();
     await createTestUser();
     await createTestPost();
     await createTestComment();
+    await createAccessToken();
   });
 
   afterEach(async () => {
@@ -383,14 +398,39 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
     await removeAllTestPosts();
     await removeAllTestCategories();
     await removeAllTestUsers();
-    await removeAllTestRoles();
   });
 
   it('should return an error if comment is not owned by current user', async () => {
-    const comment = await getTestComment();
+    const category = await getTestCategory();
+    const role = await getTestRole('user');
+    const otherUser = await createTestUser({
+      username: 'test1',
+      email: 'test1@me.com',
+      role: role._id,
+    });
+    const otherPost = await createTestPost({
+      title: 'test',
+      slug: 'test',
+      content: 'test',
+      user: otherUser._id,
+      category: category._id,
+    });
+    const otherComment = await createTestComment({
+      user: otherUser._id,
+      post: otherPost._id,
+      text: 'test',
+    });
+
+    await updateTestUser({
+      role: role._id,
+    });
+    await createAccessToken();
+
     const result = await request(app)
-      .delete(`/api/posts/${comment.post._id}/comments/${comment._id}`)
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .delete(
+        `/api/posts/${otherComment.post._id}/comments/${otherComment._id}`
+      )
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -399,7 +439,7 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
   it('should return an error if post id is invalid', async () => {
     const result = await request(app)
       .delete(`/api/posts/invalid-id/comments/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -411,7 +451,7 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
       .delete(
         `/api/posts/${global.validObjectId}/comments/${global.validObjectId}`
       )
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Post not found');
@@ -421,7 +461,7 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
     const post = await getTestPost();
     const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/invalid-id`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -432,7 +472,7 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
     const post = await getTestPost();
     const result = await request(app)
       .delete(`/api/posts/${post._id}/comments/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Comment not found');
@@ -442,7 +482,7 @@ describe('DELETE /api/posts/:postId/comments/:commentId', () => {
     const comment = await getTestComment();
     const result = await request(app)
       .delete(`/api/posts/${comment.post._id}/comments/${comment._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Comment deleted successfully');
