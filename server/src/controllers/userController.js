@@ -49,27 +49,32 @@ const updateProfile = async (req, res) => {
   });
 
   const errors = {};
+  const isUsernameChanged =
+    fields.username && fields.username !== user.username;
+  const isEmailChanged = fields.email && fields.email !== user.email;
 
-  if (fields.username && fields.username !== user.username) {
-    const isUsernameTaken = await User.exists({
-      username: fields.username,
+  if (isUsernameChanged || isEmailChanged) {
+    const duplicateConditions = {
       _id: { $ne: userId },
-    });
+      $or: [],
+    };
 
-    if (isUsernameTaken) errors.username = 'Username already in use';
-  }
+    if (isUsernameChanged)
+      duplicateConditions.$or.push({ username: fields.username });
+    if (isEmailChanged) duplicateConditions.$or.push({ email: fields.email });
 
-  if (fields.email && fields.email !== user.email) {
-    const isEmailTaken = await User.exists({
-      email: fields.email,
-      _id: { $ne: userId },
-    });
+    const existingUser = await User.findOne(duplicateConditions).select(
+      'username email'
+    );
 
-    if (isEmailTaken) errors.email = 'Email already in use';
-  }
+    if (existingUser) {
+      if (existingUser.username === fields.username)
+        errors.username = 'Username already in use';
+      if (existingUser.email === fields.email)
+        errors.email = 'Email already in use';
 
-  if (Object.keys(errors).length > 0) {
-    throw new ResponseError('Resource already in use', 409, errors);
+      throw new ResponseError('Resource already in use', 409, errors);
+    }
   }
 
   if (fields.password) fields.password = await bcrypt.hash(fields.password, 10);
@@ -169,20 +174,18 @@ const search = async (req, res) => {
 
 const create = async (req, res) => {
   const fields = validate(createUserSchema, req.body);
+  const errors = {};
 
   const user = await User.findOne({
     $or: [{ username: fields.username }, { email: fields.email }],
-  });
+  }).select('username email');
 
   if (user) {
-    const field = user.username === fields.username ? 'username' : 'email';
-    const capitalizedField = `${
-      field.charAt(0).toUpperCase() + field.slice(1)
-    }`;
+    if (user.username === fields.username)
+      errors.username = 'Username already in use';
+    if (user.email === fields.email) errors.email = 'Email already in use';
 
-    throw new ResponseError('Resource already in use', 409, {
-      [field]: `${capitalizedField} already in use`,
-    });
+    throw new ResponseError('Resource already in use', 409, errors);
   }
 
   const role = await Role.exists({ _id: fields.role });

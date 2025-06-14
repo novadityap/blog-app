@@ -20,19 +20,14 @@ const signup = async (req, res) => {
   const fields = validate(signupSchema, req.body);
   const errors = {};
 
-  const isUsernameTaken = await User.exists({
-    username: fields.username,
-  });
+  const user = await User.findOne({
+    $or: [{ username: fields.username }, { email: fields.email }],
+  }).select('username email');
 
-  if (isUsernameTaken) errors.username = 'Username already in use';
+  if (user) {
+    if (user.username === fields.username) errors.username = 'Username already in use';
+    if (user.email === fields.email) errors.email = 'Email already in use';
 
-  const isEmailTaken = await User.exists({
-    email: fields.email,
-  });
-
-  if (isEmailTaken) errors.email = 'Email already in use';
-
-  if (Object.keys(errors).length > 0) {
     throw new ResponseError('Resource already in use', 409, errors);
   }
 
@@ -126,11 +121,11 @@ const resendVerification = async (req, res) => {
 const signin = async (req, res) => {
   const fields = validate(signinSchema, req.body);
 
-  const user = await User.findOne({ 
+  const user = await User.findOne({
     email: fields.email,
-    isVerified: true
+    isVerified: true,
   }).populate('role');
-  
+
   if (!user || !(await bcrypt.compare(fields.password, user.password)))
     throw new ResponseError('Email or password is invalid', 401);
 
