@@ -1,6 +1,11 @@
 import request from 'supertest';
 import app from '../src/app.js';
 import {
+  getTestRole,
+  createTestUser,
+  updateTestUser,
+  removeAllTestUsers,
+  createAccessToken,
   createTestCategory,
   createManyTestCategories,
   getTestCategory,
@@ -9,32 +14,38 @@ import {
 
 describe('GET /api/categories', () => {
   it('should return all categories', async () => {
+    await createTestUser();
+    await createAccessToken();
     await createManyTestCategories();
 
     const result = await request(app)
       .get('/api/categories')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Categories retrieved successfully');
 
     await removeAllTestCategories();
+    await removeAllTestUsers();
   });
 });
 
 describe('GET /api/categories/search', () => {
   beforeEach(async () => {
+    await createTestUser();
+    await createAccessToken();
     await createManyTestCategories();
   });
 
   afterEach(async () => {
     await removeAllTestCategories();
+    await removeAllTestUsers();
   });
 
   it('should return a list of categories with default pagination', async () => {
     const result = await request(app)
       .get('/api/categories/search')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Categories retrieved successfully');
@@ -48,7 +59,7 @@ describe('GET /api/categories/search', () => {
   it('should return a list of categories with custom pagination', async () => {
     const result = await request(app)
       .get('/api/categories/search')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .query({
         page: 2,
       });
@@ -65,7 +76,7 @@ describe('GET /api/categories/search', () => {
   it('should return a list of categories with custom search', async () => {
     const result = await request(app)
       .get('/api/categories/search')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .query({
         q: 'test10',
       });
@@ -81,14 +92,20 @@ describe('GET /api/categories/search', () => {
 });
 
 describe('GET /api/categories/:categoryId', () => {
+  beforeEach(async () => {
+    await createTestUser();
+    await createAccessToken();
+  });
+
   afterEach(async () => {
     await removeAllTestCategories();
+    await removeAllTestUsers();
   });
 
   it('should return an error if category id is invalid', async () => {
     const result = await request(app)
       .get('/api/categories/invalid-id')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -98,19 +115,17 @@ describe('GET /api/categories/:categoryId', () => {
   it('should return an error if category is not found', async () => {
     const result = await request(app)
       .get(`/api/categories/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Category not found');
   });
 
   it('should return a category if category id is valid', async () => {
-    await createTestCategory();
-
-    const category = await getTestCategory();
+    const category = await createTestCategory();
     const result = await request(app)
       .get(`/api/categories/${category._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Category retrieved successfully');
@@ -119,14 +134,26 @@ describe('GET /api/categories/:categoryId', () => {
 });
 
 describe('POST /api/categories', () => {
+  beforeEach(async () => {
+    await createTestUser();
+    await createAccessToken();
+  });
+
   afterEach(async () => {
     await removeAllTestCategories();
+    await removeAllTestUsers();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({
+      role: role._id,
+    });
+    await createAccessToken();
+
     const result = await request(app)
       .post('/api/categories')
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -135,7 +162,7 @@ describe('POST /api/categories', () => {
   it('should return an error if input data is invalid', async () => {
     const result = await request(app)
       .post('/api/categories')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         name: '',
       });
@@ -150,7 +177,7 @@ describe('POST /api/categories', () => {
 
     const result = await request(app)
       .post('/api/categories')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         name: 'test',
       });
@@ -163,7 +190,7 @@ describe('POST /api/categories', () => {
   it('should create a category if input data is valid', async () => {
     const result = await request(app)
       .post('/api/categories')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({ name: 'test' });
 
     expect(result.status).toBe(201);
@@ -173,18 +200,27 @@ describe('POST /api/categories', () => {
 
 describe('PATCH /api/categories/:categoryId', () => {
   beforeEach(async () => {
+    await createTestUser();
+    await createAccessToken();
     await createTestCategory();
   });
 
   afterEach(async () => {
     await removeAllTestCategories();
+    await removeAllTestUsers();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({
+      role: role._id,
+    });
+    await createAccessToken();
+
     const category = await getTestCategory();
     const result = await request(app)
       .patch(`/api/categories/${category._id}`)
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -193,7 +229,7 @@ describe('PATCH /api/categories/:categoryId', () => {
   it('should return an error if category id is invalid', async () => {
     const result = await request(app)
       .patch('/api/categories/invalid-id')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -206,7 +242,7 @@ describe('PATCH /api/categories/:categoryId', () => {
     const category = await getTestCategory();
     const result = await request(app)
       .patch(`/api/categories/${category._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         name: 'test1',
       });
@@ -219,7 +255,7 @@ describe('PATCH /api/categories/:categoryId', () => {
   it('should return an error if category is not found', async () => {
     const result = await request(app)
       .patch(`/api/categories/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Category not found');
@@ -229,7 +265,7 @@ describe('PATCH /api/categories/:categoryId', () => {
     const category = await getTestCategory();
     const result = await request(app)
       .patch(`/api/categories/${category._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         name: 'test1',
       });
@@ -242,18 +278,27 @@ describe('PATCH /api/categories/:categoryId', () => {
 
 describe('DELETE /api/categories/:categoryId', () => {
   beforeEach(async () => {
+    await createTestUser();
+    await createAccessToken();
     await createTestCategory();
   });
 
   afterEach(async () => {
     await removeAllTestCategories();
+    await removeAllTestUsers();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({
+      role: role._id,
+    });
+    await createAccessToken();
+
     const category = await getTestCategory();
     const result = await request(app)
       .delete(`/api/categories/${category._id}`)
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -262,7 +307,7 @@ describe('DELETE /api/categories/:categoryId', () => {
   it('should return an error if category id is invalid', async () => {
     const result = await request(app)
       .delete('/api/categories/invalid-id')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -272,7 +317,7 @@ describe('DELETE /api/categories/:categoryId', () => {
   it('should return an error if category is not found', async () => {
     const result = await request(app)
       .delete(`/api/categories/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Category not found');
@@ -282,7 +327,7 @@ describe('DELETE /api/categories/:categoryId', () => {
     const category = await getTestCategory();
     const result = await request(app)
       .delete(`/api/categories/${category._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Category deleted successfully');
