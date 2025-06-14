@@ -1,6 +1,10 @@
 import request from 'supertest';
 import app from '../src/app.js';
 import {
+  createTestUser,
+  updateTestUser,
+  removeAllTestUsers,
+  createAccessToken,
   createTestRole,
   getTestRole,
   createManyTestRoles,
@@ -8,14 +12,24 @@ import {
 } from './testUtil.js';
 
 describe('GET /api/roles', () => {
+  beforeEach(async () => {
+    await createTestUser();
+    await createAccessToken();
+  });
+
   afterEach(async () => {
+    await removeAllTestUsers();
     await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({ role: role._id });
+    await createAccessToken();
+
     const result = await request(app)
       .get('/api/roles')
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -26,7 +40,7 @@ describe('GET /api/roles', () => {
 
     const result = await request(app)
       .get('/api/roles')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Roles retrieved successfully');
@@ -36,17 +50,24 @@ describe('GET /api/roles', () => {
 
 describe('GET /api/roles/search', () => {
   beforeEach(async () => {
+    await createTestUser();
+    await createAccessToken();
     await createManyTestRoles();
   });
 
   afterEach(async () => {
+    await removeAllTestUsers();
     await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({ role: role._id });
+    await createAccessToken();
+
     const result = await request(app)
       .get('/api/roles/search')
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -55,7 +76,7 @@ describe('GET /api/roles/search', () => {
   it('should return a list of roles with default pagination', async () => {
     const result = await request(app)
       .get('/api/roles/search')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Roles retrieved successfully');
@@ -69,7 +90,7 @@ describe('GET /api/roles/search', () => {
   it('should return a list of roles with custom pagination', async () => {
     const result = await request(app)
       .get('/api/roles/search')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .query({
         page: 2,
       });
@@ -86,7 +107,7 @@ describe('GET /api/roles/search', () => {
   it('should return a list of roles with custom search', async () => {
     const result = await request(app)
       .get('/api/roles/search')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .query({
         q: 'test10',
       });
@@ -102,14 +123,24 @@ describe('GET /api/roles/search', () => {
 });
 
 describe('GET /api/roles/:roleId', () => {
+  beforeEach(async () => {
+    await createTestUser();
+    await createAccessToken();
+  });
+
   afterEach(async () => {
+    await removeAllTestUsers();
     await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({ role: role._id });
+    await createAccessToken();
+
     const result = await request(app)
       .get(`/api/roles/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -118,7 +149,7 @@ describe('GET /api/roles/:roleId', () => {
   it('should return an error if role id is invalid', async () => {
     const result = await request(app)
       .get('/api/roles/invalid-id')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -128,19 +159,17 @@ describe('GET /api/roles/:roleId', () => {
   it('should return an error if role is not found', async () => {
     const result = await request(app)
       .get(`/api/roles/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Role not found');
   });
 
   it('should return a role if role id is valid', async () => {
-    await createTestRole();
-
-    const role = await getTestRole();
+    const role = await createTestRole();
     const result = await request(app)
       .get(`/api/roles/${role._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Role retrieved successfully');
@@ -149,14 +178,24 @@ describe('GET /api/roles/:roleId', () => {
 });
 
 describe('POST /api/roles', () => {
+  beforeEach(async () => {
+    await createTestUser();
+    await createAccessToken();
+  });
+
   afterEach(async () => {
+    await removeAllTestUsers();
     await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({ role: role._id });
+    await createAccessToken();
+
     const result = await request(app)
       .post('/api/roles')
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -165,7 +204,7 @@ describe('POST /api/roles', () => {
   it('should return an error if input data is invalid', async () => {
     const result = await request(app)
       .post('/api/roles')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         name: '',
       });
@@ -180,7 +219,7 @@ describe('POST /api/roles', () => {
 
     const result = await request(app)
       .post('/api/roles')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         name: 'test',
       });
@@ -193,7 +232,7 @@ describe('POST /api/roles', () => {
   it('should create a role if input data is valid', async () => {
     const result = await request(app)
       .post('/api/roles')
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         name: 'test',
       });
@@ -206,16 +245,23 @@ describe('POST /api/roles', () => {
 describe('PATCH /api/roles/:roleId', () => {
   beforeEach(async () => {
     await createTestRole();
+    await createTestUser();
+    await createAccessToken();
   });
 
   afterEach(async () => {
+    await removeAllTestUsers();
     await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const role = await getTestRole('user');
+    await updateTestUser({ role: role._id });
+    await createAccessToken();
+
     const result = await request(app)
       .patch(`/api/roles/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -224,7 +270,7 @@ describe('PATCH /api/roles/:roleId', () => {
   it('should return an error if role id is invalid', async () => {
     const result = await request(app)
       .patch('/api/roles/invalid-id')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -237,7 +283,7 @@ describe('PATCH /api/roles/:roleId', () => {
     const role = await getTestRole();
     const result = await request(app)
       .patch(`/api/roles/${role._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         name: 'test1',
       });
@@ -250,7 +296,7 @@ describe('PATCH /api/roles/:roleId', () => {
   it('should return an error if role is not found', async () => {
     const result = await request(app)
       .patch(`/api/roles/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Role not found');
@@ -260,7 +306,7 @@ describe('PATCH /api/roles/:roleId', () => {
     const role = await getTestRole();
     const result = await request(app)
       .patch(`/api/roles/${role._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`)
+      .set('Authorization', `Bearer ${global.accessToken}`)
       .send({
         name: 'test1',
       });
@@ -274,17 +320,24 @@ describe('PATCH /api/roles/:roleId', () => {
 describe('DELETE /api/roles/:roleId', () => {
   beforeEach(async () => {
     await createTestRole();
+    await createTestUser();
+    await createAccessToken();
   });
 
   afterEach(async () => {
+    await removeAllTestUsers();
     await removeAllTestRoles();
   });
 
   it('should return an error if user does not have permission', async () => {
+    const userRole = await getTestRole('user');
+    await updateTestUser({ role: userRole._id });
+    await createAccessToken();
+
     const role = await getTestRole();
     const result = await request(app)
       .delete(`/api/roles/${role._id}`)
-      .set('Authorization', `Bearer ${global.userToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(403);
     expect(result.body.message).toBe('Permission denied');
@@ -293,7 +346,7 @@ describe('DELETE /api/roles/:roleId', () => {
   it('should return an error if role id is invalid', async () => {
     const result = await request(app)
       .delete('/api/roles/invalid-id')
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -303,7 +356,7 @@ describe('DELETE /api/roles/:roleId', () => {
   it('should return an error if role is not found', async () => {
     const result = await request(app)
       .delete(`/api/roles/${global.validObjectId}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(404);
     expect(result.body.message).toBe('Role not found');
@@ -313,7 +366,7 @@ describe('DELETE /api/roles/:roleId', () => {
     const role = await getTestRole();
     const result = await request(app)
       .delete(`/api/roles/${role._id}`)
-      .set('Authorization', `Bearer ${global.adminToken}`);
+      .set('Authorization', `Bearer ${global.accessToken}`);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Role deleted successfully');
