@@ -201,8 +201,8 @@ describe('POST /api/users', () => {
         role: role._id,
       });
 
-    expect(result.status).toBe(409);
-    expect(result.body.message).toBe('Resource already in use');
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
     expect(result.body.errors.email).toBeDefined();
   });
 
@@ -220,8 +220,8 @@ describe('POST /api/users', () => {
         role: role._id,
       });
 
-    expect(result.status).toBe(409);
-    expect(result.body.message).toBe('Resource already in use');
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
     expect(result.body.errors.username).toBeDefined();
   });
 
@@ -334,8 +334,8 @@ describe('PATCH /api/users/:userId/profile', () => {
       .field('email', 'test1@me.com')
       .field('username', 'test1');
 
-    expect(result.status).toBe(409);
-    expect(result.body.message).toBe('Resource already in use');
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
     expect(result.body.errors.email).toBeDefined();
   });
 
@@ -350,8 +350,8 @@ describe('PATCH /api/users/:userId/profile', () => {
       .field('email', 'test1@me.com')
       .field('username', 'test1');
 
-    expect(result.status).toBe(409);
-    expect(result.body.message).toBe('Resource already in use');
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
     expect(result.body.errors.username).toBeDefined();
   });
 
@@ -484,8 +484,8 @@ describe('PATCH /api/users/:userId', () => {
       .field('username', 'test1')
       .field('role', role._id.toString());
 
-    expect(result.status).toBe(409);
-    expect(result.body.message).toBe('Resource already in use');
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
     expect(result.body.errors.email).toBeDefined();
   });
 
@@ -502,8 +502,8 @@ describe('PATCH /api/users/:userId', () => {
       .field('username', 'test1')
       .field('role', role._id.toString());
 
-    expect(result.status).toBe(409);
-    expect(result.body.message).toBe('Resource already in use');
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
     expect(result.body.errors.username).toBeDefined();
   });
 

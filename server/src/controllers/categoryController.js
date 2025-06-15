@@ -14,7 +14,7 @@ const create = async (req, res) => {
 
   const isNameTaken = await Category.exists({ name: fields.name });
   if (isNameTaken) {
-    throw new ResponseError('Resource already in use', 409, {
+    throw new ResponseError('Validation errors', 400, {
       name: 'Name already in use',
     });
   }
@@ -39,7 +39,7 @@ const update = async (req, res) => {
     const isNameTaken = await Category.exists({ name: fields.name });
 
     if (isNameTaken) {
-      throw new ResponseError('Resource already in use', 409, {
+      throw new ResponseError('Validation errors', 400, {
         name: 'Name already in use',
       });
     }

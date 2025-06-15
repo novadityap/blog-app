@@ -182,8 +182,8 @@ describe('POST /api/categories', () => {
         name: 'test',
       });
 
-    expect(result.status).toBe(409);
-    expect(result.body.message).toBe('Resource already in use');
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
     expect(result.body.errors.name).toBeDefined();
   });
 
@@ -247,8 +247,8 @@ describe('PATCH /api/categories/:categoryId', () => {
         name: 'test1',
       });
 
-    expect(result.status).toBe(409);
-    expect(result.body.message).toBe('Resource already in use');
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
     expect(result.body.errors.name).toBeDefined();
   });
 

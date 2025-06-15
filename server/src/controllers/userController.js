@@ -73,7 +73,7 @@ const updateProfile = async (req, res) => {
       if (existingUser.email === fields.email)
         errors.email = 'Email already in use';
 
-      throw new ResponseError('Resource already in use', 409, errors);
+      throw new ResponseError('Validation errors', 400, errors);
     }
   }
 
@@ -185,7 +185,7 @@ const create = async (req, res) => {
       errors.username = 'Username already in use';
     if (user.email === fields.email) errors.email = 'Email already in use';
 
-    throw new ResponseError('Resource already in use', 409, errors);
+    throw new ResponseError('Validation errors', 400, errors);
   }
 
   const role = await Role.exists({ _id: fields.role });
@@ -232,7 +232,7 @@ const update = async (req, res) => {
     });
 
     if (isUsernameTaken) {
-      throw new ResponseError('Resource already in use', 409, {
+      throw new ResponseError('Validation errors', 400, {
         username: 'Username already in use',
       });
     }
@@ -245,7 +245,7 @@ const update = async (req, res) => {
     });
 
     if (isEmailTaken) {
-      throw new ResponseError('Resource already in use', 409, {
+      throw new ResponseError('Validation errors', 400, {
         email: 'Email already in use',
       });
     }

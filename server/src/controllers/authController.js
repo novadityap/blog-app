@@ -28,7 +28,7 @@ const signup = async (req, res) => {
     if (user.username === fields.username) errors.username = 'Username already in use';
     if (user.email === fields.email) errors.email = 'Email already in use';
 
-    throw new ResponseError('Resource already in use', 409, errors);
+    throw new ResponseError('Validation errors', 400, errors);
   }
 
   const userRole = await Role.findOne({ name: 'user' });

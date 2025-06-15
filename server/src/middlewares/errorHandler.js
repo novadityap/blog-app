@@ -27,7 +27,6 @@ const errorHandler = (err, req, res, next) => {
     code,
     message: code >= 500 ? 'Internal server error' : message,
     ...(code === 400 && { errors }),
-    ...(code === 409 && { errors }),
     ...(code === 404 && { data : null }),
     ...(process.env.NODE_ENV === 'development' && code >= 500 && { stack }),
   };

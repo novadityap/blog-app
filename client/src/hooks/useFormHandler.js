@@ -90,7 +90,7 @@ const useFormHandler = ({
         });
       }
 
-      if (formType === 'datatable' && e.code !== 400 && e.code !== 409) {
+      if (formType === 'datatable' && e.code !== 400) {
         toast.error(e.message);
       } else {
         setMessage(e.message);

@@ -46,7 +46,8 @@ describe('POST /api/auth/signup', () => {
       password: 'test123',
     });
 
-    expect(result.status).toBe(409);
+    expect(result.status).toBe(400);
+    expect(result.body.message).toBe('Validation errors');
     expect(sendMail).not.toHaveBeenCalled();
   });
 
