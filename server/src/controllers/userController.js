@@ -15,6 +15,7 @@ import bcrypt from 'bcrypt';
 import checkOwnership from '../utils/checkOwnership.js';
 import cloudinary from '../utils/cloudinary.js';
 import extractPublicId from '../utils/extractPublicId.js';
+import mongoose from 'mongoose';
 
 const show = async (req, res) => {
   const userId = validate(getUserSchema, req.params.userId);
@@ -109,6 +110,7 @@ const search = async (req, res) => {
   const { page, limit, q } = query;
 
   const [{ users, totalUsers }] = await User.aggregate()
+    .match({ _id: { $ne: new mongoose.Types.ObjectId(req.user.id) } })
     .lookup({
       from: 'roles',
       localField: 'role',
