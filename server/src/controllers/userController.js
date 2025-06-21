@@ -49,31 +49,36 @@ const updateProfile = async (req, res) => {
     formSchema: updateProfileSchema,
   });
 
-  const errors = {};
-  const isUsernameChanged =
-    fields.username && fields.username !== user.username;
-  const isEmailChanged = fields.email && fields.email !== user.email;
+  const checkDuplicateConditions = [];
 
-  if (isUsernameChanged || isEmailChanged) {
-    const duplicateConditions = {
+  if (fields.username && fields.username !== user.username) {
+    checkDuplicateConditions.push({
+      username: fields.username,
+    });
+  }
+
+  if (fields.email && fields.email !== user.email) {
+    checkDuplicateConditions.push({
+      email: fields.email,
+    });
+  }
+
+  if (checkDuplicateConditions.length > 0) {
+    const existingUser = await User.findOne({
       _id: { $ne: userId },
-      $or: [],
-    };
+      $or: checkDuplicateConditions,
+    });
 
-    if (isUsernameChanged)
-      duplicateConditions.$or.push({ username: fields.username });
-    if (isEmailChanged) duplicateConditions.$or.push({ email: fields.email });
-
-    const existingUser = await User.findOne(duplicateConditions).select(
-      'username email'
-    );
+    const errors = {};
 
     if (existingUser) {
       if (existingUser.username === fields.username)
         errors.username = 'Username already in use';
       if (existingUser.email === fields.email)
         errors.email = 'Email already in use';
+    }
 
+    if (Object.keys(errors).length > 0) {
       throw new ResponseError('Validation errors', 400, errors);
     }
   }
@@ -227,29 +232,37 @@ const update = async (req, res) => {
     formSchema: updateUserSchema,
   });
 
-  if (fields.username && fields.username !== user.username) {
-    const isUsernameTaken = await User.exists({
-      username: fields.username,
-      _id: { $ne: userId },
-    });
+  const checkDuplicateConditions = [];
 
-    if (isUsernameTaken) {
-      throw new ResponseError('Validation errors', 400, {
-        username: 'Username already in use',
-      });
-    }
+  if (fields.username && fields.username !== user.username) {
+    checkDuplicateConditions.push({
+      username: fields.username,
+    });
   }
 
   if (fields.email && fields.email !== user.email) {
-    const isEmailTaken = await User.exists({
+    checkDuplicateConditions.push({
       email: fields.email,
+    });
+  }
+
+  if (checkDuplicateConditions.length > 0) {
+    const existingUser = await User.findOne({
       _id: { $ne: userId },
+      $or: checkDuplicateConditions,
     });
 
-    if (isEmailTaken) {
-      throw new ResponseError('Validation errors', 400, {
-        email: 'Email already in use',
-      });
+    const errors = {};
+
+    if (existingUser) {
+      if (existingUser.username === fields.username)
+        errors.username = 'Username already in use';
+      if (existingUser.email === fields.email)
+        errors.email = 'Email already in use';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      throw new ResponseError('Validation errors', 400, errors);
     }
   }
 
