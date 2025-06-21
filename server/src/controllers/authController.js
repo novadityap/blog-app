@@ -221,7 +221,7 @@ const refreshToken = async (req, res) => {
   });
 };
 
-const requestResetPassword = async (req, res) => {
+const resetPasswordRequest = async (req, res) => {
   const fields = validate(verifyEmailSchema, req.body);
 
   const user = await User.findOneAndUpdate(
@@ -286,7 +286,7 @@ export default {
   signin,
   signout,
   refreshToken,
-  requestResetPassword,
+  resetPasswordRequest,
   resetPassword,
   verifyEmail,
   resendVerification,
