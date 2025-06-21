@@ -16,8 +16,7 @@ app.use(helmet({
 app.use(
   cors({
     origin: process.env.CLIENT_URL,
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
   })
 );
 app.use(requestLogger);

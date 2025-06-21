@@ -24,9 +24,9 @@ const VerifyEmail = () => {
 
   const message = isError ? error?.message : data?.message;
 
-  return (
-    <div className="w-full sm:w-[450px]">
-      {isLoading && (
+  if (isLoading) {
+    return (
+      <div className="w-full sm:w-[450px]">
         <div className="flex flex-col gap-y-5">
           <Skeleton className="h-56 w-96 rounded-xl" />
           <div className="space-y-2">
@@ -35,8 +35,12 @@ const VerifyEmail = () => {
             <Skeleton className="h-4 w-64" />
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
+  return (
+    <div className="w-full sm:w-[450px]">
       {(isError || isSuccess) && (
         <Card>
           <CardHeader className="text-center">
