@@ -6,15 +6,15 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from '@/components/shadcn-ui/card';
-import { Skeleton } from '@/components/shadcn-ui/skeleton';
-import { Button } from '@/components/shadcn-ui/button';
+} from '@/components/shadcn/card';
+import { Skeleton } from '@/components/shadcn/skeleton';
+import { Button } from '@/components/shadcn/button';
 import { useSelector } from 'react-redux';
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/components/shadcn-ui/avatar';
+} from '@/components/shadcn/avatar';
 import { Link } from 'react-router-dom';
 import {
   Select,
@@ -22,7 +22,7 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
-} from '@/components/shadcn-ui/select';
+} from '@/components/shadcn/select';
 import { useLazyListCategoriesQuery } from '@/services/categoryApi';
 import dayjs from 'dayjs';
 import { useState, useEffect } from 'react';

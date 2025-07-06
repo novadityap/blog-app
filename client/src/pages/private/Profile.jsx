@@ -1,14 +1,14 @@
-import { Button } from '@/components/shadcn-ui/button';
-import { Input } from '@/components/shadcn-ui/input';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav';
-import { Skeleton } from '@/components/shadcn-ui/skeleton';
+import { Skeleton } from '@/components/shadcn/skeleton';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/shadcn-ui/card';
+} from '@/components/shadcn/card';
 import {
   Form,
   FormField,
@@ -16,12 +16,12 @@ import {
   FormMessage,
   FormItem,
   FormControl,
-} from '@/components/shadcn-ui/form';
+} from '@/components/shadcn/form';
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/components/shadcn-ui/avatar';
+} from '@/components/shadcn/avatar';
 import { useSelector } from 'react-redux';
 import { useShowUserQuery, useUpdateProfileMutation } from '@/services/userApi';
 import useFormHandler from '@/hooks/useFormHandler';

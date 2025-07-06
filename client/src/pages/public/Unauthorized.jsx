@@ -1,5 +1,5 @@
-import { Card, CardHeader, CardContent, CardFooter, CardTitle } from "@/components/shadcn-ui/card"; 
-import { Button } from "@/components/shadcn-ui/button";
+import { Card, CardHeader, CardContent, CardFooter, CardTitle } from "@/components/shadcn/card"; 
+import { Button } from "@/components/shadcn/button";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 

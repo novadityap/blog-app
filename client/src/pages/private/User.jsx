@@ -12,8 +12,8 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/components/shadcn-ui/avatar';
-import { Badge } from '@/components/shadcn-ui/badge';
+} from '@/components/shadcn/avatar';
+import { Badge } from '@/components/shadcn/badge';
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav';
 import {
   Card,
@@ -21,7 +21,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/shadcn-ui/card';
+} from '@/components/shadcn/card';
 
 const User = () => {
   const columnsHelper = createColumnHelper();

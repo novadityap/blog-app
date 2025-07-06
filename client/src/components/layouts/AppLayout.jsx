@@ -1,19 +1,19 @@
 import { Outlet } from 'react-router-dom';
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/shadcn-ui/button';
+import { Button } from '@/components/shadcn/button';
 import UserDropdown from '@/components/ui/UserDropdown';
-import { Input } from '@/components/shadcn-ui/input';
+import { Input } from '@/components/shadcn/input';
 import { setSearchTerm } from '@/features/querySlice';
 import { TbSearch, TbX, TbMenu2 } from 'react-icons/tb';
 import { cn } from '@/lib/utils';
 import { useDispatch, useSelector } from 'react-redux';
-import { Separator } from '@/components/shadcn-ui/separator';
+import { Separator } from '@/components/shadcn/separator';
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/components/shadcn-ui/avatar';
+} from '@/components/shadcn/avatar';
 import { TbLogin, TbLogout, TbEdit, TbApps, TbHome } from 'react-icons/tb';
 import Brand from '@/components/ui/Brand';
 import useSignout from '@/hooks/useSignout';

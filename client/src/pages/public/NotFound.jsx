@@ -3,8 +3,8 @@ import {
   CardHeader,
   CardContent,
   CardFooter,
-} from '@/components/shadcn-ui/card';
-import { Button } from '@/components/shadcn-ui/button';
+} from '@/components/shadcn/card';
+import { Button } from '@/components/shadcn/button';
 import { useNavigate } from 'react-router-dom';
 import notFound from '@/assets/notFound.jpg';
 

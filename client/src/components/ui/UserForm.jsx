@@ -1,11 +1,11 @@
-import { Button } from '@/components/shadcn-ui/button';
-import { Input } from '@/components/shadcn-ui/input';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
 import { useLazyListRolesQuery } from '@/services/roleApi';
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/components/shadcn-ui/avatar';
+} from '@/components/shadcn/avatar';
 import useFormHandler from '@/hooks/useFormHandler';
 import {
   Select,
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
   SelectItem,
-} from '@/components/shadcn-ui/select';
+} from '@/components/shadcn/select';
 import {
   Form,
   FormField,
@@ -21,7 +21,7 @@ import {
   FormMessage,
   FormItem,
   FormControl,
-} from '@/components/shadcn-ui/form';
+} from '@/components/shadcn/form';
 import { useEffect } from 'react';
 import { TbLoader } from 'react-icons/tb';
 

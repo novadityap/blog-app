@@ -12,7 +12,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/shadcn-ui/card';
+} from '@/components/shadcn/card';
 
 const Comment = () => {
   const columnsHelper = createColumnHelper();

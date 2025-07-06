@@ -12,26 +12,26 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from '@/components/shadcn-ui/card';
-import { Skeleton } from '@/components/shadcn-ui/skeleton';
+} from '@/components/shadcn/card';
+import { Skeleton } from '@/components/shadcn/skeleton';
 import { useEffect } from 'react';
-import { AspectRatio } from '@/components/shadcn-ui/aspect-ratio';
+import { AspectRatio } from '@/components/shadcn/aspect-ratio';
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from '@/components/shadcn-ui/form';
-import { Textarea } from '@/components/shadcn-ui/textarea';
-import { Button } from '@/components/shadcn-ui/button';
+} from '@/components/shadcn/form';
+import { Textarea } from '@/components/shadcn/textarea';
+import { Button } from '@/components/shadcn/button';
 import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import useFormHandler from '@/hooks/useFormHandler';
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/components/shadcn-ui/avatar';
+} from '@/components/shadcn/avatar';
 import { useState } from 'react';
 import dayjs from 'dayjs';
 import { TbLoader, TbInfoCircle, TbHeartFilled, TbTrash } from 'react-icons/tb';

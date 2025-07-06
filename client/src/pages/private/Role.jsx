@@ -15,7 +15,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/shadcn-ui/card';
+} from '@/components/shadcn/card';
 
 const Role = () => {
   const columnHelper = createColumnHelper();

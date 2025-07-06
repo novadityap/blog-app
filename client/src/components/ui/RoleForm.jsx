@@ -1,5 +1,5 @@
-import { Button } from '@/components/shadcn-ui/button';
-import { Input } from '@/components/shadcn-ui/input';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
 import useFormHandler from '@/hooks/useFormHandler';
 import {
   Form,
@@ -8,7 +8,7 @@ import {
   FormMessage,
   FormItem,
   FormControl,
-} from '@/components/shadcn-ui/form';
+} from '@/components/shadcn/form';
 import { TbLoader } from 'react-icons/tb';
 
 const RoleForm = ({

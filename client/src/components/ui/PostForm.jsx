@@ -1,5 +1,5 @@
-import { Button } from '@/components/shadcn-ui/button';
-import { Input } from '@/components/shadcn-ui/input';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
 import { useLazyListCategoriesQuery } from '@/services/categoryApi';
 import useFormHandler from '@/hooks/useFormHandler';
 import {
@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
   SelectItem,
-} from '@/components/shadcn-ui/select';
+} from '@/components/shadcn/select';
 import {
   Form,
   FormField,
@@ -16,10 +16,10 @@ import {
   FormMessage,
   FormItem,
   FormControl,
-} from '@/components/shadcn-ui/form';
+} from '@/components/shadcn/form';
 import { useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
-import { AspectRatio } from '@/components/shadcn-ui/aspect-ratio';
+import { AspectRatio } from '@/components/shadcn/aspect-ratio';
 import { TbLoader } from 'react-icons/tb';
 
 const PostForm = ({

@@ -1,15 +1,15 @@
 import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Button } from '@/components/shadcn-ui/button';
+import { Button } from '@/components/shadcn/button';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardFooter,
-} from '@/components/shadcn-ui/card';
+} from '@/components/shadcn/card';
 import { TbMailX, TbCircleCheck } from 'react-icons/tb';
-import { Skeleton } from '@/components/shadcn-ui/skeleton';
+import { Skeleton } from '@/components/shadcn/skeleton';
 import { useVerifyEmailMutation } from '@/services/authApi';
 import { cn } from '@/lib/utils';
 

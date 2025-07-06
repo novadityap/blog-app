@@ -4,8 +4,8 @@ import {
   CardContent,
   CardTitle,
   CardDescription,
-} from '@/components/shadcn-ui/card';
-import { Skeleton } from '@/components/shadcn-ui/skeleton';
+} from '@/components/shadcn/card';
+import { Skeleton } from '@/components/shadcn/skeleton';
 import { useShowDashboardQuery } from '@/services/dashboardApi';
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav';
 import { Link } from 'react-router-dom';

@@ -7,7 +7,7 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '../shadcn-ui/breadcrumb';
+} from '../shadcn/breadcrumb';
 import { TbHome } from 'react-icons/tb';
 
 const BreadcrumbNav = () => {

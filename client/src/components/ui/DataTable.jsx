@@ -10,12 +10,12 @@ import {
   TableRow,
   TableCell,
   TableBody,
-} from '@/components/shadcn-ui/table';
+} from '@/components/shadcn/table';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { createColumnHelper } from '@tanstack/react-table';
 import { TbEdit, TbTrash, TbPlus } from 'react-icons/tb';
-import { Input } from '@/components/shadcn-ui/input';
+import { Input } from '@/components/shadcn/input';
 import {
   Dialog,
   DialogContent,
@@ -24,16 +24,16 @@ import {
   DialogTitle,
   DialogDescription,
   DialogClose,
-} from '@/components/shadcn-ui/dialog';
-import { Button } from '@/components/shadcn-ui/button';
-import { Skeleton } from '@/components/shadcn-ui/skeleton';
+} from '@/components/shadcn/dialog';
+import { Button } from '@/components/shadcn/button';
+import { Skeleton } from '@/components/shadcn/skeleton';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/shadcn-ui/select';
+} from '@/components/shadcn/select';
 import dayjs from 'dayjs';
 import ReactPaginate from 'react-paginate';
 import { cn } from '@/lib/utils';

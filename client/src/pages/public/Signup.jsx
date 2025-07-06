@@ -1,17 +1,17 @@
-import { Button } from '@/components/shadcn-ui/button';
-import { Input } from '@/components/shadcn-ui/input';
+import { Button } from '@/components/shadcn/button';
+import { Input } from '@/components/shadcn/input';
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from '@/components/shadcn-ui/alert';
+} from '@/components/shadcn/alert';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardFooter,
-} from '@/components/shadcn-ui/card';
+} from '@/components/shadcn/card';
 import {
   Form,
   FormField,
@@ -19,7 +19,7 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from '@/components/shadcn-ui/form';
+} from '@/components/shadcn/form';
 import { TbLoader, TbCircleCheck } from 'react-icons/tb';
 import { Link } from 'react-router-dom';
 import { useSignupMutation } from '@/services/authApi';
