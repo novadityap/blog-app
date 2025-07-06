@@ -22,12 +22,12 @@ import {
 } from '@/components/shadcn-ui/form';
 import { TbLoader, TbCircleCheck } from 'react-icons/tb';
 import useFormHandler from '@/hooks/useFormHandler';
-import { useResetPasswordRequestMutation } from '@/services/authApi';
+import { useRequestResetPasswordMutation } from '@/services/authApi';
 
-const ResetPasswordRequest = () => {
+const RequestResetPassword = () => {
   const { form, handleSubmit, isLoading, isSuccess, message } =
     useFormHandler({
-      mutation: useResetPasswordRequestMutation,
+      mutation: useRequestResetPasswordMutation,
       defaultValues: {
         email: '',
       },
@@ -85,4 +85,4 @@ const ResetPasswordRequest = () => {
   );
 };
 
-export default ResetPasswordRequest;
+export default RequestResetPassword;
