@@ -1,6 +1,5 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import axiosBaseQuery from '@/app/baseQuery.js';
-import buildFormData from '@/utils/buildFormData.js';
 
 const postApi = createApi({
   reducerPath: 'postApi',
@@ -45,7 +44,7 @@ const postApi = createApi({
         url: `/posts/${postId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, postId) => [
+      invalidatesTags: (result, error, { postId }) => [
         { type: 'Post', id: postId },
         { type: 'Post', id: 'LIST' },
       ],
@@ -54,10 +53,7 @@ const postApi = createApi({
       query: ({ data, postId }) => ({
         url: `/posts/${postId}`,
         method: 'PATCH',
-        data: buildFormData(data, {
-          fileFields: 'avatar',
-          isMultiple: false,
-        }),
+        data,
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
       invalidatesTags: (result, error, { postId }) => [
@@ -70,7 +66,7 @@ const postApi = createApi({
         url: `/posts/${postId}/like`,
         method: 'PATCH',
       }),
-      invalidatesTags: (result, error, postId) => [
+      invalidatesTags: (result, error, { postId }) => [
         { type: 'Post', id: postId },
       ],
     }),

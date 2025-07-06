@@ -64,7 +64,7 @@ const roleApi = createApi({
         url: `/roles/${roleId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, roleId) => [
+      invalidatesTags: (result, error, { roleId }) => [
         { type: 'Role', id: roleId },
         { type: 'Role', id: 'LIST' },
       ],

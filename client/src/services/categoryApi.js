@@ -67,7 +67,7 @@ const categoryApi = createApi({
         url: `/categories/${categoryId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, categoryId) => [
+      invalidatesTags: (result, error, { categoryId }) => [
         { type: 'Category', id: categoryId },
         { type: 'Category', id: 'LIST' },
       ],
