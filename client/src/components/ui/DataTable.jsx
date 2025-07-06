@@ -14,16 +14,14 @@ import {
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { createColumnHelper } from '@tanstack/react-table';
-import { TbEdit, TbTrash, TbPlus } from 'react-icons/tb';
+import { TbEdit, TbTrash, TbPlus, TbEye } from 'react-icons/tb';
 import { Input } from '@/components/shadcn/input';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogFooter,
   DialogTitle,
   DialogDescription,
-  DialogClose,
 } from '@/components/shadcn/dialog';
 import { Button } from '@/components/shadcn/button';
 import { Skeleton } from '@/components/shadcn/skeleton';
@@ -37,7 +35,9 @@ import {
 import dayjs from 'dayjs';
 import ReactPaginate from 'react-paginate';
 import { cn } from '@/lib/utils';
-import { useLocation } from 'react-router-dom';
+import RemoveConfirmModal from '@/components/ui/RemoveConfirmModal';
+import { useSelector } from 'react-redux';
+import CreateUpdateModal from '@/components/ui/CreateUpdateModal';
 
 const Pagination = ({ pageCount, onPageChange, currentPage, forcePage }) => (
   <ReactPaginate
@@ -75,41 +75,25 @@ const Pagination = ({ pageCount, onPageChange, currentPage, forcePage }) => (
   />
 );
 
-const ManageItemModal = ({
+const ViewDetailModal = ({
   isOpen,
-  onToggle,
-  title,
-  children,
-  isRemove,
-  onConfirm,
-}) => {
-  return (
-    <Dialog open={isOpen} onOpenChange={onToggle}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {isRemove && (
-            <DialogDescription>
-              Are you sure you want to remove this item?
-            </DialogDescription>
-          )}
-        </DialogHeader>
-
-        {children}
-        {isRemove && (
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="secondary">Cancel</Button>
-            </DialogClose>
-            <Button variant="destructive" onClick={onConfirm}>
-              Remove
-            </Button>
-          </DialogFooter>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-};
+  onClose,
+  DetailComponent,
+  id,
+  entityName,
+}) => (
+  <Dialog open={isOpen} onOpenChange={onClose}>
+    <DialogContent className="md:max-w-2xl overflow-hidden p-0">
+      <DialogHeader className="px-6 pt-6">
+        <DialogTitle>{`Detail ${entityName}`}</DialogTitle>
+        <DialogDescription className="sr-only"></DialogDescription>
+      </DialogHeader>
+      <div className="max-h-[80vh] overflow-y-auto p-6">
+        <DetailComponent id={id} onClose={onClose} />
+      </div>
+    </DialogContent>
+  </Dialog>
+);
 
 const PageSizeSelector = ({ value, onChange }) => (
   <div className="flex items-center gap-x-3 w-16 text-sm">
@@ -128,118 +112,35 @@ const PageSizeSelector = ({ value, onChange }) => (
   </div>
 );
 
-const TableWrapper = ({ table }) => {
-  const { getHeaderGroups, getRowModel, getVisibleFlatColumns } = table;
-  const emptyRows = 10 - getRowModel().rows.length;
-
-  return (
-    <Table>
-      <TableHeader>
-        {getHeaderGroups().map(headerGroup => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map(header => (
-              <TableHead
-                key={header.id}
-                style={{
-                  width: header.column.columnDef.size,
-                  minWidth: header.column.columnDef.size,
-                  maxWidth: header.column.columnDef.size,
-                }}
-              >
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {getRowModel().rows.length === 0 ? (
-          <TableRow>
-            <TableCell
-              colSpan={getVisibleFlatColumns().length}
-              className="h-64 text-center border-0"
-            >
-              No results.
-            </TableCell>
-          </TableRow>
-        ) : (
-          <>
-            {getRowModel().rows.map(row => (
-              <TableRow key={row.id}>
-                {row.getVisibleCells().map(cell => (
-                  <TableCell
-                    key={cell.id}
-                    style={{
-                      width: cell.column.columnDef.size,
-                      minWidth: cell.column.columnDef.size,
-                      maxWidth: cell.column.columnDef.size,
-                    }}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-
-            {Array.from({ length: emptyRows }).map((_, index) => (
-              <TableRow key={`empty-${index}`} className="border-b-0">
-                <TableCell colSpan={getVisibleFlatColumns().length} />
-              </TableRow>
-            ))}
-          </>
-        )}
-      </TableBody>
-    </Table>
-  );
-};
-
-const LoadingSkeleton = () => (
-  <div className="flex flex-col gap-y-4">
-    {Array.from({ length: 10 }).map((_, index) => (
-      <Skeleton key={`row-skeleton-${index}`} className="h-6" />
-    ))}
-  </div>
-);
-
 const DataTable = ({
-  columns,
   searchQuery,
-  lazyShowQuery,
-  createMutation,
-  updateMutation,
   removeMutation,
-  FormComponent = null,
+  columns,
+  FormComponent,
+  DetailComponent,
+  allowView = false,
   allowCreate = true,
   allowUpdate = true,
+  entityName,
 }) => {
+  const { currentUser } = useSelector(state => state.auth);
   const columnsHelper = createColumnHelper();
-  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setcurrentPage] = useState(0);
   const [limit, setLimit] = useState(10);
+  const [modalType, setModalType] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
-
   const {
     data: items,
-    isLoading: isLoadingItems,
-    isFetching: isFetchingItems,
+    isLoading: isItemsLoading,
+    isFetching: isItemsFetching,
   } = searchQuery({
     page: searchTerm ? 1 : currentPage + 1,
     limit,
     q: searchTerm,
   });
-  const [fetchShowQuery, { data: item }] = lazyShowQuery();
-  const [removeMutate] = removeMutation();
+  const [removeMutate, { isLoading: isRemoveLoading }] = removeMutation();
   const totalPages = Math.max(items?.meta?.totalPages || 0, 1);
-
   const mergedColumns = [
     columnsHelper.display({
       header: '#',
@@ -252,36 +153,44 @@ const DataTable = ({
     ...columns,
     columnsHelper.accessor('createdAt', {
       header: 'Created At',
-      size: 100,
-      cell: info => dayjs(info.getValue()).format('DD MMM YYYY hh:mm A'),
+      size: 120,
+      cell: info => (
+        <div className="whitespace-normal break-words text-wrap">
+          {dayjs(info.getValue()).format('DD MMM YYYY hh:mm A')}
+        </div>
+      ),
     }),
     columnsHelper.accessor('updatedAt', {
       header: 'Updated At',
-      size: 100,
-      cell: info => dayjs(info.getValue()).format('DD MMM YYYY hh:mm A'),
+      size: 120,
+      cell: info => (
+        <div className="whitespace-normal break-words text-wrap">
+          {dayjs(info.getValue()).format('DD MMM YYYY hh:mm A')}
+        </div>
+      ),
     }),
     columnsHelper.display({
       header: 'Actions',
-      size: 80,
+      size: 100,
       cell: ({ row }) => {
-        let postId;
-
-        if (location.pathname.includes('comments'))
-          postId = row.original.post._id;
-
+        const id = row.original.id;
         return (
-          <div className="flex gap-x-2">
+          <div className="flex gap-x-3">
+            {allowView && (
+              <TbEye
+                className="size-5 cursor-pointer text-blue-600"
+                onClick={() => handleOpenModal('view', id)}
+              />
+            )}
             {allowUpdate && (
               <TbEdit
                 className="size-5 cursor-pointer text-orange-600"
-                onClick={() => handleUpdate(row.original._id)}
+                onClick={() => handleOpenModal('update', id)}
               />
             )}
             <TbTrash
               className="size-5 cursor-pointer text-red-600"
-              onClick={() =>
-                handleRemove({ id: row.original._id, parentId: postId })
-              }
+              onClick={() => handleOpenModal('remove', id)}
             />
           </div>
         );
@@ -289,58 +198,28 @@ const DataTable = ({
     }),
   ];
 
-  const handleModalToggle = open => {
-    setIsCreateModalOpen(open);
-    setIsUpdateModalOpen(open);
+  const handleOpenModal = (type, id = null) => {
+    setModalType(type);
+    setSelectedId(id);
   };
 
-  const handleCreate = () => {
+  const handleCloseModal = () => {
+    setModalType(null);
     setSelectedId(null);
-    setIsCreateModalOpen(true);
   };
 
-  const handleUpdate = async id => {
-    await fetchShowQuery(id);
-    setIsUpdateModalOpen(true);
-  };
-
-  const handleRemove = ({ id, parentId }) => {
-    if (location.pathname.includes('comments') && parentId) {
-      setSelectedId({ postId: parentId, commentId: id });
-    } else {
-      setSelectedId(id);
-    }
-
-    setIsRemoveModalOpen(true);
-  };
-
-  const handleCreateComplete = result => {
-    setIsCreateModalOpen(false);
-    setSelectedId(null);
-    toast.success(result.message);
-  };
-
-  const handleUpdateComplete = result => {
-    setIsUpdateModalOpen(false);
-    setSelectedId(null);
-    toast.success(result.message);
+  const handleSubmitComplete = () => {
+    handleCloseModal();
   };
 
   const handleRemoveConfirm = async () => {
     try {
       const result = await removeMutate(selectedId).unwrap();
-
-      setIsRemoveModalOpen(false);
-      setSelectedId(null);
       toast.success(result.message);
+      handleCloseModal();
     } catch (e) {
       toast.error('Failed to remove item');
     }
-  };
-
-  const handlePageSizeChange = value => {
-    setLimit(value);
-    setcurrentPage(0);
   };
 
   const table = useReactTable({
@@ -362,23 +241,106 @@ const DataTable = ({
           onChange={e => setSearchTerm(e.target.value)}
         />
         {allowCreate && (
-          <Button onClick={handleCreate}>
-            <TbPlus className="mr-2 size-5" />
-            Add
+          <Button
+            onClick={() => handleOpenModal('create')}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <TbPlus className="size-4" />
+            <span>Add</span>
           </Button>
         )}
       </div>
 
-      {isLoadingItems || isFetchingItems ? (
-        <LoadingSkeleton />
-      ) : (
-        <TableWrapper table={table} />
-      )}
+      <div className="overflow-auto border rounded-md">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map(headerGroup => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map(header => (
+                  <TableHead
+                    key={header.id}
+                    style={{
+                      width: header.column.columnDef.size,
+                      minWidth: header.column.columnDef.size,
+                      maxWidth: header.column.columnDef.size,
+                    }}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {isItemsLoading || isItemsFetching ? (
+              Array.from({ length: 10 }).map((_, rowIndex) => (
+                <TableRow key={rowIndex}>
+                  {table.getVisibleFlatColumns().map((col, colIndex) => (
+                    <TableCell key={colIndex}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={table.getVisibleFlatColumns().length}
+                  className="h-64 text-center border-0"
+                >
+                  No results.
+                </TableCell>
+              </TableRow>
+            ) : (
+              <>
+                {table.getRowModel().rows.map(row => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map(cell => (
+                      <TableCell
+                        key={cell.id}
+                        style={{
+                          width: cell.column.columnDef.size,
+                          minWidth: cell.column.columnDef.size,
+                          maxWidth: cell.column.columnDef.size,
+                        }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+                {Array.from({
+                  length: Math.max(0, 10 - table.getRowModel().rows.length),
+                }).map((_, i) => (
+                  <TableRow key={`empty-${i}`}>
+                    {table.getVisibleFlatColumns().map((col, j) => (
+                      <TableCell key={j}>
+                        <div className="h-6" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <div className="flex justify-between mt-4">
         <PageSizeSelector
           value={limit}
-          onChange={value => handlePageSizeChange(value)}
+          onChange={value => {
+            setLimit(value);
+            setcurrentPage(0);
+          }}
         />
 
         <Pagination
@@ -389,34 +351,29 @@ const DataTable = ({
         />
       </div>
 
-      <ManageItemModal
-        isOpen={isCreateModalOpen || isUpdateModalOpen}
-        onToggle={open => handleModalToggle(open)}
-        title={isCreateModalOpen ? 'Create' : 'Update'}
-      >
-        {FormComponent && (
-          <FormComponent
-            isCreate={isCreateModalOpen}
-            mutation={isCreateModalOpen ? createMutation : updateMutation}
-            initialValues={!isCreateModalOpen && item?.data ? item.data : {}}
-            onComplete={
-              isCreateModalOpen ? handleCreateComplete : handleUpdateComplete
-            }
-            onCancel={
-              isCreateModalOpen
-                ? () => setIsCreateModalOpen(false)
-                : () => setIsUpdateModalOpen(false)
-            }
-          />
-        )}
-      </ManageItemModal>
+      <CreateUpdateModal
+        id={selectedId}
+        entityName={entityName}
+        isOpen={modalType === 'create' || modalType === 'update'}
+        isCreate={modalType === 'create'}
+        onClose={handleCloseModal}
+        FormComponent={FormComponent}
+        onSubmitComplete={handleSubmitComplete}
+      />
 
-      <ManageItemModal
-        isOpen={isRemoveModalOpen}
-        isRemove={true}
-        title="Remove"
-        onToggle={() => setIsRemoveModalOpen(false)}
+      <RemoveConfirmModal
+        isOpen={modalType === 'remove'}
         onConfirm={handleRemoveConfirm}
+        onClose={handleCloseModal}
+        isLoading={isRemoveLoading}
+      />
+
+      <ViewDetailModal
+        entityName={entityName}
+        isOpen={modalType === 'view'}
+        onClose={handleCloseModal}
+        DetailComponent={DetailComponent}
+        id={selectedId}
       />
     </>
   );

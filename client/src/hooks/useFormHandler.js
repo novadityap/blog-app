@@ -1,85 +1,101 @@
 import { useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { setToken, setCurrentUser, updateCurrentUser } from '@/features/authSlice';
+import {
+  setToken,
+  setCurrentUser,
+  updateCurrentUser,
+} from '@/features/authSlice';
 import { toast } from 'react-hot-toast';
 
+const getChangedData = (dirtyFields, form) => {
+  return Object.fromEntries(
+    Object.keys(dirtyFields).map(key => [key, form.getValues(key)])
+  );
+};
+
+const filterEmptyValues = data => {
+  return Object.fromEntries(
+    Object.entries(data).filter(([_, value]) => value !== '')
+  );
+};
+
+
+const buildFormData = ({ data, fileFieldname, isMultiple, method }) => {
+  const formData = new FormData();
+
+  if (method) formData.append('_method', method.toUpperCase());
+
+  Object.keys(data).forEach(key => {
+    const value = data[key];
+
+    if (isMultiple && key === fileFieldname) {
+      value.forEach(file => formData.append(`${key}`, file));
+    } else {
+      formData.append(key, value);
+    }
+  });
+
+  return formData;
+};
+
+const buildPayload = (data, params) => {
+  return params?.length
+    ? {
+        data,
+        ...Object.fromEntries(params.map(({ name, value }) => [name, value])),
+      }
+    : data;
+};
+
 const useFormHandler = ({
+  page,
+  method,
   mutation,
-  params = [],
-  formType,
-  onComplete,
+  fileFieldname,
   defaultValues,
-  isCreate = true
+  onSubmitComplete,
+  params = [],
+  isMultiple = false,
+  isCreate = true,
 }) => {
   const dispatch = useDispatch();
   const [message, setMessage] = useState('');
   const [mutate, { isLoading, isError, error, isSuccess }] = mutation();
-  const { 
-    handleSubmit, 
+  const form = useForm({ defaultValues });
+  const {
+    handleSubmit,
     formState: { dirtyFields },
-    ...form 
-  } = useForm({ defaultValues });
-
-  const buildPayload = ({ data, changedData = {}, params = [] }) => {
-    let payload = {};
-
-    if (params.length > 0) {
-      const paramPayload = params.reduce((acc, { name, value }) => {
-        if (name && value !== undefined) acc[name] = value;
-        return acc;
-      }, {});
-
-      payload = {
-        data: Object.keys(changedData).length > 0 ? changedData : data,
-        ...paramPayload,
-      };
-
-      return payload;
-    } else {
-      payload = Object.keys(changedData).length > 0 ? changedData : data;
-      return payload;
-    }
-  };
+  } = form;
 
   const onSubmit = async data => {
     try {
-       const changedData = !isCreate ? Object.keys(dirtyFields).reduce((acc, key) => {
-        acc[key] = form.getValues(key);
-        return acc;
-      }, {}) : {};
+      if (!isCreate) {
+        data = getChangedData(dirtyFields, form);
+      } else {
+        data = filterEmptyValues(data);
+      }
 
-      const filteredData = Object.fromEntries(
-        Object.entries(data).filter(
-          ([_, v]) =>
-            v !== '' &&
-          v !== null &&
-          v !== undefined &&
-          !(Array.isArray(v) && v.length === 0)
-        )
-      );
-      const payload = buildPayload({
-        data: filteredData,
-        changedData,
-        params,
-      });
-      const result = await mutate(payload).unwrap();
+      if (fileFieldname) {
+        data = buildFormData({
+          data,
+          fileFieldname,
+          isMultiple,
+          method,
+        });
+      }
 
-      if (formType === 'signin') {
+      const result = await mutate(buildPayload(data, params)).unwrap();
+
+      if (page === 'signin') {
         dispatch(setToken(result.data.token));
         dispatch(setCurrentUser(result.data));
       }
+      if (page === 'profile') dispatch(updateCurrentUser(result.data));
+      if (onSubmitComplete) onSubmitComplete();
 
-      if (formType === 'profile') {
-        dispatch(updateCurrentUser(result.data));
-      }
-
-      if (formType === 'datatable' && onComplete) {
-        onComplete(result);
-      } else {
-        toast.success(result.message);
-        setMessage(result.message);
-      }
+      toast.success(result.message);
+      setMessage(result.message);
 
       form.reset(result.data);
     } catch (e) {
@@ -90,9 +106,8 @@ const useFormHandler = ({
         });
       }
 
-      if (formType === 'datatable' && e.code !== 400) {
+      if (e.code !== 400) {
         toast.error(e.message);
-      } else {
         setMessage(e.message);
       }
     }
