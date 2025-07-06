@@ -32,7 +32,7 @@ const Signin = () => {
   const { token } = useSelector(state => state.auth);
   const { form, handleSubmit, isLoading, error, isSuccess, message } =
     useFormHandler({
-      formType: 'signin',
+      page: 'signin',
       mutation: useSigninMutation,
       defaultValues: { 
         email: '', 

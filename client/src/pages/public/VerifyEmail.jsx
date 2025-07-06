@@ -13,6 +13,19 @@ import { Skeleton } from '@/components/shadcn/skeleton';
 import { useVerifyEmailMutation } from '@/services/authApi';
 import { cn } from '@/lib/utils';
 
+const VerifyEmailSkeleton = () => (
+  <div className="w-full sm:w-[450px]">
+    <div className="flex flex-col gap-y-5">
+      <Skeleton className="h-56 w-96 rounded-xl" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-96" />
+        <Skeleton className="h-4 w-96" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+    </div>
+  </div>
+);
+
 const VerifyEmail = () => {
   const { verificationToken } = useParams();
   const [verifyEmail, { isLoading, isError, isSuccess, error, data }] =
@@ -24,20 +37,7 @@ const VerifyEmail = () => {
 
   const message = isError ? error?.message : data?.message;
 
-  if (isLoading) {
-    return (
-      <div className="w-full sm:w-[450px]">
-        <div className="flex flex-col gap-y-5">
-          <Skeleton className="h-56 w-96 rounded-xl" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-96" />
-            <Skeleton className="h-4 w-96" />
-            <Skeleton className="h-4 w-64" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <VerifyEmailSkeleton />;
 
   return (
     <div className="w-full sm:w-[450px]">
