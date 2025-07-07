@@ -56,13 +56,13 @@ const CreateComment = ({
     defaultValues: {
       post: postId,
       parentCommentId,
-      text: replyTo || '',
+      text: replyTo,
     },
   });
 
   useEffect(() => {
     if (isSuccess && isReply) onCancelReply();
-  }, [isSuccess, isReply, onCancelReply]);
+  }, [isSuccess, isReply]);
 
   return (
     <div className={cn('flex w-full gap-x-4', className)}>
@@ -115,13 +115,14 @@ const CreateComment = ({
 const Comments = ({ comments, postId, token, onRemove, currentUser }) => {
   const [replyToCommentId, setReplyToCommentId] = useState(null);
   const topLevelComments = comments.filter(c => !c.parentCommentId);
+
   const getReplies = parentId =>
     comments.filter(c => c.parentCommentId === parentId);
 
   return (
     <div className="flex flex-col w-full gap-y-2">
       {topLevelComments.map(comment => (
-        <div key={comment._id} className="flex gap-x-4">
+        <div key={comment.id} className="flex gap-x-4">
           <Avatar className="size-10 mt-2">
             <AvatarImage
               src={comment.user.avatar}
@@ -139,10 +140,10 @@ const Comments = ({ comments, postId, token, onRemove, currentUser }) => {
                 </p>
                 <p className="text-gray-600 text-sm">{comment.text}</p>
               </div>
-              {token && currentUser._id === comment.user._id && (
+              {token && currentUser.id === comment.user.id && (
                 <TbTrash
                   className="size-5 cursor-pointer text-red-600"
-                  onClick={() => onRemove(postId, comment._id)}
+                  onClick={() => onRemove(postId, comment.id)}
                 />
               )}
             </div>
@@ -150,24 +151,24 @@ const Comments = ({ comments, postId, token, onRemove, currentUser }) => {
               <Button
                 variant="ghost"
                 className="text-sm text-black font-semibold mt-2 px-4 py-2 h-8 rounded-xl hover:bg-slate-200"
-                onClick={() => setReplyToCommentId(comment._id)}
+                onClick={() => setReplyToCommentId(comment.id)}
               >
                 Reply
               </Button>
             )}
-            {replyToCommentId === comment._id && (
+            {replyToCommentId === comment.id && (
               <CreateComment
                 avatarUrl={comment.user.avatar}
                 isReply={true}
                 postId={postId}
-                parentCommentId={comment._id}
+                parentCommentId={comment.id}
                 onCancelReply={() => setReplyToCommentId(null)}
                 className="mt-2"
               />
             )}
             <div className="flex flex-col w-full gap-y-2">
-              {getReplies(comment._id).map(reply => (
-                <div key={reply._id}>
+              {getReplies(comment.id).map(reply => (
+                <div key={reply.id}>
                   <div className="flex gap-x-4">
                     <Avatar className="size-8 mt-2">
                       <AvatarImage
@@ -178,7 +179,7 @@ const Comments = ({ comments, postId, token, onRemove, currentUser }) => {
                         {reply.user.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="flex-1">
                       <div className="flex justify-between items-center">
                         <div>
                           <p className="font-semibold text-gray-800">
@@ -186,10 +187,10 @@ const Comments = ({ comments, postId, token, onRemove, currentUser }) => {
                           </p>
                           <p className="text-gray-600 text-sm">{reply.text}</p>
                         </div>
-                        {token && currentUser._id === comment.user._id && (
+                        {token && currentUser.id === comment.user.id && (
                           <TbTrash
                             className="size-5 cursor-pointer text-red-600"
-                            onClick={() => onRemove(postId, comment._id)}
+                            onClick={() => onRemove(postId, reply.id)}
                           />
                         )}
                       </div>
@@ -197,19 +198,19 @@ const Comments = ({ comments, postId, token, onRemove, currentUser }) => {
                         <Button
                           variant="ghost"
                           className="text-sm text-black font-semibold mt-2 px-4 py-2 h-8 rounded-xl hover:bg-slate-200"
-                          onClick={() => setReplyToCommentId(reply._id)}
+                          onClick={() => setReplyToCommentId(reply.id)}
                         >
                           Reply
                         </Button>
                       )}
                     </div>
                   </div>
-                  {replyToCommentId === reply._id && (
+                  {replyToCommentId === reply.id && (
                     <CreateComment
                       avatarUrl={reply.user.avatar}
                       isReply={true}
                       postId={postId}
-                      parentCommentId={comment._id}
+                      parentCommentId={comment.id}
                       onCancelReply={() => setReplyToCommentId(null)}
                       replyTo={`@${reply.user.username} `}
                     />
@@ -224,48 +225,40 @@ const Comments = ({ comments, postId, token, onRemove, currentUser }) => {
   );
 };
 
-const PostDetailSkeleton = () => (
-  <Card>
-    <CardHeader>
-      <Skeleton className="h-8 w-2/3" />
-    </CardHeader>
-    <CardContent>
-      <Skeleton className="h-64 w-full rounded-md" />
-      <Skeleton className="h-6 w-1/2 mt-4" />
-      <Skeleton className="h-4 w-full mt-2" />
-    </CardContent>
-  </Card>
-);
-
-const CommentsSkeleton = () => {
+const PostDetailSkeleton = () => {
   return (
-    <div className="flex flex-col w-full gap-y-4">
-      {[...Array(2)].map((_, i) => (
-        <div key={i} className="flex gap-x-4">
-          <Skeleton className="size-10 rounded-full mt-2" />
-
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3 w-full max-w-md" />
-            <Skeleton className="h-6 w-16 mt-2 rounded-xl" />
-
-            <div className="mt-4 flex flex-col gap-y-2">
-              {[...Array(1)].map((_, j) => (
-                <div key={j} className="flex gap-x-4 ml-10">
-                  <Skeleton className="size-8 rounded-full mt-1" />
-
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-28" />
-                    <Skeleton className="h-3 w-full max-w-sm" />
-                    <Skeleton className="h-6 w-14 mt-1 rounded-xl" />
-                  </div>
-                </div>
-              ))}
-            </div>
+    <Card className="w-full">
+      <CardHeader>
+        <Skeleton className="w-1/3 h-6 mb-1" />
+        <Skeleton className="w-1/2 h-4" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <Skeleton className="w-96 h-52 rounded-sm" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="flex justify-end">
+            <Skeleton className="h-10 w-full sm:w-28 rounded-md" />
           </div>
         </div>
-      ))}
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -273,7 +266,7 @@ const LikeButton = ({ likes, onLike, currentUser, totalLikes }) => {
   const [isLiked, setIsLiked] = useState(false);
 
   useEffect(() => {
-    setIsLiked(likes.includes(currentUser._id));
+    setIsLiked(likes.includes(currentUser.id));
   }, [likes, currentUser]);
 
   return (
@@ -293,19 +286,13 @@ const LikeButton = ({ likes, onLike, currentUser, totalLikes }) => {
 const PostDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const postId = location.state.postId;
   const { token, currentUser } = useSelector(state => state.auth);
-  const [postId, setPostId] = useState(null);
   const [likePost] = useLikePostMutation();
   const [removeComment] = useRemoveCommentMutation();
-  const { data: comments, isLoading: isLoadingComments } =
+  const { data: comments, isLoading: isCommentsLoading } =
     useListCommentsByPostQuery(postId);
-  const {
-    data: post,
-    isLoading: isLoadingPost,
-    error,
-  } = useShowPostQuery(postId, {
-    refetchOnMountOrArgChange: true,
-  });
+  const { data: post, isLoading: isPostLoading } = useShowPostQuery(postId);
 
   const handleRemoveComment = async (postId, commentId) => {
     await removeComment({ postId, commentId });
@@ -315,32 +302,11 @@ const PostDetail = () => {
     if (!token) {
       navigate('/signin');
     } else {
-      likePost(post?.data?._id);
+      likePost(post?.data?.id);
     }
   };
 
-  useEffect(() => {
-    const id = location.state?.postId;
-    if (!id) {
-      navigate('/not-found');
-    } else {
-      setPostId(id);
-    }
-  }, [isLoadingPost, post, navigate, location.state]);
-
-  if (isLoadingPost) return <PostDetailSkeleton />;
-
-  if (error || !post) {
-    return (
-      <Card>
-        <CardContent className="text-center py-10">
-          <p className="text-red-500 font-semibold">
-            Failed to load the post. Please try again later.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+  if (isPostLoading || isCommentsLoading) return <PostDetailSkeleton />;
 
   return (
     <Card className="w-full max-w-3xl">
@@ -377,7 +343,7 @@ const PostDetail = () => {
       <CardContent className="text-justify">
         <AspectRatio ratio={16 / 9}>
           <img
-            src={post?.data?.postImage}
+            src={post?.data?.image}
             alt={post?.data?.title}
             className="size-full"
           />
@@ -396,7 +362,7 @@ const PostDetail = () => {
         {token ? (
           <CreateComment
             avatarUrl={post?.data?.user?.avatar || import.meta.env.VITE_API_URL}
-            postId={post?.data?._id}
+            postId={post?.data?.id}
           />
         ) : (
           <div className="flex items-center gap-3 p-4 border border-border bg-slate-200/ rounded-xl">
@@ -411,9 +377,7 @@ const PostDetail = () => {
           </div>
         )}
 
-        {isLoadingComments ? (
-          <CommentsSkeleton />
-        ) : comments?.data?.length === 0 ? (
+        {comments?.data?.length === 0 ? (
           <p className="text-center text-muted-foreground py-4">
             No comments yet. Be the first to comment!
           </p>
@@ -421,9 +385,9 @@ const PostDetail = () => {
           <Comments
             token={token}
             comments={comments?.data}
-            postId={post?.data?._id}
-            onRemove={handleRemoveComment}
             currentUser={currentUser}
+            postId={post?.data?.id}
+            onRemove={handleRemoveComment}
           />
         )}
       </CardFooter>

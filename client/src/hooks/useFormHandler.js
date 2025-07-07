@@ -103,7 +103,11 @@ const useFormHandler = ({
       toast.success(result.message);
       setMessage(result.message);
 
-      form.reset(sanitizeNull(result.data));
+      if (result.data && typeof result.data === 'object') {
+        form.reset(sanitizeNull(result.data));
+      } else {
+        form.reset();
+      }
     } catch (e) {
       if (e.errors) {
         Object.keys(e.errors).forEach(key => {

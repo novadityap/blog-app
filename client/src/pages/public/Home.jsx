@@ -65,7 +65,7 @@ const PostCard = ({ post }) => (
       <CardTitle className="capitalize text-xl font-bold">
         <Link
           to={`/posts/${post?.slug}`}
-          state={{ postId: post?._id }}
+          state={{ postId: post?.id }}
           className="hover:underline"
         >
           {post?.title}
@@ -87,11 +87,11 @@ const PostCard = ({ post }) => (
     <CardContent>
       <Link
         to={`/posts/${post?.slug}`}
-        state={{ postId: post?._id }}
+        state={{ postId: post?.id }}
         className="block"
       >
         <img
-          src={post?.postImage}
+          src={post?.image}
           alt={post?.title}
           className="w-full h-56 object-cover rounded-lg mb-4"
         />
@@ -103,7 +103,7 @@ const PostCard = ({ post }) => (
     </CardContent>
     <CardFooter className="flex justify-end">
       <Button asChild>
-        <Link to={`/posts/${post?.slug}`} state={{ postId: post?._id }}>
+        <Link to={`/posts/${post?.slug}`} state={{ postId: post?.id }}>
           Read More
         </Link>
       </Button>
@@ -122,7 +122,7 @@ const CategoryFilter = ({ categories, onOpen, onChange }) => (
         <SelectContent>
           <SelectItem value={null}>All Categories</SelectItem>
           {categories?.data?.map(category => (
-            <SelectItem key={category._id} value={category._id}>
+            <SelectItem key={category.id} value={category.id}>
               {category.name}
             </SelectItem>
           ))}
@@ -202,7 +202,7 @@ const Home = () => {
               No posts found.
             </p>
           ) : (
-            posts.map(post => <PostCard key={post?._id} post={post} />)
+            posts.map(post => <PostCard key={post?.id} post={post} />)
           )}
         </div>
       </InfiniteScroll>
