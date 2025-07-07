@@ -1,25 +1,21 @@
 import formidable from 'formidable';
 import formatError from './formatError.js';
 import ResponseError from './responseError.js';
-import logger from './logger.js';
 import cloudinary from './cloudinary.js';
 
 const normalizeField = fields => {
   const normalized = {};
-  const isAlwaysArrayKey = key => ['roles', 'permissions'].includes(key);
+
   const normalizeKey = key => (key.endsWith('[]') ? key.slice(0, -2) : key);
 
-  for (const key in fields) {
-    const normalizedKey = normalizeKey(key);
+  for (const rawKey in fields) {
+    const key = normalizeKey(rawKey);
+    const value = fields[rawKey];
 
-    if (isAlwaysArrayKey(normalizedKey)) {
-      normalized[normalizedKey] = Array.isArray(fields[key])
-        ? fields[key]
-        : [fields[key]];
-    } else if (fields[key].length === 1) {
-      normalized[normalizedKey] = fields[key][0];
+    if (Array.isArray(value) && value.length === 1) {
+      normalized[key] = value[0];
     } else {
-      normalized[normalizedKey] = fields[key];
+      normalized[key] = value;
     }
   }
 
@@ -28,11 +24,17 @@ const normalizeField = fields => {
 
 const uploadFile = (
   req,
-  { fieldname, isRequired = false, formSchema = null }
+  {
+    fieldname,
+    folderName,
+    isRequired = false,
+    maxFiles = 1,
+    existingFileCount = 0,
+    formSchema = null,
+  }
 ) => {
   return new Promise((resolve, reject) => {
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    const maxFiles = 1;
     const maxFileSize = 2 * 1024 * 1024;
     const uploadErrors = {};
 
@@ -42,27 +44,29 @@ const uploadFile = (
       let uploadedFiles = files?.[fieldname];
 
       if (isRequired && !uploadedFiles)
-        uploadErrors[fieldname] = `${fieldname} is required`;
+        uploadErrors[fieldname] = `${
+          fieldname.charAt(0).toUpperCase() + fieldname.slice(1)
+        } is required`;
 
-      if ((isRequired && uploadedFiles) || (!isRequired && uploadedFiles)) {
-        if (uploadedFiles.length > maxFiles) {
+      if (uploadedFiles) {
+        const totalFileCount = uploadedFiles.length + existingFileCount;
+
+        if (uploadedFiles.length > maxFiles || totalFileCount > maxFiles) {
           if (!uploadErrors[fieldname])
-            uploadErrors[fieldname] = `maximum allowed files is ${maxFiles}`;
+            uploadErrors[fieldname] = `Maximum allowed files is ${maxFiles}`;
         }
 
         for (const file of uploadedFiles) {
           if (file.size > maxFileSize) {
             if (!uploadErrors[fieldname])
-              uploadErrors[fieldname] = `file size must be less than ${
+              uploadErrors[fieldname] = `Maximum allowed size per file is ${
                 maxFileSize / (1024 * 1024)
               }MB`;
           }
 
           if (!allowedMimeTypes.includes(file.mimetype)) {
             if (!uploadErrors[fieldname])
-              uploadErrors[fieldname].push(
-                'only jpeg and png files are allowed'
-              );
+              uploadErrors[fieldname] = 'Only images are allowed';
           }
         }
       }
@@ -73,16 +77,18 @@ const uploadFile = (
           stripUnknown: true,
         });
 
-        if (error) {
-          Object.assign(uploadErrors, formatError(error.details));
-          return reject(
-            new ResponseError('Validation errors', 400, uploadErrors)
-          );
+        if (error || Object.keys(uploadErrors).length > 0) {
+          const errors = {
+            ...(uploadErrors || {}),
+            ...(error ? formatError(error.details) : {}),
+          };
+
+          return reject(new ResponseError('Validation errors', 400, errors));
         }
 
         fields = value;
       } else {
-        if (uploadErrors && uploadedFiles) {
+        if (Object.keys(uploadErrors).length > 0) {
           return reject(
             new ResponseError('Validation errors', 400, uploadErrors)
           );
@@ -90,13 +96,22 @@ const uploadFile = (
       }
 
       if (uploadedFiles) {
-        const result = await cloudinary.uploader.upload(uploadedFiles[0].filepath, {
-          folder: `${fieldname}s`
+        const uploadedResults = [];
+        for (const file of uploadedFiles) {
+          const result = await cloudinary.uploader.upload(file.filepath, {
+            folder: folderName,
+          });
+
+          uploadedResults.push(result);
+        }
+
+        return resolve({
+          files: uploadedResults,
+          fields,
         });
-        return resolve({ file: result, fields });
       }
 
-      resolve({ file: null, fields });
+      resolve({ files: null, fields });
     });
   });
 };
