@@ -475,7 +475,7 @@ describe('PATCH /api/users/:userId', () => {
     await createTestUser({ email: 'test1@me.com' });
 
     const user = await getTestUser();
-    const role = await getTestRole();
+    const role = await getTestRole('user');
     const result = await request(app)
       .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.accessToken}`)
@@ -493,7 +493,7 @@ describe('PATCH /api/users/:userId', () => {
     await createTestUser({ username: 'test1' });
 
     const user = await getTestUser();
-    const role = await getTestRole();
+    const role = await getTestRole('user');
     const result = await request(app)
       .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.accessToken}`)
@@ -509,7 +509,7 @@ describe('PATCH /api/users/:userId', () => {
 
   it('should update user without changing avatar', async () => {
     const user = await getTestUser();
-    const role = await getTestRole();
+    const role = await getTestRole('user');
     const result = await request(app)
       .patch(`/api/users/${user._id}`)
       .set('Authorization', `Bearer ${global.accessToken}`)

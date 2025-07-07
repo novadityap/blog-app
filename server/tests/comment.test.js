@@ -56,7 +56,7 @@ describe('GET /api/posts/:postId/comments', () => {
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Comments retrieved successfully');
     expect(result.body.data).toHaveLength(1);
-    expect(result.body.data[0]._id).toEqual(comment._id.toString());
+    expect(result.body.data[0].id).toEqual(comment._id.toString());
   });
 });
 

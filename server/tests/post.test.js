@@ -171,7 +171,8 @@ describe('POST /api/posts', () => {
       .set('Content-Type', 'multipart/form-data')
       .field('content', 'test')
       .field('title', 'test')
-      .field('category', global.validObjectId.toString());
+      .field('category', global.validObjectId.toString())
+      .attach('postImage', global.testPostImagePath);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -189,10 +190,13 @@ describe('POST /api/posts', () => {
       .field('category', category._id.toString())
       .attach('postImage', global.testPostImagePath);
 
+    const updatedPost = await getTestPost();
+
     expect(result.status).toBe(201);
     expect(result.body.message).toBe('Post created successfully');
 
     await removeAllTestCategories();
+    await removeTestFile(updatedPost.postImage);
   });
 });
 
@@ -282,7 +286,7 @@ describe('PATCH /api/posts/:postId', () => {
   it('should update post with changing post image', async () => {
     const uploadResult = await cloudinary.uploader.upload(
       global.testPostImagePath,
-      { folder: 'postImages' }
+      { folder: 'posts' }
     );
     const post = await updateTestPost({ postImage: uploadResult.secure_url });
     const result = await request(app)
