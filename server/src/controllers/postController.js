@@ -1,5 +1,4 @@
 import Post from '../models/postModel.js';
-import User from '../models/userModel.js';
 import Category from '../models/categoryModel.js';
 import slugify from 'slugify';
 import ResponseError from '../utils/responseError.js';
@@ -15,21 +14,26 @@ import {
 import mongoose from 'mongoose';
 import cloudinary from '../utils/cloudinary.js';
 import extractPublicId from '../utils/extractPublicId.js';
+import formatMongoDoc from '../utils/formatMongoDoc.js';
 
 const create = async (req, res) => {
-  const { file, fields } = await uploadFile(req, {
+  const { files, fields } = await uploadFile(req, {
     isRequired: true,
     fieldname: 'postImage',
+    folderName: 'posts',
     formSchema: createPostSchema,
   });
 
   fields.slug = slugify(fields.title, { lower: true });
 
-  if (file) fields.postImage = file.secure_url;
+  if (files && files.length > 0) fields.postImage = files[0].secure_url;
 
   if (fields.category) {
     const category = await Category.exists({ _id: fields.category });
     if (!category) {
+      if (files && files.length > 0) {
+        await cloudinary.uploader.destroy(extractPublicId(files[0].secure_url));
+      }
       throw new ResponseError('Validation errors', 400, {
         category: 'Invalid category id',
       });
@@ -114,11 +118,13 @@ const search = async (req, res) => {
     });
   }
 
+  const formattedPosts = posts.map(post => formatMongoDoc(post, true));
+
   logger.info('posts retrieved successfully');
   res.status(200).json({
     code: 200,
     message: 'Posts retrieved successfully',
-    data: posts,
+    data: formattedPosts,
     meta: {
       pageSize: limit,
       totalItems: totalPosts,
@@ -151,25 +157,29 @@ const update = async (req, res) => {
   const post = await Post.findById(postId);
   if (!post) throw new ResponseError('Post not found', 404);
 
-  const { file, fields } = await uploadFile(req, {
+  const { files, fields } = await uploadFile(req, {
     fieldname: 'postImage',
+    folderName: 'posts',
     formSchema: updatePostSchema,
   });
 
   if (fields.category && fields.category !== post.category) {
     const category = await Category.exists({ _id: fields.category });
     if (!category) {
+      if (files && files.length > 0) {
+        await cloudinary.uploader.destroy(extractPublicId(files[0].secure_url));
+      }
       throw new ResponseError('Validation errors', 400, {
         category: 'Invalid category id',
       });
     }
   }
 
-  if (file) {
-    if (file.secure_url !== post.postImage) {
+  if (files && files.length > 0) {
+    if (files[0].secure_url !== post.postImage) {
       await cloudinary.uploader.destroy(extractPublicId(post.postImage));
 
-      post.postImage = file.secure_url;
+      post.postImage = files[0].secure_url;
       logger.info('post image updated successfully');
     }
   }

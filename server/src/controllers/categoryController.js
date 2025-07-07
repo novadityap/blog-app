@@ -8,6 +8,7 @@ import {
 } from '../validations/categoryValidation.js';
 import validate from '../utils/validate.js';
 import logger from '../utils/logger.js';
+import formatMongoDoc from '../utils/formatMongoDoc.js';
 
 const create = async (req, res) => {
   const fields = validate(createCategorySchema, req.body);
@@ -130,11 +131,13 @@ export const search = async (req, res) => {
     });
   }
 
+  const formattedCategories = categories.map((category) => formatMongoDoc(category, true));
+
   logger.info('categories retrieved successfully');
   res.status(200).json({
     code: 200,
     message: 'Categories retrieved successfully',
-    data: categories,
+    data: formattedCategories,
     meta: {
       pageSize: limit,
       totalItems: totalCategories,

@@ -156,7 +156,7 @@ const signin = async (req, res) => {
       code: 200,
       message: 'Signed in successfully',
       data: {
-        _id: transformedUser._id,
+        id: transformedUser._id,
         username: transformedUser.username,
         email: transformedUser.email,
         avatar: transformedUser.avatar,

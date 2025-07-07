@@ -11,6 +11,7 @@ import {
 } from '../validations/commentValidation.js';
 import { getPostSchema } from '../validations/postValidation.js';
 import checkOwnership from '../utils/checkOwnership.js';
+import formatMongoDoc from '../utils/formatMongoDoc.js';
 
 const validatePostId = async id => {
   const postId = validate(getPostSchema, id);
@@ -122,10 +123,12 @@ const search = async (req, res) => {
     });
   }
 
+  const formattedComments = comments.map(comment => formatMongoDoc(comment, true));
+
   res.status(200).json({
     code: 200,
     message: 'Comments retrieved successfully',
-    data: comments,
+    data: formattedComments,
     meta: {
       pageSize: limit,
       totalItems: totalComments,
@@ -172,7 +175,12 @@ const remove = async (req, res) => {
   await validatePostId(req.params.postId);
   const commentId = validate(getCommentSchema, req.params.commentId);
 
-  await checkOwnership(Comment, commentId, req.user);
+   await checkOwnership({
+      modelName: 'comment',
+      paramsId: commentId,
+      ownerFieldName: 'user',
+      currentUser: req.user,
+    });
 
   const comment = await Comment.findByIdAndDelete(commentId);
   if (!comment) throw new ResponseError('Comment not found', 404);

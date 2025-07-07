@@ -8,6 +8,7 @@ import {
   getRoleSchema,
   searchRoleSchema,
 } from '../validations/roleValidation.js';
+import formatMongoDoc from '../utils/formatMongoDoc.js';
 
 const create = async (req, res) => {
   const fields = validate(createRoleSchema, req.body);
@@ -64,11 +65,13 @@ const search = async (req, res) => {
     });
   }
 
+  const formattedRoles = roles.map(role => formatMongoDoc(role, true));
+
   logger.info('roles retrieved successfully');
   res.status(200).json({
     code: 200,
     message: 'Roles retrieved successfully',
-    data: roles,
+    data: formattedRoles,
     meta: {
       pageSize: limit,
       totalItems: totalRoles,

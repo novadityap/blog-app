@@ -16,10 +16,15 @@ import checkOwnership from '../utils/checkOwnership.js';
 import cloudinary from '../utils/cloudinary.js';
 import extractPublicId from '../utils/extractPublicId.js';
 import mongoose from 'mongoose';
+import formatMongoDoc from '../utils/formatMongoDoc.js';
 
 const show = async (req, res) => {
   const userId = validate(getUserSchema, req.params.userId);
-  await checkOwnership(User, userId, req.user);
+   await checkOwnership({
+    modelName: 'user',
+    paramsId: userId,
+    currentUser: req.user,
+  });
 
   const user = await User.findById(userId).populate('role');
   if (!user) {
@@ -36,19 +41,23 @@ const show = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   const userId = validate(getUserSchema, req.params.userId);
-  await checkOwnership(User, userId, req.user);
+  await checkOwnership({
+    modelName: 'user',
+    paramsId: userId,
+    currentUser: req.user,
+  });
 
   const user = await User.findById(userId).populate('role', 'name');
 
-  if (!user) {
-    throw new ResponseError('User not found', 404);
-  }
+  if (!user) throw new ResponseError('User not found', 404);
 
-  const { file, fields } = await uploadFile(req, {
+  const { files, fields } = await uploadFile(req, {
     fieldname: 'avatar',
+    folderName: 'avatars',
     formSchema: updateProfileSchema,
   });
 
+  const errors = {};
   const checkDuplicateConditions = [];
 
   if (fields.username && fields.username !== user.username) {
@@ -69,27 +78,24 @@ const updateProfile = async (req, res) => {
       $or: checkDuplicateConditions,
     });
 
-    const errors = {};
-
     if (existingUser) {
       if (existingUser.username === fields.username)
         errors.username = 'Username already in use';
       if (existingUser.email === fields.email)
         errors.email = 'Email already in use';
     }
-
-    if (Object.keys(errors).length > 0) {
-      throw new ResponseError('Validation errors', 400, errors);
-    }
   }
+
+  if (Object.keys(errors).length > 0)
+    throw new ResponseError('Validation errors', 400, errors);
 
   if (fields.password) fields.password = await bcrypt.hash(fields.password, 10);
 
-  if (file) {
+  if (files && files.length > 0) {
     if (user.avatar !== process.env.DEFAULT_AVATAR_URL)
       await cloudinary.uploader.destroy(extractPublicId(user.avatar));
 
-    user.avatar = file.secure_url;
+    fields.avatar = files[0].secure_url;
     logger.info('avatar updated successfully');
   }
 
@@ -101,7 +107,7 @@ const updateProfile = async (req, res) => {
     code: 200,
     message: 'Profile updated successfully',
     data: {
-      _id: user._id,
+      id: user._id,
       username: user.username,
       email: user.email,
       avatar: user.avatar,
@@ -165,11 +171,13 @@ const search = async (req, res) => {
     });
   }
 
+  const formattedUsers = users.map(user => formatMongoDoc(user, true));
+
   logger.info('users retrieved successfully');
   res.status(200).json({
     code: 200,
     message: 'Users retrieved successfully',
-    data: users,
+    data: formattedUsers,
     meta: {
       pageSize: limit,
       totalItems: totalUsers,
@@ -220,18 +228,22 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   const userId = validate(getUserSchema, req.params.userId);
-  await checkOwnership(User, userId, req.user);
+  await checkOwnership({
+    modelName: 'user',
+    paramsId: userId,
+    currentUser: req.user,
+  });
 
   const user = await User.findById(userId);
-  if (!user) {
-    throw new ResponseError('User not found', 404);
-  }
+  if (!user) throw new ResponseError('User not found', 404);
 
-  const { file, fields } = await uploadFile(req, {
+  const { files, fields } = await uploadFile(req, {
     fieldname: 'avatar',
+    folderName: 'avatars',
     formSchema: updateUserSchema,
   });
 
+  const errors = {};
   const checkDuplicateConditions = [];
 
   if (fields.username && fields.username !== user.username) {
@@ -252,19 +264,16 @@ const update = async (req, res) => {
       $or: checkDuplicateConditions,
     });
 
-    const errors = {};
-
     if (existingUser) {
       if (existingUser.username === fields.username)
         errors.username = 'Username already in use';
       if (existingUser.email === fields.email)
         errors.email = 'Email already in use';
     }
-
-    if (Object.keys(errors).length > 0) {
-      throw new ResponseError('Validation errors', 400, errors);
-    }
   }
+
+  if (Object.keys(errors).length > 0)
+    throw new ResponseError('Validation errors', 400, errors);
 
   if (fields.role) {
     const role = await Role.exists({ _id: fields.role });
@@ -277,11 +286,11 @@ const update = async (req, res) => {
 
   if (fields.password) fields.password = await bcrypt.hash(fields.password, 10);
 
-  if (file) {
+  if (files && files.length > 0) {
     if (user.avatar !== process.env.DEFAULT_AVATAR_URL)
       await cloudinary.uploader.destroy(extractPublicId(user.avatar));
 
-    user.avatar = file.secure_url;
+    fields.avatar = files[0].secure_url;
     logger.info('avatar updated successfully');
   }
 
@@ -298,7 +307,11 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   const userId = validate(getUserSchema, req.params.userId);
-  await checkOwnership(User, userId, req.user);
+  await checkOwnership({
+    modelName: 'user',
+    paramsId: userId,
+    currentUser: req.user,
+  });
 
   const user = await User.findByIdAndDelete(userId);
   if (!user) {
