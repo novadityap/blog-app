@@ -36,7 +36,6 @@ import dayjs from 'dayjs';
 import ReactPaginate from 'react-paginate';
 import { cn } from '@/lib/utils';
 import RemoveConfirmModal from '@/components/ui/RemoveConfirmModal';
-import { useSelector } from 'react-redux';
 import CreateUpdateModal from '@/components/ui/CreateUpdateModal';
 
 const Pagination = ({ pageCount, onPageChange, currentPage, forcePage }) => (
@@ -75,26 +74,6 @@ const Pagination = ({ pageCount, onPageChange, currentPage, forcePage }) => (
   />
 );
 
-const ViewDetailModal = ({
-  isOpen,
-  onClose,
-  DetailComponent,
-  id,
-  entityName,
-}) => (
-  <Dialog open={isOpen} onOpenChange={onClose}>
-    <DialogContent className="md:max-w-2xl overflow-hidden p-0">
-      <DialogHeader className="px-6 pt-6">
-        <DialogTitle>{`Detail ${entityName}`}</DialogTitle>
-        <DialogDescription className="sr-only"></DialogDescription>
-      </DialogHeader>
-      <div className="max-h-[80vh] overflow-y-auto p-6">
-        <DetailComponent id={id} onClose={onClose} />
-      </div>
-    </DialogContent>
-  </Dialog>
-);
-
 const PageSizeSelector = ({ value, onChange }) => (
   <div className="flex items-center gap-x-3 w-16 text-sm">
     <span>Show</span>
@@ -117,13 +96,11 @@ const DataTable = ({
   removeMutation,
   columns,
   FormComponent,
-  DetailComponent,
   allowView = false,
   allowCreate = true,
   allowUpdate = true,
   entityName,
 }) => {
-  const { currentUser } = useSelector(state => state.auth);
   const columnsHelper = createColumnHelper();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setcurrentPage] = useState(0);
@@ -366,14 +343,6 @@ const DataTable = ({
         onConfirm={handleRemoveConfirm}
         onClose={handleCloseModal}
         isLoading={isRemoveLoading}
-      />
-
-      <ViewDetailModal
-        entityName={entityName}
-        isOpen={modalType === 'view'}
-        onClose={handleCloseModal}
-        DetailComponent={DetailComponent}
-        id={selectedId}
       />
     </>
   );
