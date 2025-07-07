@@ -30,12 +30,14 @@ const CreateUpdateModal = ({
         <DialogDescription className="sr-only"></DialogDescription>
       </DialogHeader>
       <div className="max-h-[80vh] overflow-y-auto px-6 pb-6">
-        <FormComponent
-          id={id}
-          isCreate={isCreate}
-          onSubmitComplete={onSubmitComplete}
-          onCancel={onClose}
-        />
+        {FormComponent && (
+          <FormComponent
+            id={id}
+            isCreate={isCreate}
+            onSubmitComplete={onSubmitComplete}
+            onCancel={onClose}
+          />
+        )}
       </div>
     </DialogContent>
   </Dialog>

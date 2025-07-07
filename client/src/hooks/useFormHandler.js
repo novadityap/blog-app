@@ -14,6 +14,12 @@ const getChangedData = (dirtyFields, form) => {
   );
 };
 
+const sanitizeNull = data => {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [key, value ?? ''])
+  );
+};
+
 const filterEmptyValues = data => {
   return Object.fromEntries(
     Object.entries(data).filter(([_, value]) => value !== '')
@@ -97,7 +103,7 @@ const useFormHandler = ({
       toast.success(result.message);
       setMessage(result.message);
 
-      form.reset(result.data);
+      form.reset(sanitizeNull(result.data));
     } catch (e) {
       if (e.errors) {
         Object.keys(e.errors).forEach(key => {
