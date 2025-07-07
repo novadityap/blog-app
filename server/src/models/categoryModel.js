@@ -12,5 +12,14 @@ categorySchema.pre('findByIdAndDelete', { document: false, query: true }, async 
   next();
 });
 
+categorySchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    ret.id = ret._id;
+    delete ret._id;
+  }
+});
+
 const Category = mongoose.model('Category', categorySchema);
 export default Category;

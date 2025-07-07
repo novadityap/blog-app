@@ -65,5 +65,15 @@ userSchema.pre(
   }
 );
 
+userSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: (_, ret) => {
+    ret.id = ret._id;
+    delete ret._id;
+  }
+});
+
+
 const User = mongoose.model('User', userSchema);
 export default User;
