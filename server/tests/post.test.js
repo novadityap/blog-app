@@ -172,7 +172,7 @@ describe('POST /api/posts', () => {
       .field('content', 'test')
       .field('title', 'test')
       .field('category', global.validObjectId.toString())
-      .attach('postImage', global.testPostImagePath);
+      .attach('image', global.testPostImagePath);
 
     expect(result.status).toBe(400);
     expect(result.body.message).toBe('Validation errors');
@@ -188,7 +188,7 @@ describe('POST /api/posts', () => {
       .field('content', 'test')
       .field('title', 'test')
       .field('category', category._id.toString())
-      .attach('postImage', global.testPostImagePath);
+      .attach('image', global.testPostImagePath);
 
     const updatedPost = await getTestPost();
 
@@ -196,7 +196,7 @@ describe('POST /api/posts', () => {
     expect(result.body.message).toBe('Post created successfully');
 
     await removeAllTestCategories();
-    await removeTestFile(updatedPost.postImage);
+    await removeTestFile(updatedPost.image);
   });
 });
 
@@ -288,17 +288,17 @@ describe('PATCH /api/posts/:postId', () => {
       global.testPostImagePath,
       { folder: 'posts' }
     );
-    const post = await updateTestPost({ postImage: uploadResult.secure_url });
+    const post = await updateTestPost({ image: uploadResult.secure_url });
     const result = await request(app)
       .patch(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.accessToken}`)
       .set('Content-Type', 'multipart/form-data')
       .field('title', 'test1')
       .field('content', 'test1')
-      .attach('postImage', global.testPostImagePath);
+      .attach('image', global.testPostImagePath);
 
     const updatedPost = await getTestPost('test1');
-    const postImageExists = await checkFileExists(updatedPost.postImage);
+    const postImageExists = await checkFileExists(updatedPost.image);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Post updated successfully');
@@ -306,7 +306,7 @@ describe('PATCH /api/posts/:postId', () => {
     expect(result.body.data.content).toBe('test1');
     expect(postImageExists).toBe(true);
 
-    await removeTestFile(updatedPost.postImage);
+    await removeTestFile(updatedPost.image);
   });
 });
 
@@ -351,14 +351,14 @@ describe('DELETE /api/posts/:postId', () => {
       }
     );
 
-    await updateTestPost({ postImage: uploadResult.secure_url });
+    await updateTestPost({ image: uploadResult.secure_url });
 
     const post = await getTestPost();
     const result = await request(app)
       .delete(`/api/posts/${post._id}`)
       .set('Authorization', `Bearer ${global.accessToken}`);
 
-    const postImageExists = await checkFileExists(post.postImage);
+    const postImageExists = await checkFileExists(post.image);
 
     expect(result.status).toBe(200);
     expect(result.body.message).toBe('Post deleted successfully');

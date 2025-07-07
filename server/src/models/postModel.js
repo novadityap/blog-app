@@ -8,7 +8,7 @@ const postSchema = new mongoose.Schema(
     },
     title: String,
     content: String,
-    postImage: {
+    image: {
       type: String,
     },
     category: {

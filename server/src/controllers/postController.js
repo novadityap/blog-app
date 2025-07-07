@@ -19,14 +19,14 @@ import formatMongoDoc from '../utils/formatMongoDoc.js';
 const create = async (req, res) => {
   const { files, fields } = await uploadFile(req, {
     isRequired: true,
-    fieldname: 'postImage',
+    fieldname: 'image',
     folderName: 'posts',
     formSchema: createPostSchema,
   });
 
   fields.slug = slugify(fields.title, { lower: true });
 
-  if (files && files.length > 0) fields.postImage = files[0].secure_url;
+  if (files && files.length > 0) fields.image = files[0].secure_url;
 
   if (fields.category) {
     const category = await Category.exists({ _id: fields.category });
@@ -158,7 +158,7 @@ const update = async (req, res) => {
   if (!post) throw new ResponseError('Post not found', 404);
 
   const { files, fields } = await uploadFile(req, {
-    fieldname: 'postImage',
+    fieldname: 'image',
     folderName: 'posts',
     formSchema: updatePostSchema,
   });
@@ -176,10 +176,10 @@ const update = async (req, res) => {
   }
 
   if (files && files.length > 0) {
-    if (files[0].secure_url !== post.postImage) {
-      await cloudinary.uploader.destroy(extractPublicId(post.postImage));
+    if (files[0].secure_url !== post.image) {
+      await cloudinary.uploader.destroy(extractPublicId(post.image));
 
-      post.postImage = files[0].secure_url;
+      post.image = files[0].secure_url;
       logger.info('post image updated successfully');
     }
   }
@@ -201,7 +201,7 @@ const remove = async (req, res) => {
   const post = await Post.findByIdAndDelete(postId);
   if (!post) throw new ResponseError('Post not found', 404);
 
-  await cloudinary.uploader.destroy(extractPublicId(post.postImage));
+  await cloudinary.uploader.destroy(extractPublicId(post.image));
   logger.info('post image deleted successfully');
 
   logger.info('post deleted successfully');

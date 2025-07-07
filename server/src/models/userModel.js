@@ -53,7 +53,7 @@ userSchema.pre(
     const posts = await mongoose.model('Post').find({ user: userId });
 
     const postPublicIds = posts
-      .map(post => extractPublicId(post.postImage))
+      .map(post => extractPublicId(post.image))
       .filter(publicId => publicId !== null);
 
     if (postPublicIds.length > 0)
