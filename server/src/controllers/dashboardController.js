@@ -4,6 +4,7 @@ import Comment from '../models/commentModel.js';
 import Role from '../models/roleModel.js';
 import Category from '../models/categoryModel.js';
 import logger from '../utils/logger.js';
+import formatMongoDoc from '../utils/formatMongoDoc.js';
 
 export const stats = async (req, res) => {
   const totalUsers = await User.countDocuments();
@@ -70,6 +71,9 @@ export const stats = async (req, res) => {
       recentComments: 1,
     });
 
+  const formattedPosts = recentPosts.map(post => formatMongoDoc(post, true));
+  const formattedComments = recentComments.map(comment => formatMongoDoc(comment, true));
+
   logger.info('statistics data retrieved successfully');
   res.status(200).json({
     code: 200,
@@ -80,8 +84,8 @@ export const stats = async (req, res) => {
       totalComments,
       totalRoles,
       totalCategories,
-      recentPosts,
-      recentComments,
+      recentPosts: formattedPosts,
+      recentComments: formattedComments,
     },
   });
 };
