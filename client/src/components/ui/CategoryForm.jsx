@@ -10,25 +10,51 @@ import {
   FormControl,
 } from '@/components/shadcn/form';
 import { TbLoader } from 'react-icons/tb';
+import {
+  useShowCategoryQuery,
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+} from '@/services/categoryApi';
+import { useEffect } from 'react';
+import { Skeleton } from '@/components/shadcn/skeleton';
+
+const CategoryFormSkeleton = () => (
+  <div className="space-y-4">
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-20" /> 
+      <Skeleton className="h-10 w-full rounded-md" /> 
+    </div>
+    <div className="flex justify-end gap-x-2">
+      <Skeleton className="h-10 w-24 rounded-md" /> 
+      <Skeleton className="h-10 w-24 rounded-md" /> 
+    </div>
+  </div>
+);
 
 const CategoryForm = ({
-  initialValues,
-  mutation,
-  onComplete,
+  id,
+  onSubmitComplete,
   onCancel,
   isCreate,
 }) => {
-  const { form, handleSubmit, isLoading } = useFormHandler({
-    formType: 'datatable',
-    ...(!isCreate && {
-      params: [{ name: 'categoryId', value: initialValues._id }],
-    }),
-    mutation,
-    onComplete,
-    defaultValues: {
-      name: initialValues.name ?? '',
-    },
+  const { data: category, isLoading: isCategoryLoading } = useShowCategoryQuery(id, {
+    skip: isCreate || !id
   });
+  const { form, handleSubmit, isLoading } = useFormHandler({
+    isCreate,
+    mutation: isCreate ? useCreateCategoryMutation : useUpdateCategoryMutation,
+    onSubmitComplete,
+    defaultValues: {
+      name: '',
+    },
+    ...(!isCreate && {params: [{ name: 'categoryId', value: id }]}),
+  });
+
+  useEffect(() => {
+      if (!isCreate && category?.data) form.reset({ name: category.data.name });
+  }, [category]);
+
+  if (isCategoryLoading) return <CategoryFormSkeleton />;
 
   return (
     <Form {...form}>

@@ -1,6 +1,11 @@
 import { Button } from '@/components/shadcn/button';
 import { Input } from '@/components/shadcn/input';
-import { useLazyListRolesQuery } from '@/services/roleApi';
+import { useListRolesQuery } from '@/services/roleApi';
+import {
+  useShowUserQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+} from '@/services/userApi';
 import {
   Avatar,
   AvatarFallback,
@@ -24,34 +29,64 @@ import {
 } from '@/components/shadcn/form';
 import { useEffect } from 'react';
 import { TbLoader } from 'react-icons/tb';
+import { Skeleton } from '@/components/shadcn/skeleton';
 
-const UserForm = ({
-  initialValues,
-  mutation,
-  onComplete,
-  onCancel,
-  isCreate,
-}) => {
-  const [fetchRoles, { data: roles }] = useLazyListRolesQuery();
+const UserFormSkeleton = ({ isCreate }) => (
+  <div className="space-y-4">
+    {!isCreate && (
+      <div className="flex justify-center">
+        <Skeleton className="h-32 w-32 rounded-full" />
+      </div>
+    )}
+    <Skeleton className="h-4 w-20" />
+    <Skeleton className="h-10 w-full" />
+    <Skeleton className="h-4 w-20" />
+    <Skeleton className="h-10 w-full" />
+    <Skeleton className="h-4 w-20" />
+    <Skeleton className="h-10 w-full" />
+    <Skeleton className="h-4 w-20" />
+    <Skeleton className="h-10 w-full" />
+    <div className="flex justify-end gap-2">
+      <Skeleton className="h-10 w-24 rounded-md" />
+      <Skeleton className="h-10 w-24 rounded-md" />
+    </div>
+  </div>
+);
+
+const UserForm = ({id, onSubmitComplete, onCancel, isCreate}) => {
+  const { data: user, isLoading: isUserLoading } = useShowUserQuery(id, {
+      skip: isCreate || !id
+    });
+  const { data: roles, isLoading: isRolesLoading } = useListRolesQuery();
   const { form, handleSubmit, isLoading } = useFormHandler({
-    formType: 'datatable',
-    ...(!isCreate && {
-      params: [{ name: 'userId', value: initialValues._id }],
-    }),
-    mutation,
-    onComplete,
+    fileFieldname: 'avatar',
+    isCreate,
+    mutation: isCreate ? useCreateUserMutation : useUpdateUserMutation,
+    onSubmitComplete,
     defaultValues: {
-      avatar: '',
-      username: initialValues.username ?? '',
-      email: initialValues.email ?? '',
+      username: '',
+      email: '',
       password: '',
-      role: initialValues.role?._id ?? '',
+      roleId: '',
     },
+    ...(!isCreate && { 
+      params: [{ name: 'userId', value: id }],
+    }),
   });
 
   useEffect(() => {
-    if (!isCreate) fetchRoles();
-  }, [fetchRoles, isCreate]);
+    if (!isCreate && user?.data && roles?.data?.length > 0) {
+      form.reset({
+        username: user.data.username,
+        email: user.data.email,
+        roleId: user.data.role.id,
+        password: ''
+      });
+    }
+  }, [user, roles]);
+
+  if (isUserLoading || isRolesLoading)
+    return <UserFormSkeleton isCreate={isCreate} />;
 
   return (
     <Form {...form}>
@@ -61,9 +96,11 @@ const UserForm = ({
             <div className="flex justify-center">
               <Avatar className="size-32">
                 <AvatarImage
-                  src={initialValues?.avatar}
+                  src={user?.data?.avatar}
                   fallback={
-                    <AvatarFallback>{initialValues?.username}</AvatarFallback>
+                    <AvatarFallback>
+                      {user?.data?.username?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
                   }
                 />
               </Avatar>
@@ -87,7 +124,6 @@ const UserForm = ({
             />
           </>
         )}
-
         <FormField
           control={form.control}
           name="username"
@@ -129,27 +165,23 @@ const UserForm = ({
         />
         <FormField
           control={form.control}
-          name="role"
+          name="roleId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Role</FormLabel>
-              <Select
-                value={field.value}
+              <Select 
+                key={field.value}
+                value={field.value} 
                 onValueChange={field.onChange}
-                onOpenChange={open => open && !roles && fetchRoles()}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {roles?.data?.map(role => (
-                    <SelectItem
-                      key={role._id}
-                      value={role._id}
-                      selected={role._id === field.value}
-                    >
+                    <SelectItem key={role.id} value={role.id}>
                       {role.name}
                     </SelectItem>
                   ))}

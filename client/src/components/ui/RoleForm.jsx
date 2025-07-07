@@ -10,25 +10,47 @@ import {
   FormControl,
 } from '@/components/shadcn/form';
 import { TbLoader } from 'react-icons/tb';
+import { Skeleton } from '@/components/shadcn/skeleton';
+import {
+  useShowRoleQuery,
+  useCreateRoleMutation,
+  useUpdateRoleMutation,
+} from '@/services/roleApi';
+import {useEffect } from 'react';
 
-const RoleForm = ({
-  initialValues,
-  mutation,
-  onComplete,
-  onCancel,
-  isCreate,
-}) => {
+const RoleFormSkeleton = () => (
+  <div className="space-y-4">
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-20" /> 
+        <Skeleton className="h-10 w-full rounded-md" /> 
+      </div>
+      <div className="flex justify-end gap-x-2">
+        <Skeleton className="h-10 w-24 rounded-md" /> 
+        <Skeleton className="h-10 w-24 rounded-md" /> 
+      </div>
+    </div>
+);
+
+const RoleForm = ({onSubmitComplete, onCancel, isCreate, id}) => {
+  const { data: role, isLoading: isRoleLoading } = useShowRoleQuery(id, {
+    skip: isCreate || !id
+  });
   const { form, handleSubmit, isLoading } = useFormHandler({
     formType: 'datatable',
-    ...(!isCreate && {
-      params: [{ name: 'roleId', value: initialValues._id }],
-    }),
-    mutation,
-    onComplete,
+    isCreate,
+    mutation: isCreate ? useCreateRoleMutation : useUpdateRoleMutation,
+    onSubmitComplete,
     defaultValues: {
-      name: initialValues.name ?? '',
+      name: '',
     },
+    ...(!isCreate && { params: [{ name: 'roleId', value: id }] }),
   });
+
+  useEffect(() => {
+      if (!isCreate && role?.data) form.reset({ name: role.data.name });
+  }, [role]);
+
+  if (isRoleLoading) return <RoleFormSkeleton />;
 
   return (
     <Form {...form}>

@@ -1,6 +1,11 @@
 import { Button } from '@/components/shadcn/button';
 import { Input } from '@/components/shadcn/input';
-import { useLazyListCategoriesQuery } from '@/services/categoryApi';
+import { useListCategoriesQuery } from '@/services/categoryApi';
+import {
+  useCreatePostMutation,
+  useUpdatePostMutation,
+  useShowPostQuery,
+} from '@/services/postApi';
 import useFormHandler from '@/hooks/useFormHandler';
 import {
   Select,
@@ -21,34 +26,60 @@ import { useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
 import { AspectRatio } from '@/components/shadcn/aspect-ratio';
 import { TbLoader } from 'react-icons/tb';
+import { Skeleton } from '@/components/shadcn/skeleton';
 
-const PostForm = ({
-  initialValues,
-  mutation,
-  onComplete,
-  onCancel,
-  isCreate,
-}) => {
-  const [fetchCategories, { data: categories }] = useLazyListCategoriesQuery();
+const PostFormSkeleton = ({isCreate}) => (
+  <div className="space-y-4">
+    {!isCreate && (
+      <div className="flex justify-center">
+      <Skeleton className="size-52 rounded-sm" />
+    </div>
+    )}
+    <Skeleton className="h-4 w-20" />
+    <Skeleton className="h-10 w-full" />
+    <Skeleton className="h-4 w-20" />
+    <Skeleton className="h-10 w-full" />
+    <Skeleton className="h-4 w-20" />
+    <Skeleton className="h-10 w-full" />
+    <div className="flex justify-end gap-2">
+      <Skeleton className="h-10 w-24 rounded-md" />
+      <Skeleton className="h-10 w-24 rounded-md" />
+    </div>
+  </div>
+);
+
+const PostForm = ({ id, onSubmitComplete, onCancel, isCreate }) => {
+  const { data: categories, isLoading: isCategoriesLoading } =
+    useListCategoriesQuery();
+  const { data: post, isLoading: isPostLoading } = useShowPostQuery(id, {
+    skip: isCreate || !id,
+  });
   const { form, handleSubmit, isLoading } = useFormHandler({
-    formTipe: 'datatable',
-    ...(!isCreate && {
-      params: [{ name: 'postId', value: initialValues._id }],
-    }),
-    formType: 'post',
-    mutation,
-    onComplete,
+    isCreate,
+    fileFieldname: 'image',
+    mutation: isCreate ? useCreatePostMutation : useUpdatePostMutation,
+    onSubmitComplete,
     defaultValues: {
-      postImage: '',
-      title: initialValues.title ?? '',
-      content: initialValues.content ?? '',
-      category: initialValues.category?._id ?? '',
+      title: '',
+      content: '',
+      category: '',
     },
+    ...(!isCreate && {
+      params: [{ name: 'postId', value: id }],
+    }),
   });
 
   useEffect(() => {
-    if (!isCreate) fetchCategories();
-  }, [fetchCategories, isCreate]);
+    if (!isCreate && post?.data && categories?.data) {
+      form.reset({
+        title: post.data.title,
+        content: post.data.content,
+        category: post.data.category.id,
+      });
+    }
+  }, [post, categories]);
+
+  if (isPostLoading || isCategoriesLoading) return <PostFormSkeleton isCreate={isCreate} />;
 
   return (
     <Form {...form}>
@@ -56,7 +87,7 @@ const PostForm = ({
         {!isCreate && (
           <AspectRatio ratio={16 / 9}>
             <img
-              src={initialValues.postImage}
+              src={post?.data?.image}
               alt="post image"
               className="size-full object-cover"
             />
@@ -64,7 +95,7 @@ const PostForm = ({
         )}
         <FormField
           control={form.control}
-          name="postImage"
+          name="image"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Image</FormLabel>
@@ -130,9 +161,9 @@ const PostForm = ({
             <FormItem>
               <FormLabel>Category</FormLabel>
               <Select
+                key={field.value}
                 value={field.value}
                 onValueChange={field.onChange}
-                onOpenChange={open => open && !categories && fetchCategories()}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -142,9 +173,9 @@ const PostForm = ({
                 <SelectContent>
                   {categories?.data?.map(category => (
                     <SelectItem
-                      key={category._id}
-                      value={category._id}
-                      selected={category._id === field.value}
+                      key={category.id}
+                      value={category.id}
+                      selected={category.id === field.value}
                     >
                       {category.name}
                     </SelectItem>
