@@ -37,7 +37,11 @@ const RecentItemsCard = ({ title, items, link, formatter }) => (
     </CardHeader>
     <CardContent>
       {items?.length ? (
-        <ul className="space-y-2 text-gray-700">{items.map(formatter)}</ul>
+        <ul className="space-y-2 text-gray-700">
+          {items.map(item => (
+            <li key={item.id}>{formatter(item)}</li>
+          ))}
+        </ul>
       ) : (
         <p className="text-gray-600 italic">
           No {title.split(' ')[1]?.toLowerCase()} available.
@@ -102,13 +106,10 @@ const Dashboard = () => {
               items={data?.data?.recentPosts}
               link="/dashboard/posts"
               formatter={post => (
-                <li
-                  key={post._id}
-                  className="flex justify-between items-center py-1"
-                >
+                <div className="flex justify-between items-center py-1">
                   <Link
                     to={`/posts/${post.slug}`}
-                    state={{ postId: post?._id }}
+                    state={{ postId: post?.id }}
                     className="hover:underline text-blue-700 font-medium truncate"
                   >
                     {post.title}
@@ -116,7 +117,7 @@ const Dashboard = () => {
                   <span className="text-xs text-gray-500">
                     {new Date(post.createdAt).toLocaleDateString()}
                   </span>
-                </li>
+                </div>
               )}
             />
 
@@ -125,15 +126,15 @@ const Dashboard = () => {
               items={data?.data?.recentComments}
               link="/dashboard/comments"
               formatter={comment => (
-                <li key={comment._id} className="flex flex-col py-1">
+                <div className="flex flex-col py-1">
                   <p className="text-gray-800 line-clamp-2">{comment.text}</p>
                   <div className="text-xs text-gray-500 flex justify-between">
-                    <span>{comment.user.username || 'Anonymous'}</span>
+                    <span>{comment.user?.username || 'Anonymous'}</span>
                     <span>
                       {new Date(comment.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                </li>
+                </div>
               )}
             />
           </>

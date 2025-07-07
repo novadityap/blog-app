@@ -1,9 +1,6 @@
 import DataTable from '@/components/ui/DataTable';
 import {
   useSearchCategoriesQuery,
-  useLazyShowCategoryQuery,
-  useCreateCategoryMutation,
-  useUpdateCategoryMutation,
   useRemoveCategoryMutation,
 } from '@/services/categoryApi';
 import CategoryForm from '@/components/ui/CategoryForm';
@@ -41,11 +38,9 @@ const Category = () => {
           <DataTable
             columns={columns}
             searchQuery={useSearchCategoriesQuery}
-            lazyShowQuery={useLazyShowCategoryQuery}
-            createMutation={useCreateCategoryMutation}
-            updateMutation={useUpdateCategoryMutation}
             removeMutation={useRemoveCategoryMutation}
             FormComponent={CategoryForm}
+            entityName='category'
           />
         </CardContent>
       </Card>

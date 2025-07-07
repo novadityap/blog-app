@@ -2,9 +2,6 @@ import DataTable from '@/components/ui/DataTable';
 import { createColumnHelper } from '@tanstack/react-table';
 import {
   useSearchUsersQuery,
-  useLazyShowUserQuery,
-  useCreateUserMutation,
-  useUpdateUserMutation,
   useRemoveUserMutation,
 } from '@/services/userApi.js';
 import UserForm from '@/components/ui/UserForm.jsx';
@@ -69,11 +66,9 @@ const User = () => {
           <DataTable
             columns={columns}
             searchQuery={useSearchUsersQuery}
-            lazyShowQuery={useLazyShowUserQuery}
-            createMutation={useCreateUserMutation}
-            updateMutation={useUpdateUserMutation}
             removeMutation={useRemoveUserMutation}
             FormComponent={UserForm}
+            entityName='user'
           />
         </CardContent>
       </Card>

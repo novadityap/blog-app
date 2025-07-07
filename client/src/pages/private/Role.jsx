@@ -2,9 +2,6 @@ import { createColumnHelper } from '@tanstack/react-table';
 import DataTable from '@/components/ui/DataTable';
 import {
   useSearchRolesQuery,
-  useLazyShowRoleQuery,
-  useCreateRoleMutation,
-  useUpdateRoleMutation,
   useRemoveRoleMutation,
 } from '@/services/roleApi';
 import RoleForm from '@/components/ui/RoleForm';
@@ -41,11 +38,9 @@ const Role = () => {
           <DataTable
             columns={columns}
             searchQuery={useSearchRolesQuery}
-            lazyShowQuery={useLazyShowRoleQuery}
-            createMutation={useCreateRoleMutation}
-            updateMutation={useUpdateRoleMutation}
             removeMutation={useRemoveRoleMutation}
             FormComponent={RoleForm}
+            entityName='role'
           />
         </CardContent>
       </Card>

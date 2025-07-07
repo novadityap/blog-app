@@ -2,9 +2,6 @@ import DataTable from '@/components/ui/DataTable';
 import { createColumnHelper } from '@tanstack/react-table';
 import {
   useSearchPostsQuery,
-  useLazyShowPostQuery,
-  useCreatePostMutation,
-  useUpdatePostMutation,
   useRemovePostMutation,
 } from '@/services/postApi.js';
 import PostForm from '@/components/ui/PostForm.jsx';
@@ -59,11 +56,9 @@ const Post = () => {
           <DataTable
             columns={columns}
             searchQuery={useSearchPostsQuery}
-            lazyShowQuery={useLazyShowPostQuery}
-            createMutation={useCreatePostMutation}
-            updateMutation={useUpdatePostMutation}
             removeMutation={useRemovePostMutation}
             FormComponent={PostForm}
+            entityName='post'
           />
         </CardContent>
       </Card>

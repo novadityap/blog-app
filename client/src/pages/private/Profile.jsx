@@ -28,46 +28,82 @@ import useFormHandler from '@/hooks/useFormHandler';
 import { useEffect } from 'react';
 import { TbLoader } from 'react-icons/tb';
 
+const ProfileSkeleton = () => {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="w-1/3 h-6 mb-1" />
+        <Skeleton className="w-1/2 h-4" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <Skeleton className="size-32 rounded-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="flex justify-end">
+            <Skeleton className="h-10 w-full sm:w-28 rounded-md" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Profile = () => {
   const currentUser = useSelector(state => state.auth.currentUser);
-  const { data, isLoading, isFetching } = useShowUserQuery(currentUser._id);
+  const { data: user, isLoading: isUserLoading, isFetching: isUserFetching } =
+    useShowUserQuery(currentUser.id);
   const {
     form,
     handleSubmit,
-    isLoading: isLoadingUpdate,
+    isLoading
   } = useFormHandler({
-    formType: 'profile',
-    params: [
-      { name: 'userId', value: data?.data?._id },
-    ],
+    fileFieldname: 'avatar',
+    isCreate: false,
+    page: 'profile',
+    params: [{ name: 'userId', value: currentUser.id }],
     mutation: useUpdateProfileMutation,
     defaultValues: {
-      avatar: '',
       username: '',
       email: '',
       password: '',
-    },
+    }
   });
-
+  
   useEffect(() => {
-    if (data?.data) {
+    if (user?.data) {
       form.reset({
-        avatar: data.data.avatar,
-        username: data.data.username,
-        email: data.data.email,
-        password: '',
+        username: user.data.username,
+        email: user.data.email,
+        password: ''
       });
     }
-  }, [data]);
-
-  if (isLoading || isFetching || !data?.data) return <ProfileSkeleton />;
+  }, [user]);
+  
+  if (isUserLoading || isUserFetching) return <ProfileSkeleton />;
 
   return (
     <>
       <BreadcrumbNav />
       <Card>
         <CardHeader>
-          <CardTitle className="text-gray-600">Profile</CardTitle>
+          <CardTitle className="text-heading">Profile</CardTitle>
           <CardDescription>Manage your profile</CardDescription>
         </CardHeader>
         <CardContent>
@@ -76,9 +112,9 @@ const Profile = () => {
               <div className="flex justify-center">
                 <Avatar className="size-32">
                   <AvatarImage
-                    src={data?.data?.avatar}
+                    src={user?.data?.avatar}
                     fallback={
-                      <AvatarFallback>{data?.data?.username}</AvatarFallback>
+                      <AvatarFallback>{currentUser.username.charAt(0).toUpperCase()}</AvatarFallback>
                     }
                   />
                 </Avatar>
@@ -100,7 +136,6 @@ const Profile = () => {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="username"
@@ -144,9 +179,9 @@ const Profile = () => {
                 <Button
                   type="submit"
                   className="w-full sm:w-32"
-                  disabled={isLoadingUpdate}
+                  disabled={isLoading}
                 >
-                  {isLoadingUpdate ? (
+                  {isLoading ? (
                     <>
                       <TbLoader className="animate-spin mr-2 size-5" />
                       Updating...
@@ -161,43 +196,6 @@ const Profile = () => {
         </CardContent>
       </Card>
     </>
-  );
-};
-
-const ProfileSkeleton = () => {
-  return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="w-1/3 h-6 mb-1" />
-        <Skeleton className="w-1/2 h-4" />
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex justify-center">
-            <Skeleton className="size-32 rounded-full" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="w-24 h-4" />
-            <Skeleton className="h-10 w-full rounded-md" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="w-24 h-4" />
-            <Skeleton className="h-10 w-full rounded-md" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="w-24 h-4" />
-            <Skeleton className="h-10 w-full rounded-md" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="w-24 h-4" />
-            <Skeleton className="h-10 w-full rounded-md" />
-          </div>
-          <div className="flex justify-end">
-            <Skeleton className="h-10 w-full sm:w-28 rounded-md" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 };
 
