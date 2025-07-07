@@ -123,7 +123,9 @@ const search = async (req, res) => {
     });
   }
 
-  const formattedComments = comments.map(comment => formatMongoDoc(comment, true));
+  const formattedComments = comments.map(comment =>
+    formatMongoDoc(comment, true)
+  );
 
   res.status(200).json({
     code: 200,
@@ -175,12 +177,14 @@ const remove = async (req, res) => {
   await validatePostId(req.params.postId);
   const commentId = validate(getCommentSchema, req.params.commentId);
 
-   await checkOwnership({
-      modelName: 'comment',
-      paramsId: commentId,
-      ownerFieldName: 'user',
-      currentUser: req.user,
-    });
+  await checkOwnership({
+    modelName: 'comment',
+    paramsId: commentId,
+    ownerFieldName: 'user',
+    currentUser: req.user,
+  });
+
+  await Comment.deleteMany({ parentCommentId: commentId });
 
   const comment = await Comment.findByIdAndDelete(commentId);
   if (!comment) throw new ResponseError('Comment not found', 404);

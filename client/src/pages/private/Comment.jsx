@@ -2,7 +2,6 @@ import DataTable from '@/components/ui/DataTable';
 import { createColumnHelper } from '@tanstack/react-table';
 import {
   useSearchCommentsQuery,
-  useLazyShowCommentQuery,
   useRemoveCommentMutation,
 } from '@/services/commentApi.js';
 import BreadcrumbNav from '@/components/ui/BreadcrumbNav';
@@ -52,8 +51,8 @@ const Comment = () => {
           <DataTable
             columns={columns}
             searchQuery={useSearchCommentsQuery}
-            lazyShowQuery={useLazyShowCommentQuery}
             removeMutation={useRemoveCommentMutation}
+            entityName='comment'
             allowCreate={false}
             allowUpdate={false}
           />
