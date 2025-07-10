@@ -18,8 +18,8 @@ import {
 import { OAuth2Client } from 'google-auth-library';
 import slugify from 'slugify';
 
-const generateUsername = (baseName, count) => {
-  const slug = slugify(baseName, { lower: true, strict: true });
+const generateUsername = (username, count) => {
+  const slug = slugify(username, { lower: true, strict: true });
   return count > 0 ? `${slug}${count}` : slug;
 };
 
@@ -192,19 +192,15 @@ const googleSignin = async (req, res) => {
   });
 
   const { email, name } = ticket.getPayload();
-  let user = await User.findOne({ 
-    email,
-    isVerified: true
-  });
+  let user = await User.findOne({ email });
 
   if (!user) {
-    let baseUsername = name;
-    let count = 0;
     let username;
+    let count = 0;
     let isUsernameTaken = true;
 
     while (isUsernameTaken) {
-      username = generateUsername(baseUsername, count);
+      username = generateUsername(name, count);
       const existing = await User.findOne({ username });
       if (!existing) isUsernameTaken = false;
       count++;
