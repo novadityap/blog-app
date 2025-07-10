@@ -18,8 +18,8 @@ import {
 import { OAuth2Client } from 'google-auth-library';
 import slugify from 'slugify';
 
-const generateUsername = (baseNamem, count) => {
-  const slug = slugify(baseNamem, { lower: true, strict: true });
+const generateUsername = (baseName, count) => {
+  const slug = slugify(baseName, { lower: true, strict: true });
   return count > 0 ? `${slug}${count}` : slug;
 };
 
