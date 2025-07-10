@@ -13,6 +13,7 @@ const apiRouter = express.Router();
 
 // Public API
 apiRouter.post('/auth/signup', authController.signup);
+apiRouter.post('/auth/google-signin', authController.googleSignin);
 apiRouter.post('/auth/verify-email/:verificationToken', authController.verifyEmail);
 apiRouter.post('/auth/resend-verification', authController.resendVerification);
 apiRouter.post('/auth/refresh-token', authController.refreshToken);

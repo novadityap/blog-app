@@ -1,10 +1,6 @@
 import { Button } from '@/components/shadcn/button';
 import { Input } from '@/components/shadcn/input';
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from '@/components/shadcn/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/shadcn/alert';
 import {
   Card,
   CardContent,
@@ -20,12 +16,14 @@ import {
   FormControl,
   FormMessage,
 } from '@/components/shadcn/form';
-import { TbLoader, TbCircleCheck } from 'react-icons/tb';
+import { TbLoader, TbCircleCheck, TbBrandGoogle } from 'react-icons/tb';
 import { Link } from 'react-router-dom';
 import { useSignupMutation } from '@/services/authApi';
 import useFormHandler from '@/hooks/useFormHandler';
+import useGoogleSignin from '@/hooks/useGoogleSignin';
 
 const Signup = () => {
+  const handleGoogleSignin = useGoogleSignin();
   const { form, handleSubmit, isLoading, isSuccess, message } = useFormHandler({
     mutation: useSignupMutation,
     defaultValues: {
@@ -91,11 +89,7 @@ const Signup = () => {
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <TbLoader className="animate-spin mr-2 size-5" />
@@ -107,6 +101,14 @@ const Signup = () => {
             </Button>
           </form>
         </Form>
+        <Button
+          onClick={handleGoogleSignin}
+          variant="outline"
+          className="w-full flex items-center gap-2"
+        >
+          <TbBrandGoogle size={20} />
+          Sign in with Google
+        </Button>
       </CardContent>
       <CardFooter className="flex flex-col items-center">
         <div className="flex items-center justify-betweens gap-1">

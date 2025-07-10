@@ -15,6 +15,13 @@ import {
   verifyEmailSchema,
   resetPasswordSchema,
 } from '../validations/userValidation.js';
+import { OAuth2Client } from 'google-auth-library';
+import slugify from 'slugify';
+
+const generateUsername = (baseNamem, count) => {
+  const slug = slugify(baseNamem, { lower: true, strict: true });
+  return count > 0 ? `${slug}${count}` : slug;
+};
 
 const signup = async (req, res) => {
   const fields = validate(signupSchema, req.body);
@@ -25,7 +32,8 @@ const signup = async (req, res) => {
   }).select('username email');
 
   if (user) {
-    if (user.username === fields.username) errors.username = 'Username already in use';
+    if (user.username === fields.username)
+      errors.username = 'Username already in use';
     if (user.email === fields.email) errors.email = 'Email already in use';
 
     throw new ResponseError('Validation errors', 400, errors);
@@ -128,6 +136,89 @@ const signin = async (req, res) => {
 
   if (!user || !(await bcrypt.compare(fields.password, user.password)))
     throw new ResponseError('Email or password is invalid', 401);
+
+  const payload = { sub: user._id, role: user.role.name };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES,
+  });
+  const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES,
+  });
+  const decodedRefreshToken = jwt.decode(refreshToken);
+
+  await RefreshToken.create({
+    token: refreshToken,
+    user: user._id,
+    expiresAt: new Date(decodedRefreshToken.exp * 1000),
+  });
+
+  const transformedUser = user.toObject();
+
+  logger.info('signed in successfully');
+  res
+    .cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
+    .json({
+      code: 200,
+      message: 'Signed in successfully',
+      data: {
+        id: transformedUser._id,
+        username: transformedUser.username,
+        email: transformedUser.email,
+        avatar: transformedUser.avatar,
+        role: transformedUser.role.name,
+        token,
+      },
+    });
+};
+
+const googleSignin = async (req, res) => {
+  if (!req.body.code) {
+    throw new ResponseError('Authorization code is not provided', 401);
+  }
+
+  const client = new OAuth2Client({
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    redirectUri: process.env.GOOGLE_REDIRECT_URI,
+  });
+
+  const { tokens } = await client.getToken(req.body.code);
+  const ticket = await client.verifyIdToken({
+    idToken: tokens.id_token,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const { email, name } = ticket.getPayload();
+  let user = await User.findOne({ email });
+
+  if (!user) {
+    let baseUsername = name;
+    let count = 0;
+    let username;
+    let isUsernameTaken = true;
+
+    while (isUsernameTaken) {
+      username = generateUsername(baseUsername, count);
+      const existing = await User.findOne({ username });
+      if (!existing) isUsernameTaken = false;
+      count++;
+    }
+
+    const userRole = await Role.findOne({ name: 'user' });
+
+    user = await User.create({
+      email,
+      username,
+      avatar: process.env.DEFAULT_AVATAR_URL,
+      role: userRole._id,
+      isVerified: true,
+    });
+  }
+
+  await user.populate('role');
 
   const payload = { sub: user._id, role: user.role.name };
   const token = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -283,6 +374,7 @@ const resetPassword = async (req, res) => {
 
 export default {
   signup,
+  googleSignin,
   signin,
   signout,
   refreshToken,
