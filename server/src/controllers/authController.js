@@ -215,6 +215,9 @@ const googleSignin = async (req, res) => {
       role: userRole._id,
       isVerified: true,
     });
+  } else if (!user.isVerified) {
+    user.isVerified = true;
+    await user.save()
   }
 
   await user.populate('role');
