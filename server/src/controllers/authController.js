@@ -192,7 +192,10 @@ const googleSignin = async (req, res) => {
   });
 
   const { email, name } = ticket.getPayload();
-  let user = await User.findOne({ email });
+  let user = await User.findOne({ 
+    email,
+    isVerified: true
+  });
 
   if (!user) {
     let baseUsername = name;
