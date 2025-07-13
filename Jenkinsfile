@@ -11,6 +11,8 @@ pipeline {
     stage ('Copy env file') {
       steps {
         withCredentials([file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV')]) {
+          sh 'ls -la'
+          sh 'ls -la client'
           sh 'cp $CLIENT_ENV client/.env'
         }
         withCredentials([file(credentialsId: 'blog-app-server-env', variable: 'SERVER_ENV')]) {
