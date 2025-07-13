@@ -1,20 +1,28 @@
-import path from "path"
-import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
+import path from 'path';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [react()],
+  logLevel: 'info',
+  plugins: [
+    react(),
+  ],
   server: {
-    host: '0,0,0,0',
+    host: '0.0.0.0',
     port: 5173,
-    strictPort: true
+    strictPort: true,
   },
-  optimizeDeps: {
-    include: ['react-quill']
+   optimizeDeps: {
+    exclude: ['react-quill-new']
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, './src'),
     },
   },
-})
+  build: {
+    rollupOptions: {
+      treeshake: false 
+    }
+  },
+});

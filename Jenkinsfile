@@ -4,52 +4,67 @@ pipeline {
   stages {
     stage('Clean Workspace') {
       steps {
-        deleteDir() 
+        deleteDir()
       }
     }
 
-    stage ('Checkout') {
+    stage('Checkout') {
       steps {
         checkout scm
       }
     }
 
-   stage('Copy env file') {
-  steps {
-  withCredentials([file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV')]) {
-    sh 'cp "$CLIENT_ENV" client/.env'
-  }
+    stage('Copy env file') {
+      steps {
+        withCredentials([
+          file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV'),
+          file(credentialsId: 'blog-app-server-env', variable: 'SERVER_ENV'),
+        ]) {
+          sh """
+            cp "$CLIENT_ENV" client/.env
+            cp "$SERVER_ENV" server/.env
+          """
+        }
+      }
+    }
 
-  withCredentials([file(credentialsId: 'blog-app-server-env', variable: 'SERVER_ENV')]) {
-    sh 'cp "$SERVER_ENV" server/.env'
-  }
-}
-}
-
-
-    stage ('Build Docker Compose Dev') {
+    stage('Build & Up Dev Containers') {
       steps {
         sh 'docker compose -f docker-compose.dev.yml up -d --build'
       }
     }
 
-    stage ('Run Server Tests') {
+    stage('Run Server Tests') {
       steps {
         sh 'docker compose -f docker-compose.dev.yml exec server npm run test'
       }
     }
 
-    stage ('Stop Docker Compose') {
+    stage('Clean Dev Docker Containers & Images') {
       steps {
-        sh 'docker compose -f docker-compose.dev.yml down -v'
+        sh '''
+          docker compose -f docker-compose.dev.yml down --rmi all --volumes --remove-orphans
+          docker image prune -af
+        '''
       }
     }
 
-    stage ('Build and Push Docker Images') {
+    stage('Build Production Docker Images') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+        sh 'docker compose build'
+      }
+    }
+
+   stage('Push Docker Images') {
+      steps {
+        withCredentials([
+          usernamePassword(
+            credentialsId: 'dockerhub',
+            usernameVariable: 'DOCKER_USER',
+            passwordVariable: 'DOCKER_PASS',
+          ),
+        ]) {
           sh '''
-            docker compose build
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
             docker compose push
           '''
@@ -58,3 +73,4 @@ pipeline {
     }
   }
 }
+
