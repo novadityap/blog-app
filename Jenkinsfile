@@ -1,10 +1,5 @@
 pipeline {
-  agent {
-    docker {
-      image 'node:22-alpine'
-      args '--network jenkins -e DOCKER_HOST=tcp://jenkins-docker:2375'
-    }
-  }
+  agent any
 
   stages {
     stage ('Checkout') {
@@ -13,7 +8,7 @@ pipeline {
       }
     }
 
-    stage('Copy env file') {
+    stage ('Copy env file') {
       steps {
         withCredentials([file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV')]) {
           sh 'cp $CLIENT_ENV client/.env'
@@ -24,25 +19,25 @@ pipeline {
       }
     }
 
-    stage('Build Docker Compose Dev') {
+    stage ('Build Docker Compose Dev') {
       steps {
         sh 'docker compose -f docker-compose.dev.yml up -d --build'
       }
     }
 
-    stage('Run Server Tests') {
+    stage ('Run Server Tests') {
       steps {
         sh 'docker compose -f docker-compose.dev.yml exec blog-app-server-dev npm run test'
       }
     }
 
-    stage('Stop Docker Compose') {
+    stage ('Stop Docker Compose') {
       steps {
         sh 'docker compose -f docker-compose.dev.yml down -v'
       }
     }
 
-    stage('Build and Push Docker Images') {
+    stage ('Build and Push Docker Images') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
           sh '''
