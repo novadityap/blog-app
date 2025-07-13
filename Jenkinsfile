@@ -1,69 +1,57 @@
 pipeline {
-  agent any
-
-  tools {
-    nodejs 'node:22'
-  }
-
-  environment {
-    DOCKER_IMAGE = 'novadityap/blog-app-server'
+  agent {
+    docker {
+      image 'node:22-alpine'
+      args '--network jenkins -e DOCKER_HOST=tcp://jenkins-docker:2375'
+    }
   }
 
   stages {
-    stage('Checkout') {
+    stage ('Checkout') {
       steps {
         checkout scm
       }
     }
 
-    stage('Install client dependencies and build') {
+    stage('Copy env file') {
       steps {
-         dir('client') {
-          sh '''
-            cp /var/jenkins_home/env/.env.client.blogapp .env
-            npm install
-            npm run build
-          '''
+        withCredentials([file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV')]) {
+          sh 'cp $CLIENT_ENV client/.env'
+        }
+        withCredentials([file(credentialsId: 'blog-app-server-env', variable: 'SERVER_ENV')]) {
+          sh 'cp $SERVER_ENV server/.env'
         }
       }
     }
 
-    stage('Install server dependencies') {
+    stage('Build Docker Compose Dev') {
       steps {
-        dir('server') {
-          sh 'npm install'
-        }
+        sh 'docker compose -f docker-compose.dev.yml up -d --build'
       }
     }
 
-    stage('Test server') {
+    stage('Run Server Tests') {
       steps {
-        dir('server') {
-          sh '''
-            cp /var/jenkins_home/env/.env.server.blogapp .env
-            npm run test
-          '''
-        }
+        sh 'docker compose -f docker-compose.dev.yml exec blog-app-server-dev npm run test'
       }
     }
 
-    stage('Build server docker image') {
+    stage('Stop Docker Compose') {
       steps {
-        dir('server') {
-          sh 'docker build -t $DOCKER_IMAGE .'
-        }
+        sh 'docker compose -f docker-compose.dev.yml down -v'
       }
     }
 
-    stage('Push server docker image') {
+    stage('Build and Push Docker Images') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
           sh '''
+            docker compose build
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-            docker push $DOCKER_IMAGE
+            docker compose push
           '''
         }
       }
     }
   }
-} 
+}

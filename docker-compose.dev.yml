@@ -1,0 +1,50 @@
+services:
+  server:
+    image: novadityap/blog-app-server-dev
+    container_name: blog-app-server-dev
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ./server/.env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+    restart: always
+    networks:
+      - blog-app-dev
+
+  client:
+    image: novadityap/blog-app-client-dev
+    container_name: blog-app-client-dev
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ./client/.env
+    ports:
+      - "5173:5173"
+    restart: always
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    networks:
+      - blog-app-dev
+
+  mongo:
+    container_name: blog-app-mongo-dev
+    image: mongo:8.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - blog-app-dev
+
+volumes:
+  mongo-data:
+    name: mongo-data
+networks:
+  blog-app-dev:
+    name: blog-app-dev
