@@ -16,38 +16,14 @@ pipeline {
 
    stage('Copy env file') {
   steps {
-    withCredentials([file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV')]) {
-      sh '''
-        echo "Isi direktori root:"
-        ls -la
-        echo "Isi direktori client:"
-        ls -la client
-
-        if [ -f "$CLIENT_ENV" ]; then
-          echo "Menyalin $CLIENT_ENV ke client/.env"
-          cp "$CLIENT_ENV" client/.env
-        else
-          echo "File environment tidak ditemukan: $CLIENT_ENV"
-          exit 1
-        fi
-      '''
-    }
-
-    withCredentials([file(credentialsId: 'blog-app-server-env', variable: 'SERVER_ENV')]) {
-      sh '''
-        echo "Isi direktori server:"
-        ls -la server
-
-        if [ -f "$SERVER_ENV" ]; then
-          echo "Menyalin $SERVER_ENV ke server/.env"
-          cp "$SERVER_ENV" server/.env
-        else
-          echo "File environment tidak ditemukan: $SERVER_ENV"
-          exit 1
-        fi
-      '''
-    }
+  withCredentials([file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV')]) {
+    sh 'cp "$CLIENT_ENV" client/.env'
   }
+
+  withCredentials([file(credentialsId: 'blog-app-server-env', variable: 'SERVER_ENV')]) {
+    sh 'cp "$SERVER_ENV" server/.env'
+  }
+}
 }
 
 
@@ -59,7 +35,7 @@ pipeline {
 
     stage ('Run Server Tests') {
       steps {
-        sh 'docker compose -f docker-compose.dev.yml exec blog-app-server-dev npm run test'
+        sh 'docker compose -f docker-compose.dev.yml exec server npm run test'
       }
     }
 
