@@ -3,7 +3,7 @@ services:
     image: novadityap/blog-app-server
     build:
       context: ./server
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.production
     ports:
       - "4000:4000"
     restart: always
@@ -12,7 +12,7 @@ services:
     image: novadityap/blog-app-client
     build:
       context: ./client
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.production
     ports:
       - "3000:80"
     restart: always
