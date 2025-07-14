@@ -8,6 +8,14 @@
         }
       }
 
+      stage('Stop & Remove Dev Containers') {
+        steps {
+          sh '''
+            docker compose -f docker-compose.development.yml down --remove-orphans || true
+          '''
+        }
+      }
+
       stage('Checkout') {
         steps {
           checkout scm
@@ -65,10 +73,10 @@
         }
       }
 
-      stage('Cleanup Docker') {
+      stage('Cleanup Dev Containers After Push') {
         steps {
           sh '''
-            docker compose -f docker-compose.development.yml down --remove-orphans
+            docker compose -f docker-compose.development.yml down --remove-orphans || true
           '''
         }
       }
