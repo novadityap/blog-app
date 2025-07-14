@@ -8,7 +8,7 @@
     "start": "NODE_ENV=production node src/index.js",
     "dev": "NODE_ENV=development nodemon src/index.js",
     "test": "NODE_ENV=development jest --detectOpenHandles --runInBand",
-    "seed": "NODE_ENV=development node src/seeders/seed.js"
+    "seed": "node src/seeders/seed.js"
   },
   "author": "Nova Aditya",
   "license": "ISC",
