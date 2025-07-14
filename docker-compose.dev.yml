@@ -6,7 +6,7 @@ services:
       context: ./server
       dockerfile: Dockerfile.dev
     env_file:
-      - ./server/.env
+      - ./server/.env.development
     ports:
       - "3000:3000"
     depends_on:
@@ -22,7 +22,7 @@ services:
       context: ./client
       dockerfile: Dockerfile.dev
     env_file:
-      - ./client/.env
+      - ./client/.env.development
     ports:
       - "5173:5173"
     restart: always

@@ -5,10 +5,10 @@
   "description": "server",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "test": "jest --detectOpenHandles --runInBand",
-    "seed": "node src/seeders/seed.js"
+    "start": "NODE_ENV=production node src/index.js",
+    "dev": "NODE_ENV=development nodemon src/index.js",
+    "test": "NODE_ENV=development --detectOpenHandles --runInBand",
+    "seed": "NODE_ENV=development node src/seeders/seed.js"
   },
   "author": "Nova Aditya",
   "license": "ISC",

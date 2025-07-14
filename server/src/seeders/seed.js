@@ -2,7 +2,7 @@ import seedRole from "./roleSeeder.js";
 import seedUser from "./userSeeder.js";
 import seedCategory from "./categorySeeder.js";
 import logger from "../utils/logger.js";
-import connectDB from '../config/connection.js';
+import connectDB from '../utils/connection.js';
 import 'dotenv/config';
 import mongoose from 'mongoose';
 

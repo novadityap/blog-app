@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import connectDB from './src/config/connection.js';
+import connectDB from './src/utils/connection.js';
 import mongoose from 'mongoose';
 import seedRole from './src/seeders/roleSeeder.js';
 import path from 'node:path';

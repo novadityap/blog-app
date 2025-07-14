@@ -1,12 +1,12 @@
 import app from './app.js';
-import connectDB from './config/connection.js';
-import 'dotenv/config';
+import connectDB from './utils/connection.js';
 import logger from './utils/logger.js';
 import './cron/deleteUnverifiedUsers.js';
+import loadEnv from './utils/loadEnv.js';
 
 (async () => {
-  const port = process.env.PORT || 3000;
-
+  loadEnv();
   await connectDB();
-  app.listen(port, '0.0.0.0', () => logger.info(`Server running on port ${port}`));
+
+  app.listen(process.env.PORT, '0.0.0.0', () => logger.info(`Server running on port ${process.env.PORT}`));
 })();
