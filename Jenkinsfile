@@ -1,69 +1,77 @@
-pipeline {
-  agent any
+  pipeline {
+    agent any
 
-  stages {
-    stage('Clean Workspace') {
-      steps {
-        deleteDir()
-      }
-    }
-
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
-    }
-
-    stage('Copy env file') {
-      steps {
-        withCredentials([
-          file(credentialsId: 'blog-app-client-dev-env', variable: 'CLIENT_DEV_ENV'),
-          file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV'),
-          file(credentialsId: 'blog-app-server-dev-env', variable: 'SERVER_DEV_ENV'),
-        ]) {
-          sh """
-            cp "$CLIENT_DEV_ENV" client/.env.development
-            cp "$CLIENT_ENV" client/.env.production
-            cp "$SERVER_DEV_ENV" server/.env.development
-          """
+    stages {
+      stage('Clean Workspace') {
+        steps {
+          deleteDir()
         }
       }
-    }
 
-    stage('Build & Up Dev Containers') {
-      steps {
-        sh 'docker compose -f docker-compose.development.yml up -d --build'
+      stage('Checkout') {
+        steps {
+          checkout scm
+        }
       }
-    }
 
-    stage('Run Server Tests') {
-      steps {
-        sh 'docker compose -f docker-compose.development.yml exec server npm run test'
+      stage('Copy env file') {
+        steps {
+          withCredentials([
+            file(credentialsId: 'blog-app-client-dev-env', variable: 'CLIENT_DEV_ENV'),
+            file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV'),
+            file(credentialsId: 'blog-app-server-dev-env', variable: 'SERVER_DEV_ENV'),
+          ]) {
+            sh """
+              cp "$CLIENT_DEV_ENV" client/.env.development
+              cp "$CLIENT_ENV" client/.env.production
+              cp "$SERVER_DEV_ENV" server/.env.development
+            """
+          }
+        }
       }
-    }
 
-    stage('Build Production Docker Images') {
-      steps {
-        sh 'docker compose -f docker-compose.production.yml build'
+      stage('Build & Up Dev Containers') {
+        steps {
+          sh 'docker compose -f docker-compose.development.yml up -d --build'
+        }
       }
-    }
 
-   stage('Push Docker Images') {
-      steps {
-        withCredentials([
-          usernamePassword(
-            credentialsId: 'dockerhub',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS',
-          ),
-        ]) {
+      stage('Run Server Tests') {
+        steps {
+          sh 'docker compose -f docker-compose.development.yml exec server npm run test'
+        }
+      }
+
+      stage('Build Production Docker Images') {
+        steps {
+          sh 'docker compose -f docker-compose.production.yml build'
+        }
+      }
+
+    stage('Push Docker Images') {
+        steps {
+          withCredentials([
+            usernamePassword(
+              credentialsId: 'dockerhub',
+              usernameVariable: 'DOCKER_USER',
+              passwordVariable: 'DOCKER_PASS',
+            ),
+          ]) {
+            sh '''
+              echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+              docker compose -f docker-compose.production.yml push
+            '''
+          }
+        }
+      }
+
+      stage('Cleanup Docker') {
+        steps {
           sh '''
-            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-            docker compose -f docker-compose.production.yml push
+            docker compose -f docker-compose.development.yml down --remove-orphans || true
           '''
         }
       }
     }
   }
-}
 
