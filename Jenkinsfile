@@ -42,15 +42,6 @@ pipeline {
       }
     }
 
-    stage('Clean Dev Docker Containers & Images') {
-      steps {
-        sh '''
-          docker compose -f docker-compose.dev.yml down --rmi all --volumes --remove-orphans
-          docker image prune -af
-        '''
-      }
-    }
-
     stage('Build Production Docker Images') {
       steps {
         sh 'docker compose build'
