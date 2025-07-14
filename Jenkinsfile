@@ -68,7 +68,7 @@
       stage('Cleanup Docker') {
         steps {
           sh '''
-            docker compose -f docker-compose.development.yml down --remove-orphans || true
+            docker compose -f docker-compose.development.yml down --remove-orphans
           '''
         }
       }
