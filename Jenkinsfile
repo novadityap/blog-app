@@ -18,12 +18,12 @@
         steps {
           withCredentials([
             file(credentialsId: 'blog-app-client-dev-env', variable: 'CLIENT_DEV_ENV'),
-            file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV'),
+            file(credentialsId: 'blog-app-client-prod-env', variable: 'CLIENT_PROD_ENV'),
             file(credentialsId: 'blog-app-server-dev-env', variable: 'SERVER_DEV_ENV'),
           ]) {
             sh """
               cp "$CLIENT_DEV_ENV" client/.env.development
-              cp "$CLIENT_ENV" client/.env.production
+              cp "$CLIENT_PROD_ENV" client/.env.production
               cp "$SERVER_DEV_ENV" server/.env.development
             """
           }
