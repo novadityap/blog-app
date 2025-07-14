@@ -32,13 +32,13 @@ pipeline {
 
     stage('Build & Up Dev Containers') {
       steps {
-        sh 'docker compose -f docker-compose.dev.yml up -d --build'
+        sh 'docker compose -f docker-compose.development.yml up -d --build'
       }
     }
 
     stage('Run Server Tests') {
       steps {
-        sh 'docker compose -f docker-compose.dev.yml exec server npm run test'
+        sh 'docker compose -f docker-compose.development.yml exec server npm run test'
       }
     }
 
