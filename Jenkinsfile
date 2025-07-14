@@ -17,12 +17,14 @@ pipeline {
     stage('Copy env file') {
       steps {
         withCredentials([
+          file(credentialsId: 'blog-app-client-dev-env', variable: 'CLIENT_DEV_ENV'),
           file(credentialsId: 'blog-app-client-env', variable: 'CLIENT_ENV'),
-          file(credentialsId: 'blog-app-server-env', variable: 'SERVER_ENV'),
+          file(credentialsId: 'blog-app-server-dev-env', variable: 'SERVER_DEV_ENV'),
         ]) {
           sh """
-            cp "$CLIENT_ENV" client/.env
-            cp "$SERVER_ENV" server/.env
+            cp "$CLIENT_DEV_ENV" client/.env.development
+            cp "$CLIENT_ENV" client/.env.production
+            cp "$SERVER_DEV_ENV" server/.env.development
           """
         }
       }
