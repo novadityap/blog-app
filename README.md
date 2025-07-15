@@ -6,18 +6,17 @@ A full-stack blogging platform with modern features such as user authentication,
 
 ## 🚀 Tech Stack
 
-**Backend:**
-- Node.js with Express.js
-- MongoDB with Mongoose
-- JWT Authentication + Google OAuth2
-- Nodemailer (Email verification and password reset)   
-- Docker & Docker Compose
+### Backend
+- **Express.js** — Web framework for building RESTful APIs
+- **MongoDB** — NoSQL database, managed with Mongoose ODM
+- **Authentication** — JSON Web Token (JWT) and Google OAuth 2.0
+- **Email Service** — Handled via Nodemailer
 
-**Frontend:**
-- React (Vite)
-- Redux Toolkit + RTK Query
-- React Router
-- shadcn ui + Tailwind CSS
+### Frontend
+- **React.js** — Single Page Application framework using Vite
+- **React Router** — Client-side routing
+- **Redux Toolkit & RTK Query** — State and data fetching management
+- **shadcn/ui** — Accessible and customizable UI components
 
 ---
 
@@ -86,32 +85,13 @@ docker compose -f docker-compose.development.yml exec server npm run test
 - **View container logs:**
 
   ```bash
-  docker compose logs -f
+  docker compose -f docker-compose.development.yml logs -f
   ```
 
 - **Stop and remove containers, networks, and volumes:**
 
   ```bash
-  docker compose down -v
+  docker compose -f docker-compose.development.yml down -v
   ```
-
----
-
-## 📁 Project Structure
-
-```
-blog-app/
-├── client/        # Frontend (React)
-├── server/        # Backend (Express.js)
-├── docker-compose.development.yml
-└── README.md
-```
-
----
-
-## 👤 Author
-
-**Nova Aditya Pratama**  
-Email: [admin@email.com](mailto:admin@email.com)
 
 ---
