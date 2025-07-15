@@ -2,23 +2,10 @@
     agent any
 
     stages {
-      stage('Clean Workspace') {
+      stage('Checkout & Clean') {
         steps {
-          deleteDir()
-        }
-      }
-
-      stage('Checkout') {
-        steps {
+          cleanWs()
           checkout scm
-        }
-      }
-
-      stage('Stop & Remove Dev Containers') {
-        steps {
-          sh '''
-            docker compose -f docker-compose.development.yml down --remove-orphans || true
-          '''
         }
       }
 
@@ -38,9 +25,13 @@
         }
       }
 
-      stage('Build & Up Dev Containers') {
+      stage('Start Dev Containers') {
         steps {
-          sh 'docker compose -f docker-compose.development.yml up -d --build'
+          sh '''
+            docker system prune -af --volumes || true
+            docker compose -f docker-compose.development.yml down --volumes --remove-orphans || true
+            docker compose -f docker-compose.development.yml up -d --build
+          '''
         }
       }
 
@@ -72,14 +63,16 @@
           }
         }
       }
+    }
 
-      stage('Cleanup Dev Containers After Push') {
-        steps {
-          sh '''
-            docker compose -f docker-compose.development.yml down --remove-orphans || true
-          '''
-        }
-      }
+    post {
+     always {
+      sh '''
+        docker compose -f docker-compose.development.yml down --volumes --remove-orphans || true
+        docker system prune -af --volumes || true
+      '''
+      cleanWs()
     }
   }
+}
 
