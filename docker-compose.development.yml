@@ -38,13 +38,13 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - mongo-data:/data/db
+      - blog-mongo-data:/data/db
     networks:
       - blog-app-dev
 
 volumes:
-  mongo-data:
-    name: mongo-data
+  blog-mongo-data:
+    name: blog-mongo-data
 networks:
   blog-app-dev:
     name: blog-app-dev
