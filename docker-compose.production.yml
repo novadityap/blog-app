@@ -5,7 +5,7 @@ services:
       context: ./server
       dockerfile: Dockerfile.production
     ports:
-      - "4000:4000"
+      - "3000:3000"
     restart: always
 
   client:
@@ -14,6 +14,6 @@ services:
       context: ./client
       dockerfile: Dockerfile.production
     ports:
-      - "3000:80"
+      - "5173:80"
     restart: always
 
