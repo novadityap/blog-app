@@ -82,6 +82,8 @@ const search = async (req, res) => {
       as: 'post',
       pipeline: [{ $project: { title: 1 } }],
     })
+    .unwind('user')
+    .unwind('post')
     .match(
       q
         ? {
