@@ -13,6 +13,7 @@ export default defineConfig({
     strictPort: true,
   },
    optimizeDeps: {
+    include: ['quill-delta', 'eventemitter3'],
     exclude: ['react-quill-new']
   },
   resolve: {

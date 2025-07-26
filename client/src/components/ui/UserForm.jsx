@@ -79,7 +79,7 @@ const UserForm = ({id, onSubmitComplete, onCancel, isCreate}) => {
       form.reset({
         username: user.data.username,
         email: user.data.email,
-        roleId: user.data.role.id,
+        role: user.data.role.id,
         password: ''
       });
     }
@@ -165,7 +165,7 @@ const UserForm = ({id, onSubmitComplete, onCancel, isCreate}) => {
         />
         <FormField
           control={form.control}
-          name="roleId"
+          name="role"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Role</FormLabel>

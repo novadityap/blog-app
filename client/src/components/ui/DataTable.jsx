@@ -16,13 +16,6 @@ import { toast } from 'react-hot-toast';
 import { createColumnHelper } from '@tanstack/react-table';
 import { TbEdit, TbTrash, TbPlus, TbEye } from 'react-icons/tb';
 import { Input } from '@/components/shadcn/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/shadcn/dialog';
 import { Button } from '@/components/shadcn/button';
 import { Skeleton } from '@/components/shadcn/skeleton';
 import {
@@ -106,6 +99,7 @@ const DataTable = ({
   const [currentPage, setcurrentPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [modalType, setModalType] = useState(null);
+  const [selectedParentId, setSelectedParentId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const {
     data: items,
@@ -151,6 +145,8 @@ const DataTable = ({
       size: 100,
       cell: ({ row }) => {
         const id = row.original.id;
+        const postId = row.original?.post?.id;
+
         return (
           <div className="flex gap-x-3">
             {allowView && (
@@ -167,7 +163,7 @@ const DataTable = ({
             )}
             <TbTrash
               className="size-5 cursor-pointer text-red-600"
-              onClick={() => handleOpenModal('remove', id)}
+              onClick={() => handleOpenModal('remove', id, postId)}
             />
           </div>
         );
@@ -175,9 +171,10 @@ const DataTable = ({
     }),
   ];
 
-  const handleOpenModal = (type, id = null) => {
+  const handleOpenModal = (type, id = null, parentId = null) => {
     setModalType(type);
     setSelectedId(id);
+    setSelectedParentId(parentId);
   };
 
   const handleCloseModal = () => {
@@ -191,7 +188,7 @@ const DataTable = ({
 
   const handleRemoveConfirm = async () => {
     try {
-      const result = await removeMutate(selectedId).unwrap();
+      const result = entityName === 'comment' ? await removeMutate({ postId: selectedParentId, commentId: selectedId }).unwrap() : await removeMutate(selectedId).unwrap();
       toast.success(result.message);
       handleCloseModal();
     } catch (e) {

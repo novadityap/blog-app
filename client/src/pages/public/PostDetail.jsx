@@ -56,7 +56,7 @@ const CreateComment = ({
     defaultValues: {
       post: postId,
       parentCommentId,
-      text: replyTo,
+      text: replyTo ?? '',
     },
   });
 
