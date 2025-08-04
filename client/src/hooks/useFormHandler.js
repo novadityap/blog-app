@@ -5,7 +5,7 @@ import {
   setToken,
   setCurrentUser,
   updateCurrentUser,
-} from '@/features/authSlice';
+} from '@/lib/features/authSlice';
 import { toast } from 'react-hot-toast';
 
 const getChangedData = (dirtyFields, form) => {

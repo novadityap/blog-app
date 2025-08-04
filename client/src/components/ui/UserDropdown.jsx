@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+'use client';
+
+import Link from 'next/link';
 import {
   Avatar,
   AvatarFallback,
@@ -31,7 +33,7 @@ const UserDropdown = ({ className }) => {
     { name: 'Home', icon: TbHome, link: '/' },
     ...(token
       ? [
-          { name: 'Dashboard', icon: TbApps, link: '/dashboard' },
+          { name: 'Dashboard', icon: TbApps, link: currentUser?.role === 'admin' ? '/dashboard' : '/dashboard/profile' },
           { name: 'Sign Out', icon: TbLogout, action: handleSignout },
         ]
       : [
@@ -44,9 +46,9 @@ const UserDropdown = ({ className }) => {
     <DropdownMenu>
       <DropdownMenuTrigger className={cn('outline-none', className)}>
         <Avatar>
-          <AvatarImage src={currentUser.avatar} alt="User Avatar" />
+          <AvatarImage src={currentUser?.avatar} alt="User Avatar" />
           <AvatarFallback>
-            {currentUser.username.charAt(0).toUpperCase()}
+            {currentUser?.username.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -55,7 +57,7 @@ const UserDropdown = ({ className }) => {
         <DropdownMenuSeparator />
         {menuItems.map(({ name, icon: Icon, link, action }, index) =>
           link ? (
-            <Link key={index} to={link}>
+            <Link key={index} href={link}>
               <DropdownMenuItem className="cursor-pointer hover:focus:bg-gray-200">
                 <Icon className="mr-2 size-5" />
                 {name}

@@ -1,19 +1,19 @@
 import { useSignoutMutation } from "@/services/authApi";
 import { useDispatch } from "react-redux";
-import { clearAuth } from "@/features/authSlice";
-import { useNavigate } from "react-router-dom";
+import { clearAuth } from "@/lib/features/authSlice";
+import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 
 const useSignout = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [signout] = useSignoutMutation();
 
   const handleSignout = async () => {
     try {
       await signout();
       dispatch(clearAuth());
-      navigate("/");
+      router.replace("/");
     } catch (e) {
       toast.error(e.message);
     }

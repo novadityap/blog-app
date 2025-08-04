@@ -27,6 +27,7 @@ import ReactQuill from 'react-quill-new';
 import { AspectRatio } from '@/components/shadcn/aspect-ratio';
 import { TbLoader } from 'react-icons/tb';
 import { Skeleton } from '@/components/shadcn/skeleton';
+import Image from 'next/image';
 
 const PostFormSkeleton = ({isCreate}) => (
   <div className="space-y-4">
@@ -84,10 +85,11 @@ const PostForm = ({ id, onSubmitComplete, onCancel, isCreate }) => {
   return (
     <Form {...form}>
       <form className="space-y-4" onSubmit={handleSubmit}>
-        {!isCreate && (
+        {!isCreate && post?.data?.image && (
           <AspectRatio ratio={16 / 9}>
-            <img
-              src={post?.data?.image}
+            <Image
+              fill
+              src={post.data.image}
               alt="post image"
               className="size-full object-cover"
             />
@@ -166,7 +168,7 @@ const PostForm = ({ id, onSubmitComplete, onCancel, isCreate }) => {
                 onValueChange={field.onChange}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                 </FormControl>

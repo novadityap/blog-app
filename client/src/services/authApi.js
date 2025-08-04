@@ -1,4 +1,4 @@
-import axiosBaseQuery from '@/app/baseQuery.js';
+import axiosBaseQuery from '@/lib/baseQuery.js';
 import { createApi } from '@reduxjs/toolkit/query/react';
 
 const authApi = createApi({

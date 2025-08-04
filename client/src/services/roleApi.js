@@ -1,4 +1,4 @@
-import axiosBaseQuery from '@/app/baseQuery';
+import axiosBaseQuery from '@/lib/baseQuery';
 import { createApi } from '@reduxjs/toolkit/query/react';
 
 const roleApi = createApi({

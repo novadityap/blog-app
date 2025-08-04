@@ -1,4 +1,7 @@
-import { useLocation, Link } from 'react-router-dom';
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import React from 'react';
 import {
   Breadcrumb,
@@ -7,16 +10,16 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '../shadcn/breadcrumb';
+} from '@/components/shadcn/breadcrumb';
 import { TbHome } from 'react-icons/tb';
 
 const BreadcrumbNav = () => {
-  const location = useLocation();
-  const pathnames = location.pathname.split('/').filter(x => x);
+  const pathname = usePathname();
+  const pathnames = pathname.split('/').filter(x => x);
 
   return (
     <Breadcrumb>
-      <BreadcrumbList>
+      <BreadcrumbList className="mb-6">
         {pathnames.map((value, index) => {
           const routeTo = `/${pathnames.slice(0, index + 1).join('/')}`;
           const isLast = index === pathnames.length - 1;
@@ -33,7 +36,7 @@ const BreadcrumbNav = () => {
                   </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link to={routeTo} className="flex items-center gap-x-1">
+                    <Link href={routeTo} className="flex items-center gap-x-1">
                       {value === 'dashboard' && <TbHome className="size-5" />}
                       {value.charAt(0).toUpperCase() + value.slice(1)}
                     </Link>
