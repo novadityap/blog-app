@@ -13,8 +13,7 @@ A full-stack blogging platform with modern features such as user authentication,
 - **Email Service** — Handled via Nodemailer
 
 ### Frontend
-- **React.js** — Single Page Application framework using Vite
-- **React Router** — Client-side routing
+- **Next.js** — Fullstack React framework
 - **Redux Toolkit & RTK Query** — State and data fetching management
 - **shadcn/ui** — Accessible and customizable UI components
 
