@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '@/components/shadcn/button';
 import { Input } from '@/components/shadcn/input';
 import useFormHandler from '@/hooks/useFormHandler';
