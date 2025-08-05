@@ -26,7 +26,6 @@ const filterEmptyValues = data => {
   );
 };
 
-
 const buildFormData = ({ data, fileFieldname, isMultiple, method }) => {
   const formData = new FormData();
 
@@ -104,7 +103,9 @@ const useFormHandler = ({
       setMessage(result.message);
 
       if (result.data && typeof result.data === 'object') {
-        form.reset(sanitizeNull(result.data));
+        form.reset(sanitizeNull(result.data), {
+          keepDefaultValues: true,
+        });
       } else {
         form.reset();
       }
