@@ -52,7 +52,7 @@ const User = () => {
         const role = info.getValue();
         if (role.name === 'admin')
           return <Badge variant="destructive">Admin</Badge>;
-        if (role.name === 'user') return <Badge variant="primary">User</Badge>;
+        if (role.name === 'user') return <Badge variant="default">User</Badge>;
       },
     }),
   ];

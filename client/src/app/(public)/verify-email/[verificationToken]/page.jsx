@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/shadcn/button';
@@ -33,9 +33,13 @@ const VerifyEmail = () => {
   const { verificationToken } = useParams();
   const [verifyEmail, { isLoading, isError, isSuccess, error, data }] =
     useVerifyEmailMutation();
+  const hasRequested = useRef(false);
 
   useEffect(() => {
-    if (verificationToken) verifyEmail(verificationToken);
+    if (verificationToken && !hasRequested.current) {
+      verifyEmail(verificationToken);
+      hasRequested.current = true;
+    }
   }, [verificationToken, verifyEmail]);
 
   const message = isError ? error?.message : data?.message;
